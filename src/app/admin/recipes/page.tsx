@@ -17,7 +17,8 @@ type Recipe = {
   is_active: boolean;
   recipe_ingredients?: Array<{
     ml_per_serving: number;
-    ingredients: Ingredient | null;
+    // Supabase embedded relation can type as object or array depending on schema typing.
+    ingredients: Ingredient | Ingredient[] | null;
   }>;
 };
 
@@ -43,6 +44,13 @@ export default function RecipesAdmin() {
     ingredientId: "",
     ml: 30,
   });
+
+  const normalizeIngredient = (ingredient: Ingredient | Ingredient[] | null) => {
+    if (!ingredient) {
+      return null;
+    }
+    return Array.isArray(ingredient) ? ingredient[0] ?? null : ingredient;
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -300,7 +308,8 @@ export default function RecipesAdmin() {
                       key={`${recipe.id}-${index}`}
                       className="rounded-full bg-white/80 px-3 py-2"
                     >
-                      {item.ingredients?.name} · {item.ml_per_serving}ml
+                      {normalizeIngredient(item.ingredients)?.name ?? "Unknown"} ·{" "}
+                      {item.ml_per_serving}ml
                     </span>
                   ))}
                 </div>

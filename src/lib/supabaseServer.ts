@@ -1,15 +1,25 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+// Keep this intentionally untyped (or broadly typed) to avoid "never" table typings
+// when not using generated Supabase Database types.
+let cachedClient: SupabaseClient | null = null;
 
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error("Missing Supabase server credentials.");
+export function getSupabaseServerClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing Supabase server credentials.");
+  }
+
+  if (!cachedClient) {
+    cachedClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+  }
+
+  return cachedClient;
 }
-
-export const supabaseServer = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-});

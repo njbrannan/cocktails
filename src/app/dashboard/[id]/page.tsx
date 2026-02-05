@@ -22,7 +22,8 @@ type Recipe = {
 type EventRecipe = {
   id: string;
   servings: number;
-  recipes: Recipe | null;
+  // Supabase embedded relation can type as object or array depending on schema typing.
+  recipes: Recipe | Recipe[] | null;
 };
 
 export default function EventBuilderPage() {
@@ -43,6 +44,13 @@ export default function EventBuilderPage() {
   const [notes, setNotes] = useState("");
 
   const canSubmit = useMemo(() => event?.status === "draft", [event?.status]);
+
+  const normalizeRecipe = (recipe: Recipe | Recipe[] | null) => {
+    if (!recipe) {
+      return null;
+    }
+    return Array.isArray(recipe) ? recipe[0] ?? null : recipe;
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -118,7 +126,9 @@ export default function EventBuilderPage() {
     if (!event) {
       return;
     }
-    const existing = eventRecipes.find((item) => item.recipes?.id === recipeId);
+    const existing = eventRecipes.find(
+      (item) => normalizeRecipe(item.recipes)?.id === recipeId,
+    );
     if (existing) {
       const { error: deleteError } = await supabase
         .from("event_recipes")
@@ -256,7 +266,7 @@ export default function EventBuilderPage() {
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 {recipes.map((recipe) => {
                   const isSelected = eventRecipes.some(
-                    (item) => item.recipes?.id === recipe.id,
+                    (item) => normalizeRecipe(item.recipes)?.id === recipe.id,
                   );
                   return (
                     <button
@@ -295,7 +305,7 @@ export default function EventBuilderPage() {
                     >
                       <div>
                         <p className="text-sm font-semibold text-[#151210]">
-                          {item.recipes?.name || "Cocktail"}
+                          {normalizeRecipe(item.recipes)?.name || "Cocktail"}
                         </p>
                       </div>
                       <input

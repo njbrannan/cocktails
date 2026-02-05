@@ -11,20 +11,28 @@ type EventItem = {
   guest_count: number | null;
 };
 
-type EventRecipeRow = {
+type DbIngredient = {
+  id: string;
+  name: string;
+  type: "liquor" | "mixer" | "juice" | "syrup" | "garnish";
+  bottle_size_ml: number | null;
+};
+
+type DbRecipeIngredient = {
+  ml_per_serving: number;
+  // Supabase embedded relations can type as object or array depending on schema typing.
+  ingredients: DbIngredient | DbIngredient[] | null;
+};
+
+type DbRecipe = {
+  name: string;
+  recipe_ingredients: DbRecipeIngredient[];
+};
+
+type DbEventRecipeRow = {
   servings: number;
-  recipes: {
-    name: string;
-    recipe_ingredients: Array<{
-      ml_per_serving: number;
-      ingredients: {
-        id: string;
-        name: string;
-        type: "liquor" | "mixer" | "juice" | "syrup" | "garnish";
-        bottle_size_ml: number | null;
-      } | null;
-    }>;
-  } | null;
+  // Supabase embedded relations can type as object or array depending on schema typing.
+  recipes: DbRecipe | DbRecipe[] | null;
 };
 
 export default function InventoryAdmin() {
@@ -63,25 +71,32 @@ export default function InventoryAdmin() {
       return;
     }
 
-    const items = (data as EventRecipeRow[]).flatMap((row) => {
-      if (!row.recipes) {
-        return [];
-      }
+    const rows = ((data ?? []) as unknown as DbEventRecipeRow[]) || [];
+    const items = rows.flatMap((row) => {
+      const recipes = row.recipes
+        ? Array.isArray(row.recipes)
+          ? row.recipes
+          : [row.recipes]
+        : [];
 
-      return row.recipes.recipe_ingredients.map((ingredientRow) => {
-        const ingredient = ingredientRow.ingredients;
-        if (!ingredient) {
-          return null;
-        }
-        return {
-          ingredientId: ingredient.id,
-          name: ingredient.name,
-          type: ingredient.type,
-          mlPerServing: ingredientRow.ml_per_serving,
-          servings: row.servings,
-          bottleSizeMl: ingredient.bottle_size_ml,
-        };
-      });
+      return recipes.flatMap((recipe) =>
+        (recipe.recipe_ingredients ?? []).flatMap((ingredientRow) => {
+          const ingredients = ingredientRow.ingredients
+            ? Array.isArray(ingredientRow.ingredients)
+              ? ingredientRow.ingredients
+              : [ingredientRow.ingredients]
+            : [];
+
+          return ingredients.map((ingredient) => ({
+            ingredientId: ingredient.id,
+            name: ingredient.name,
+            type: ingredient.type,
+            mlPerServing: ingredientRow.ml_per_serving,
+            servings: row.servings,
+            bottleSizeMl: ingredient.bottle_size_ml,
+          }));
+        }),
+      );
     });
 
     const cleanItems = items.filter(Boolean) as Array<{

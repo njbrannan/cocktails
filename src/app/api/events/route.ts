@@ -1,7 +1,8 @@
-import { supabaseServer } from "@/lib/supabaseServer";
+import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
+  const supabaseServer = getSupabaseServerClient();
   const body = await request.json();
   const { title, eventDate, guestCount, notes, clientEmail } = body;
 
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const supabaseServer = getSupabaseServerClient();
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
 
@@ -50,6 +52,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const supabaseServer = getSupabaseServerClient();
   const body = await request.json();
   const { token, title, eventDate, guestCount, notes, status } = body;
 

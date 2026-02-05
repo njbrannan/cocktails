@@ -1,0 +1,9 @@
+<svg width="640" height="220" viewBox="0 0 640 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="220" rx="28" fill="#F8F1E7"/>
+  <path d="M84 64C84 45.2223 99.2223 30 118 30H522C540.778 30 556 45.2223 556 64V156C556 174.778 540.778 190 522 190H118C99.2223 190 84 174.778 84 156V64Z" fill="#F2D9B1"/>
+  <path d="M112 68C112 56.9543 120.954 48 132 48H508C519.046 48 528 56.9543 528 68V152C528 163.046 519.046 172 508 172H132C120.954 172 112 163.046 112 152V68Z" fill="#F8F1E7" stroke="#C47B4A" stroke-width="2"/>
+  <text x="320" y="98" text-anchor="middle" font-family="Playfair Display, serif" font-size="36" fill="#6A2E2A" letter-spacing="1.8">Get Involved</text>
+  <text x="320" y="138" text-anchor="middle" font-family="Manrope, sans-serif" font-size="20" fill="#4B3F3A" letter-spacing="1">Cocktail Party Planner</text>
+  <path d="M180 156C214 170 248 176 320 176C392 176 426 170 460 156" stroke="#C47B4A" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="320" cy="156" r="6" fill="#C47B4A"/>
+</svg>

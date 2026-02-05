@@ -1,26 +1,84 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: light;
+  --color-ink: #151210;
+  --color-ink-muted: #4b3f3a;
+  --color-cream: #f8f1e7;
+  --color-champagne: #f2d9b1;
+  --color-copper: #c47b4a;
+  --color-berry: #6a2e2a;
+  --color-shadow: rgba(21, 18, 16, 0.12);
+  --color-glow: rgba(196, 123, 74, 0.25);
+  --radius-pill: 999px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-body), "Manrope", system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), "Playfair Display", serif;
+}
+
+.glass-panel {
+  background: rgba(248, 241, 231, 0.85);
+  border: 1px solid rgba(196, 123, 74, 0.2);
+  box-shadow: 0 20px 50px var(--color-shadow);
+  backdrop-filter: blur(12px);
+}
+
+.text-shadow-soft {
+  text-shadow: 0 10px 30px var(--color-glow);
+}
+
+.hero-grid {
+  background-image:
+    radial-gradient(circle at top right, rgba(196, 123, 74, 0.18), transparent 45%),
+    radial-gradient(circle at 20% 20%, rgba(106, 46, 42, 0.16), transparent 35%),
+    linear-gradient(120deg, rgba(242, 217, 177, 0.5), rgba(248, 241, 231, 0.8));
+}
+
+.frosted-border {
+  border: 1px solid rgba(21, 18, 16, 0.08);
+}
+
+button, a {
+  transition: transform 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--color-copper);
+  outline-offset: 2px;
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-float-up {
+  animation: floatUp 700ms ease forwards;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.shimmer {
+  background-size: 200% 200%;
+  animation: shimmer 8s ease infinite;
 }

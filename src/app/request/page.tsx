@@ -259,7 +259,12 @@ export default function RequestPage() {
                 <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                   {recipes.map((recipe) => {
                     const isSelected = selectedRecipeIds.has(recipe.id);
-                    const imageSrc = recipe.image_url || PLACEHOLDER_IMAGE;
+                    const imageSrc = recipe.image_url
+                      ? recipe.image_url.startsWith("http") ||
+                        recipe.image_url.startsWith("/")
+                        ? recipe.image_url
+                        : `/cocktails/${recipe.image_url}`
+                      : PLACEHOLDER_IMAGE;
 
                     return (
                       <button
@@ -285,6 +290,9 @@ export default function RequestPage() {
                             alt={recipe.name}
                             loading="lazy"
                             className="h-full w-full object-cover"
+                            onError={(event) => {
+                              event.currentTarget.src = PLACEHOLDER_IMAGE;
+                            }}
                           />
                           {isSelected ? (
                             <div className="absolute left-3 top-3 rounded-full bg-[#6a2e2a] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#f8f1e7]">

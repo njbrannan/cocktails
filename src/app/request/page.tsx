@@ -124,13 +124,19 @@ export default function RequestPage() {
     setSuccess(null);
     setEditLink(null);
 
+    // Aggregate by a normalized key so if you accidentally have duplicate ingredients
+    // in Supabase (e.g. "Lime Juice" entered twice with different UUIDs), the order
+    // list still combines them.
     const items = selectedRecipes.flatMap(({ recipe, servings }) =>
       (recipe.recipe_ingredients ?? []).flatMap((ri) => {
         const ingredient = normalizeIngredient(ri.ingredients);
         if (!ingredient) return [];
+
+        const normalizedKey = `${ingredient.type}:${ingredient.name.trim().toLowerCase()}`;
+
         return [
           {
-            ingredientId: ingredient.id,
+            ingredientId: normalizedKey,
             name: ingredient.name,
             type: ingredient.type,
             mlPerServing: ri.ml_per_serving,
@@ -141,7 +147,12 @@ export default function RequestPage() {
       }),
     );
 
-    setOrderList(buildIngredientTotals(items));
+    const totals = buildIngredientTotals(items).sort((a, b) => {
+      if (a.type !== b.type) return a.type.localeCompare(b.type);
+      return a.name.localeCompare(b.name);
+    });
+
+    setOrderList(totals);
   };
 
   const handleOrderBartenders = async () => {

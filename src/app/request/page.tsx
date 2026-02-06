@@ -147,8 +147,20 @@ export default function RequestPage() {
       }),
     );
 
+    const typePriority: Record<string, number> = {
+      liquor: 0,
+      mixer: 1,
+      juice: 2,
+      syrup: 3,
+      garnish: 4,
+    };
+
     const totals = buildIngredientTotals(items).sort((a, b) => {
-      if (a.type !== b.type) return a.type.localeCompare(b.type);
+      const typeA = typePriority[a.type] ?? 99;
+      const typeB = typePriority[b.type] ?? 99;
+      if (typeA !== typeB) return typeA - typeB;
+      // Within each type, biggest quantities first.
+      if (a.totalMl !== b.totalMl) return b.totalMl - a.totalMl;
       return a.name.localeCompare(b.name);
     });
 

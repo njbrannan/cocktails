@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { getAdminEmail, isEmailConfigured, sendEmail } from "@/lib/resend";
+import { buildIngredientTotals } from "@/lib/inventoryMath";
 import { NextRequest, NextResponse } from "next/server";
 
 function escapeHtml(input: string) {
@@ -11,20 +12,120 @@ function escapeHtml(input: string) {
     .replaceAll("'", "&#039;");
 }
 
+type CocktailSelection = {
+  recipeId: string;
+  recipeName?: string;
+  servings: number;
+};
+
+function formatOrderListHtml(
+  totals: ReturnType<typeof buildIngredientTotals>,
+) {
+  const rows = totals
+    .map((t) => {
+      const right = t.bottlesNeeded
+        ? `${t.totalMl} ml · ${t.bottlesNeeded} × ${t.bottleSizeMl}ml`
+        : `${t.totalMl} ml`;
+      return `<tr>
+  <td style="padding:8px 10px;border-bottom:1px solid #eee"><strong>${escapeHtml(t.name)}</strong><br/><span style="color:#666;font-size:12px">${escapeHtml(t.type)}</span></td>
+  <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;white-space:nowrap">${escapeHtml(right)}</td>
+</tr>`;
+    })
+    .join("");
+
+  return `<table style="width:100%;border-collapse:collapse">${rows}</table>`;
+}
+
+async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
+  const { data, error } = await supabaseServer
+    .from("event_recipes")
+    .select(
+      "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, bottle_size_ml)))",
+    )
+    .eq("event_id", eventId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const rows = ((data ?? []) as unknown as Array<{
+    servings: number;
+    recipes: any;
+  }>) as any[];
+
+  const items = rows.flatMap((row) => {
+    const recipes = row.recipes
+      ? Array.isArray(row.recipes)
+        ? row.recipes
+        : [row.recipes]
+      : [];
+
+    return recipes.flatMap((recipe: any) => {
+      const recipeIngredients = recipe.recipe_ingredients ?? [];
+      return recipeIngredients.flatMap((ri: any) => {
+        const ingredients = ri.ingredients
+          ? Array.isArray(ri.ingredients)
+            ? ri.ingredients
+            : [ri.ingredients]
+          : [];
+        return ingredients.map((ingredient: any) => ({
+          ingredientId: ingredient.id,
+          name: ingredient.name,
+          type: ingredient.type,
+          mlPerServing: ri.ml_per_serving,
+          servings: row.servings,
+          bottleSizeMl: ingredient.bottle_size_ml,
+        }));
+      });
+    });
+  });
+
+  return buildIngredientTotals(items);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabaseServer = getSupabaseServerClient();
     const body = await request.json();
-    const { title, eventDate, guestCount, notes, clientEmail } = body;
+    const {
+      title,
+      eventDate,
+      guestCount,
+      notes,
+      clientEmail,
+      cocktails,
+      submit,
+    }: {
+      title?: string;
+      eventDate?: string;
+      guestCount?: number;
+      notes?: string;
+      clientEmail?: string;
+      cocktails?: CocktailSelection[];
+      submit?: boolean;
+    } = body;
+
+    const cleanedCocktails = (cocktails ?? [])
+      .filter((c) => c && c.recipeId && Number(c.servings) > 0)
+      .map((c) => ({
+        recipeId: c.recipeId,
+        recipeName: c.recipeName,
+        servings: Number(c.servings),
+      }));
+
+    const computedGuestCount =
+      typeof guestCount === "number" && guestCount > 0
+        ? guestCount
+        : cleanedCocktails.reduce((sum, c) => sum + c.servings, 0) || null;
 
     const { data, error } = await supabaseServer
       .from("events")
       .insert({
         title: title || "New Cocktail Event",
         event_date: eventDate || null,
-        guest_count: guestCount || null,
+        guest_count: computedGuestCount,
         notes: notes || null,
-        status: "draft",
+        status: submit ? "submitted" : "draft",
         client_email: clientEmail || null,
       })
       .select("id, edit_token")
@@ -54,6 +155,88 @@ export async function POST(request: NextRequest) {
 </div>`,
         text: `Your private edit link for "${title || "Cocktail request"}": ${editLink}`,
       });
+    }
+
+    if (cleanedCocktails.length > 0) {
+      const { error: insertEventRecipesError } = await supabaseServer
+        .from("event_recipes")
+        .insert(
+          cleanedCocktails.map((c) => ({
+            event_id: data.id,
+            recipe_id: c.recipeId,
+            servings: c.servings,
+          })),
+        );
+
+      if (insertEventRecipesError) {
+        return NextResponse.json(
+          { error: insertEventRecipesError.message },
+          { status: 400 },
+        );
+      }
+    }
+
+    // If it's submitted immediately, email admin + client confirmation (when email is configured).
+    if (submit && isEmailConfigured()) {
+      const adminEmail = getAdminEmail();
+      const safeTitle = escapeHtml(title || "Cocktail request");
+      const safeDate = escapeHtml(eventDate || "Date TBD");
+      const safeGuests = escapeHtml(String(computedGuestCount ?? ""));
+      const safeNotes = escapeHtml(notes || "");
+      const safeLink = escapeHtml(editLink);
+
+      let orderTotals: ReturnType<typeof buildIngredientTotals> = [];
+      try {
+        orderTotals = await computeOrderListForEvent(supabaseServer, data.id);
+      } catch {
+        orderTotals = [];
+      }
+
+      const cocktailsHtml = cleanedCocktails.length
+        ? `<ul>${cleanedCocktails
+            .map(
+              (c) =>
+                `<li>${escapeHtml(c.recipeName || c.recipeId)} · ${escapeHtml(String(c.servings))}</li>`,
+            )
+            .join("")}</ul>`
+        : "";
+
+      const orderListHtml = orderTotals.length
+        ? formatOrderListHtml(orderTotals)
+        : "<p style=\"margin:0;color:#666\">(Order list unavailable)</p>";
+
+      if (adminEmail) {
+        await sendEmail({
+          to: adminEmail,
+          subject: `New booking request: ${title || "Cocktail request"}`,
+          html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
+  <h2 style="margin:0 0 12px 0">New booking request submitted</h2>
+  <p style="margin:0 0 8px 0"><strong>Title:</strong> ${safeTitle}</p>
+  <p style="margin:0 0 8px 0"><strong>Date:</strong> ${safeDate}</p>
+  <p style="margin:0 0 8px 0"><strong>Guests:</strong> ${safeGuests}</p>
+  <p style="margin:0 0 8px 0"><strong>Client email:</strong> ${escapeHtml(clientEmail || "")}</p>
+  <p style="margin:0 0 8px 0"><strong>Notes:</strong> ${safeNotes || "<em>(none)</em>"}</p>
+  ${editLink ? `<p style="margin:12px 0 0 0"><strong>Edit link:</strong> <a href="${safeLink}">${safeLink}</a></p>` : ""}
+  <h3 style="margin:16px 0 8px 0">Order list</h3>
+  ${orderListHtml}
+</div>`,
+          text: `New booking request submitted\nTitle: ${title || ""}\nDate: ${eventDate || ""}\nGuests: ${computedGuestCount || ""}\nClient: ${clientEmail || ""}\nNotes: ${notes || ""}\n${editLink ? `Edit: ${editLink}` : ""}`,
+        });
+      }
+
+      if (clientEmail && editLink) {
+        await sendEmail({
+          to: clientEmail,
+          subject: `Request sent: ${title || "Cocktail request"}`,
+          html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
+  <h2 style="margin:0 0 12px 0">Request sent</h2>
+  <p style="margin:0 0 12px 0">We’ve received your request: <strong>${safeTitle}</strong>.</p>
+  <p style="margin:0 0 12px 0">If you need to make changes, use your private edit link:</p>
+  <p style="margin:0 0 12px 0"><a href="${safeLink}">${safeLink}</a></p>
+</div>`,
+          text: `We’ve received your request: ${title || ""}\nEdit link: ${editLink}`,
+        });
+      }
     }
 
     return NextResponse.json({

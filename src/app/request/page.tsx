@@ -108,7 +108,7 @@ export default function RequestPage() {
       const next = { ...prev };
       for (const recipe of sorted) {
         if (next[recipe.id] === undefined) {
-          next[recipe.id] = "";
+          next[recipe.id] = "0";
         }
       }
       return next;
@@ -270,6 +270,24 @@ export default function RequestPage() {
                           type="number"
                           min={0}
                           value={servingsRaw}
+                          onFocus={() => {
+                            if (recipe.isMissing) return;
+                            if ((servingsByRecipeId[recipe.id] ?? "0") === "0") {
+                              setServingsByRecipeId((prev) => ({
+                                ...prev,
+                                [recipe.id]: "",
+                              }));
+                            }
+                          }}
+                          onBlur={() => {
+                            if (recipe.isMissing) return;
+                            if ((servingsByRecipeId[recipe.id] ?? "") === "") {
+                              setServingsByRecipeId((prev) => ({
+                                ...prev,
+                                [recipe.id]: "0",
+                              }));
+                            }
+                          }}
                           onChange={(event) =>
                             setServingsByRecipeId((prev) => ({
                               ...prev,
@@ -277,7 +295,6 @@ export default function RequestPage() {
                             }))
                           }
                           disabled={recipe.isMissing}
-                          placeholder="0"
                           className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
                         />
                       </label>

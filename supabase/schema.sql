@@ -36,6 +36,7 @@ create table if not exists events (
   id uuid primary key default uuid_generate_v4(),
   client_id uuid references auth.users on delete set null,
   client_email text,
+  client_phone text,
   title text,
   event_date date,
   guest_count integer,

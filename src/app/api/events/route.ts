@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
       guestCount,
       notes,
       clientEmail,
+      clientPhone,
       cocktails,
       submit,
     }: {
@@ -101,6 +102,7 @@ export async function POST(request: NextRequest) {
       guestCount?: number;
       notes?: string;
       clientEmail?: string;
+      clientPhone?: string;
       cocktails?: CocktailSelection[];
       submit?: boolean;
     } = body;
@@ -127,6 +129,7 @@ export async function POST(request: NextRequest) {
         notes: notes || null,
         status: submit ? "submitted" : "draft",
         client_email: clientEmail || null,
+        client_phone: clientPhone || null,
       })
       .select("id, edit_token")
       .single();
@@ -215,12 +218,13 @@ export async function POST(request: NextRequest) {
   <p style="margin:0 0 8px 0"><strong>Date:</strong> ${safeDate}</p>
   <p style="margin:0 0 8px 0"><strong>Guests:</strong> ${safeGuests}</p>
   <p style="margin:0 0 8px 0"><strong>Client email:</strong> ${escapeHtml(clientEmail || "")}</p>
+  <p style="margin:0 0 8px 0"><strong>Telephone:</strong> ${escapeHtml(clientPhone || "")}</p>
   <p style="margin:0 0 8px 0"><strong>Notes:</strong> ${safeNotes || "<em>(none)</em>"}</p>
   ${editLink ? `<p style="margin:12px 0 0 0"><strong>Edit link:</strong> <a href="${safeLink}">${safeLink}</a></p>` : ""}
   <h3 style="margin:16px 0 8px 0">Order list</h3>
   ${orderListHtml}
 </div>`,
-          text: `New booking request submitted\nTitle: ${title || ""}\nDate: ${eventDate || ""}\nGuests: ${computedGuestCount || ""}\nClient: ${clientEmail || ""}\nNotes: ${notes || ""}\n${editLink ? `Edit: ${editLink}` : ""}`,
+          text: `New booking request submitted\nTitle: ${title || ""}\nDate: ${eventDate || ""}\nGuests: ${computedGuestCount || ""}\nClient: ${clientEmail || ""}\nTelephone: ${clientPhone || ""}\nNotes: ${notes || ""}\n${editLink ? `Edit: ${editLink}` : ""}`,
         });
       }
 

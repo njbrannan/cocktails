@@ -55,6 +55,7 @@ export default function RequestPage() {
   const [eventDate, setEventDate] = useState("");
   const [notes, setNotes] = useState("");
   const [clientEmail, setClientEmail] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
 
   const [orderList, setOrderList] = useState<
     ReturnType<typeof buildIngredientTotals> | null
@@ -191,6 +192,7 @@ export default function RequestPage() {
           eventDate,
           notes,
           clientEmail,
+          clientPhone,
           submit: true,
           cocktails: selectedRecipes.map(({ recipe, servings }) => ({
             recipeId: recipe.id,
@@ -236,7 +238,7 @@ export default function RequestPage() {
             Book bartenders
           </p>
           <h1 className="font-display text-4xl text-[#151210]">
-            Cocktail menu builder
+            Cocktail Menu Builder
           </h1>
           <p className="mt-2 text-sm text-[#4b3f3a]">
             Choose cocktails, set quantities, then create your order list.
@@ -425,17 +427,27 @@ export default function RequestPage() {
               </p>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <input
-                  type="date"
-                  value={eventDate}
-                  onChange={(event) => setEventDate(event.target.value)}
-                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
-                />
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                  Date of Event
+                  <input
+                    type="date"
+                    value={eventDate}
+                    onChange={(event) => setEventDate(event.target.value)}
+                    className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
+                  />
+                </label>
                 <input
                   type="email"
                   value={clientEmail}
                   onChange={(event) => setClientEmail(event.target.value)}
                   placeholder="Your email"
+                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
+                />
+                <input
+                  type="tel"
+                  value={clientPhone}
+                  onChange={(event) => setClientPhone(event.target.value)}
+                  placeholder="Telephone number"
                   className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
                 />
                 <textarea

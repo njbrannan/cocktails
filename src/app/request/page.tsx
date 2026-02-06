@@ -36,6 +36,14 @@ const MENU_RECIPE_NAMES = [
   "Margarita",
 ] as const;
 
+const typePriority: Record<string, number> = {
+  liquor: 0,
+  mixer: 1,
+  juice: 2,
+  syrup: 3,
+  garnish: 4,
+};
+
 export default function RequestPage() {
   const router = useRouter();
 
@@ -146,14 +154,6 @@ export default function RequestPage() {
         ];
       }),
     );
-
-    const typePriority: Record<string, number> = {
-      liquor: 0,
-      mixer: 1,
-      juice: 2,
-      syrup: 3,
-      garnish: 4,
-    };
 
     const totals = buildIngredientTotals(items).sort((a, b) => {
       const typeA = typePriority[a.type] ?? 99;
@@ -324,23 +324,41 @@ export default function RequestPage() {
                             No ingredients added yet.
                           </p>
                         ) : (
-                          (recipe.recipe_ingredients ?? []).map((ri, index) => {
-                            const ingredient = normalizeIngredient(ri.ingredients);
-                            if (!ingredient) return null;
-                            const ml =
-                              servings > 0 ? ri.ml_per_serving * servings : ri.ml_per_serving;
-                            return (
+                          (recipe.recipe_ingredients ?? [])
+                            .flatMap((ri, index) => {
+                              const ingredient = normalizeIngredient(ri.ingredients);
+                              if (!ingredient) return [];
+                              const ml =
+                                servings > 0
+                                  ? ri.ml_per_serving * servings
+                                  : ri.ml_per_serving;
+                              return [
+                                {
+                                  key: `${recipe.id}-${index}`,
+                                  name: ingredient.name,
+                                  type: ingredient.type,
+                                  ml,
+                                },
+                              ];
+                            })
+                            .sort((a, b) => {
+                              const typeA = typePriority[a.type] ?? 99;
+                              const typeB = typePriority[b.type] ?? 99;
+                              if (typeA !== typeB) return typeA - typeB;
+                              if (a.ml !== b.ml) return b.ml - a.ml;
+                              return a.name.localeCompare(b.name);
+                            })
+                            .map((row) => (
                               <div
-                                key={`${recipe.id}-${index}`}
+                                key={row.key}
                                 className="flex items-center justify-between gap-4"
                               >
                                 <span className="font-medium text-[#151210]">
-                                  {ingredient.name}
+                                  {row.name}
                                 </span>
-                                <span>{ml} ml</span>
+                                <span>{row.ml} ml</span>
                               </div>
-                            );
-                          })
+                            ))
                         )}
                       </div>
                     </div>

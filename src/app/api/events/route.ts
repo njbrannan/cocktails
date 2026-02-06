@@ -140,6 +140,7 @@ export async function POST(request: NextRequest) {
 
     const origin = request.headers.get("origin") || "";
     const editLink = origin ? `${origin}/request/edit/${data.edit_token}` : "";
+    const adminEmail = getAdminEmail();
 
     // Draft created: email the client their private edit link (when email is configured).
     if (clientEmail && isEmailConfigured() && editLink) {
@@ -157,6 +158,7 @@ export async function POST(request: NextRequest) {
   <p style="margin:0;color:#555">If you didn’t request this, you can ignore this email.</p>
 </div>`,
         text: `Your private edit link for "${title || "Cocktail request"}": ${editLink}`,
+        replyTo: adminEmail || undefined,
       });
     }
 
@@ -181,7 +183,6 @@ export async function POST(request: NextRequest) {
 
     // If it's submitted immediately, email admin + client confirmation (when email is configured).
     if (submit && isEmailConfigured()) {
-      const adminEmail = getAdminEmail();
       const safeTitle = escapeHtml(title || "Cocktail request");
       const safeDate = escapeHtml(eventDate || "Date TBD");
       const safeGuests = escapeHtml(String(computedGuestCount ?? ""));
@@ -239,6 +240,7 @@ export async function POST(request: NextRequest) {
   <p style="margin:0 0 12px 0"><a href="${safeLink}">${safeLink}</a></p>
 </div>`,
           text: `We’ve received your request: ${title || ""}\nEdit link: ${editLink}`,
+          replyTo: adminEmail || undefined,
         });
       }
     }

@@ -3,6 +3,7 @@ type SendEmailArgs = {
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string;
 };
 
 function getResendConfig() {
@@ -38,6 +39,7 @@ export async function sendEmail(args: SendEmailArgs) {
       subject: args.subject,
       html: args.html,
       text: args.text,
+      ...(args.replyTo ? { replyTo: args.replyTo } : {}),
     }),
   });
 

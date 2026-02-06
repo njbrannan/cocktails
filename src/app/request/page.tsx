@@ -41,7 +41,7 @@ export default function RequestPage() {
 
   const [recipes, setRecipes] = useState<DisplayRecipe[]>([]);
   const [servingsByRecipeId, setServingsByRecipeId] = useState<
-    Record<string, number>
+    Record<string, string>
   >({});
 
   const [eventDate, setEventDate] = useState("");
@@ -65,7 +65,7 @@ export default function RequestPage() {
     return recipes
       .map((recipe) => ({
         recipe,
-        servings: Number(servingsByRecipeId[recipe.id] ?? 0),
+        servings: Number(servingsByRecipeId[recipe.id] ?? "0") || 0,
       }))
       .filter((item) => !item.recipe.isMissing && item.servings > 0);
   }, [recipes, servingsByRecipeId]);
@@ -108,7 +108,7 @@ export default function RequestPage() {
       const next = { ...prev };
       for (const recipe of sorted) {
         if (next[recipe.id] === undefined) {
-          next[recipe.id] = 0;
+          next[recipe.id] = "";
         }
       }
       return next;
@@ -248,7 +248,8 @@ export default function RequestPage() {
           ) : (
             <div className="mt-6 grid gap-6">
               {recipes.map((recipe) => {
-                const servings = servingsByRecipeId[recipe.id] ?? 0;
+                const servingsRaw = servingsByRecipeId[recipe.id] ?? "";
+                const servings = Number(servingsRaw || "0") || 0;
                 return (
                   <div
                     key={recipe.id}
@@ -268,14 +269,15 @@ export default function RequestPage() {
                         <input
                           type="number"
                           min={0}
-                          value={servings}
+                          value={servingsRaw}
                           onChange={(event) =>
                             setServingsByRecipeId((prev) => ({
                               ...prev,
-                              [recipe.id]: Number(event.target.value),
+                              [recipe.id]: event.target.value,
                             }))
                           }
                           disabled={recipe.isMissing}
+                          placeholder="0"
                           className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
                         />
                       </label>

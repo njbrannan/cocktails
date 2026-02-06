@@ -14,7 +14,14 @@ type EventItem = {
 type DbIngredient = {
   id: string;
   name: string;
-  type: "liquor" | "mixer" | "juice" | "syrup" | "garnish" | "ice";
+  type:
+    | "liquor"
+    | "mixer"
+    | "juice"
+    | "syrup"
+    | "garnish"
+    | "ice"
+    | "glassware";
   bottle_size_ml: number | null;
   unit: string | null;
 };
@@ -104,7 +111,14 @@ export default function InventoryAdmin() {
     const cleanItems = items.filter(Boolean) as Array<{
       ingredientId: string;
       name: string;
-      type: "liquor" | "mixer" | "juice" | "syrup" | "garnish" | "ice";
+      type:
+        | "liquor"
+        | "mixer"
+        | "juice"
+        | "syrup"
+        | "garnish"
+        | "ice"
+        | "glassware";
       amountPerServing: number;
       servings: number;
       unit?: string | null;

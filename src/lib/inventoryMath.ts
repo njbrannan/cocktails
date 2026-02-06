@@ -4,7 +4,8 @@ export type IngredientType =
   | "juice"
   | "syrup"
   | "garnish"
-  | "ice";
+  | "ice"
+  | "glassware";
 
 export type IngredientTotal = {
   ingredientId: string;

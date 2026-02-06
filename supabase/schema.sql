@@ -10,7 +10,7 @@ create table if not exists profiles (
 create table if not exists ingredients (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
-  type text not null check (type in ('liquor', 'mixer', 'juice', 'syrup', 'garnish', 'ice')),
+  type text not null check (type in ('liquor', 'mixer', 'juice', 'syrup', 'garnish', 'ice', 'glassware')),
   bottle_size_ml integer,
   unit text default 'ml',
   created_at timestamptz default now()

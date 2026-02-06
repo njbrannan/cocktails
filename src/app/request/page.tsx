@@ -8,7 +8,14 @@ import { useEffect, useMemo, useState } from "react";
 type Ingredient = {
   id: string;
   name: string;
-  type: "liquor" | "mixer" | "juice" | "syrup" | "garnish" | "ice";
+  type:
+    | "liquor"
+    | "mixer"
+    | "juice"
+    | "syrup"
+    | "garnish"
+    | "ice"
+    | "glassware";
   bottle_size_ml: number | null;
   unit: string | null;
 };
@@ -38,6 +45,7 @@ const typePriority: Record<string, number> = {
   syrup: 3,
   garnish: 4,
   ice: 5,
+  glassware: 6,
 };
 
 export default function RequestPage() {

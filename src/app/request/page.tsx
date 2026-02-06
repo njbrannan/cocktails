@@ -3,7 +3,6 @@
 import { buildIngredientTotals } from "@/lib/inventoryMath";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 type Ingredient = {
@@ -23,26 +22,11 @@ type Recipe = {
   id: string;
   name: string;
   description: string | null;
+  image_url?: string | null;
   recipe_ingredients: RecipeIngredient[];
 };
 
-type DisplayRecipe = Recipe & {
-  isMissing?: boolean;
-};
-
-const MENU_RECIPE_NAMES = [
-  "Moscow Mule",
-  "Aperol Spritz",
-  "Mojito",
-  "Margarita",
-] as const;
-
-const MENU_IMAGE_BY_NAME: Record<(typeof MENU_RECIPE_NAMES)[number], string> = {
-  "Moscow Mule": "/cocktails/moscow-mule.svg",
-  "Aperol Spritz": "/cocktails/aperol-spritz.svg",
-  Mojito: "/cocktails/mojito.svg",
-  Margarita: "/cocktails/margarita.svg",
-};
+const PLACEHOLDER_IMAGE = "/cocktails/placeholder.svg";
 
 const typePriority: Record<string, number> = {
   liquor: 0,
@@ -55,7 +39,7 @@ const typePriority: Record<string, number> = {
 export default function RequestPage() {
   const router = useRouter();
 
-  const [recipes, setRecipes] = useState<DisplayRecipe[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -89,16 +73,13 @@ export default function RequestPage() {
       }))
       .filter(
         (item) =>
-          !item.recipe.isMissing &&
           selectedRecipeIds.has(item.recipe.id) &&
           item.servings > 0,
       );
   }, [recipes, servingsByRecipeId, selectedRecipeIds]);
 
   const selectedForQuantity = useMemo(() => {
-    return recipes.filter(
-      (recipe) => !recipe.isMissing && selectedRecipeIds.has(recipe.id),
-    );
+    return recipes.filter((recipe) => selectedRecipeIds.has(recipe.id));
   }, [recipes, selectedRecipeIds]);
 
   const canProceedToQuantities = selectedRecipeIds.size > 0;
@@ -111,9 +92,8 @@ export default function RequestPage() {
     const { data, error: recipeError } = await supabase
       .from("recipes")
       .select(
-        "id, name, description, recipe_ingredients(ml_per_serving, ingredients(id, name, type, bottle_size_ml))",
+        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, bottle_size_ml))",
       )
-      .in("name", [...MENU_RECIPE_NAMES])
       .eq("is_active", true);
 
     if (recipeError) {
@@ -122,21 +102,7 @@ export default function RequestPage() {
     }
 
     const list = ((data ?? []) as unknown as Recipe[]) || [];
-    const sorted: DisplayRecipe[] = [...MENU_RECIPE_NAMES].map((name) => {
-      const found = list.find((recipe) => recipe.name === name);
-      if (found) {
-        return found;
-      }
-      // Still render the four fixed options, even if a recipe isn't configured yet.
-      return {
-        id: `missing:${name}`,
-        name,
-        description: null,
-        recipe_ingredients: [],
-        isMissing: true,
-      };
-    });
-
+    const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
     setRecipes(sorted);
     setServingsByRecipeId((prev) => {
       const next = { ...prev };
@@ -285,26 +251,21 @@ export default function RequestPage() {
 
           {recipes.length === 0 ? (
             <p className="mt-4 text-sm text-[#4b3f3a]">
-              No cocktails found yet. Add recipes in Admin → Recipes with these
-              exact names: Moscow Mule, Aperol Spritz, Mojito, Margarita.
+              No cocktails found yet. Add recipes in Supabase (recipes + recipe_ingredients).
             </p>
           ) : (
             <>
               {step === "select" ? (
                 <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                   {recipes.map((recipe) => {
-                    const isSelected =
-                      !recipe.isMissing && selectedRecipeIds.has(recipe.id);
-                    const isDisabled = Boolean(recipe.isMissing);
-                    const imageSrc =
-                      MENU_IMAGE_BY_NAME[recipe.name as (typeof MENU_RECIPE_NAMES)[number]];
+                    const isSelected = selectedRecipeIds.has(recipe.id);
+                    const imageSrc = recipe.image_url || PLACEHOLDER_IMAGE;
 
                     return (
                       <button
                         key={recipe.id}
                         type="button"
                         onClick={() => {
-                          if (isDisabled) return;
                           setSelectedRecipeIds((prev) => {
                             const next = new Set(prev);
                             if (next.has(recipe.id)) next.delete(recipe.id);
@@ -316,24 +277,18 @@ export default function RequestPage() {
                           isSelected
                             ? "border-[#6a2e2a] ring-2 ring-[#6a2e2a]/20"
                             : "border-[#c47b4a]/20"
-                        } ${isDisabled ? "opacity-60" : ""}`}
+                        }`}
                       >
                         <div className="relative h-[180px] w-full">
-                          <Image
+                          <img
                             src={imageSrc}
                             alt={recipe.name}
-                            fill
-                            className="object-cover"
-                            priority={recipe.name === "Margarita"}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
                           />
                           {isSelected ? (
                             <div className="absolute left-3 top-3 rounded-full bg-[#6a2e2a] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#f8f1e7]">
                               Selected
-                            </div>
-                          ) : null}
-                          {isDisabled ? (
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#151210]/70 to-transparent px-4 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-white">
-                              Not Configured
                             </div>
                           ) : null}
                         </div>

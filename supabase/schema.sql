@@ -20,6 +20,7 @@ create table if not exists recipes (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
   description text,
+  image_url text,
   is_active boolean default true,
   created_at timestamptz default now()
 );

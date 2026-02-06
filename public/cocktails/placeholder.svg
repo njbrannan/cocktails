@@ -1,0 +1,9 @@
+<svg width="560" height="420" viewBox="0 0 560 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="560" height="420" rx="28" fill="#F8F1E7"/>
+  <path d="M170 112C170 96.536 182.536 84 198 84H362C377.464 84 390 96.536 390 112V132C390 165.137 363.137 192 330 192H230C196.863 192 170 165.137 170 132V112Z" fill="#F2D9B1" stroke="#C47B4A" stroke-width="6"/>
+  <path d="M280 192L328 258H232L280 192Z" fill="#C47B4A" opacity="0.85"/>
+  <path d="M280 258V316" stroke="#6A2E2A" stroke-width="10" stroke-linecap="round"/>
+  <path d="M220 324H340" stroke="#6A2E2A" stroke-width="10" stroke-linecap="round"/>
+  <text x="280" y="382" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="22" fill="#4B3F3A" letter-spacing="1">Cocktail</text>
+</svg>
+

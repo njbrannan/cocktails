@@ -1,5 +1,23 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## iOS App (Capacitor Wrapper)
+
+This repo also includes an iOS wrapper built with Capacitor that loads the live web app.
+
+- Config: `capacitor.config.ts` (update `server.url` if you change domains)
+- iOS project: `ios/`
+
+Commands:
+
+```bash
+npm run cap:sync
+npm run ios:open
+```
+
+Notes:
+- You need Xcode on a Mac to run/build the iOS app.
+- For App Store distribution you’ll need an Apple Developer account.
+
 ## Getting Started
 
 First, run the development server:

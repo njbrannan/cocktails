@@ -12,31 +12,54 @@ export default function RequestPage() {
   const [clientEmail, setClientEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [editLink, setEditLink] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);
-    const response = await fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        eventDate,
-        guestCount,
-        notes,
-        clientEmail,
-      }),
-    });
+    setSuccess(null);
+    setEditLink(null);
 
-    const data = await response.json();
-    setLoading(false);
+    try {
+      const response = await fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          eventDate,
+          guestCount,
+          notes,
+          clientEmail,
+        }),
+      });
 
-    if (!response.ok) {
-      setError(data.error || "Unable to create request.");
-      return;
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
+        setError(data?.error || `Unable to create request (HTTP ${response.status}).`);
+        return;
+      }
+
+      const token = data?.editToken as string | undefined;
+      if (!token) {
+        setError("Request created, but no edit token was returned.");
+        return;
+      }
+
+      const link = `${window.location.origin}/request/edit/${token}`;
+      setEditLink(link);
+      setSuccess("Request created. Use the private link below to edit any time.");
+    } catch (err: any) {
+      setError(err?.message || "Network error while creating request.");
+    } finally {
+      setLoading(false);
     }
-
-    router.push(`/request/edit/${data.editToken}`);
   };
 
   return (
@@ -56,6 +79,7 @@ export default function RequestPage() {
         </header>
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {success ? <p className="text-sm text-[#4b3f3a]">{success}</p> : null}
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
           <h2 className="font-display text-2xl text-[#6a2e2a]">
@@ -101,8 +125,34 @@ export default function RequestPage() {
             disabled={loading}
             className="mt-4 rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
           >
-            {loading ? "Saving..." : "Create Request"}
+            {loading ? "Sending request..." : "Create Request"}
           </button>
+
+          {editLink ? (
+            <div className="mt-6 rounded-3xl border border-[#c47b4a]/20 bg-white/70 px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                Private edit link
+              </p>
+              <p className="mt-2 break-all text-sm text-[#151210]">{editLink}</p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(editLink);
+                    setSuccess("Link copied. You're all set.");
+                  }}
+                  className="rounded-full border border-[#6a2e2a]/30 bg-white/80 px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] hover:-translate-y-0.5"
+                >
+                  Copy Link
+                </button>
+                <button
+                  onClick={() => router.push(editLink.replace(window.location.origin, ""))}
+                  className="rounded-full bg-[#c47b4a] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
+                >
+                  Edit Request
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

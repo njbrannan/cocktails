@@ -84,13 +84,28 @@ create policy "Admins manage ingredients" on ingredients
   for all using (exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin'))
   with check (exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin'));
 
+create policy "Public can read ingredients" on ingredients
+  for select using (true);
+
 create policy "Admins manage recipes" on recipes
   for all using (exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin'))
   with check (exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin'));
 
+create policy "Public can read active recipes" on recipes
+  for select using (is_active = true);
+
 create policy "Admins manage recipe ingredients" on recipe_ingredients
   for all using (exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin'))
   with check (exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin'));
+
+create policy "Public can read ingredients for active recipes" on recipe_ingredients
+  for select using (
+    exists (
+      select 1 from recipes r
+      where r.id = recipe_ingredients.recipe_id
+        and r.is_active = true
+    )
+  );
 
 create policy "Clients manage own events" on events
   for all using (auth.uid() = client_id)

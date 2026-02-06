@@ -24,8 +24,8 @@ function formatOrderListHtml(
   const rows = totals
     .map((t) => {
       const right = t.bottlesNeeded
-        ? `${t.totalMl} ml · ${t.bottlesNeeded} × ${t.bottleSizeMl}ml`
-        : `${t.totalMl} ml`;
+        ? `${t.total} ml · ${t.bottlesNeeded} × ${t.bottleSizeMl}ml`
+        : `${t.total} ${t.unit}`;
       return `<tr>
   <td style="padding:8px 10px;border-bottom:1px solid #eee"><strong>${escapeHtml(t.name)}</strong><br/><span style="color:#666;font-size:12px">${escapeHtml(t.type)}</span></td>
   <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;white-space:nowrap">${escapeHtml(right)}</td>
@@ -40,7 +40,7 @@ async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
   const { data, error } = await supabaseServer
     .from("event_recipes")
     .select(
-      "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, bottle_size_ml)))",
+      "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml)))",
     )
     .eq("event_id", eventId);
 
@@ -72,8 +72,9 @@ async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
           ingredientId: ingredient.id,
           name: ingredient.name,
           type: ingredient.type,
-          mlPerServing: ri.ml_per_serving,
+          amountPerServing: ri.ml_per_serving,
           servings: row.servings,
+          unit: ingredient.unit,
           bottleSizeMl: ingredient.bottle_size_ml,
         }));
       });

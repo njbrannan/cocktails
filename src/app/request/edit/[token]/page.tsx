@@ -17,11 +17,14 @@ type EventRecord = {
 type Ingredient = {
   id: string;
   name: string;
-  type: "liquor" | "mixer" | "juice" | "syrup" | "garnish";
+  type: "liquor" | "mixer" | "juice" | "syrup" | "garnish" | "ice";
   bottle_size_ml: number | null;
+  unit: string | null;
 };
 
 type RecipeIngredient = {
+  // NOTE: Column is `ml_per_serving` in Supabase, but we treat it as "amount per serving"
+  // and rely on `ingredients.unit` for formatting.
   ml_per_serving: number;
   ingredients: Ingredient | Ingredient[] | null;
 };
@@ -42,6 +45,7 @@ const typePriority: Record<string, number> = {
   juice: 2,
   syrup: 3,
   garnish: 4,
+  ice: 5,
 };
 
 export default function RequestEditPage() {
@@ -96,7 +100,7 @@ export default function RequestEditPage() {
     const { data, error: recipeError } = await supabase
       .from("recipes")
       .select(
-        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, bottle_size_ml))",
+        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml))",
       )
       .eq("is_active", true);
 
@@ -414,7 +418,7 @@ export default function RequestEditPage() {
                                 .flatMap((ri, index) => {
                                   const ingredient = normalizeIngredient(ri.ingredients);
                                   if (!ingredient) return [];
-                                  const ml =
+                                  const amount =
                                     servings > 0
                                       ? ri.ml_per_serving * servings
                                       : ri.ml_per_serving;
@@ -423,7 +427,8 @@ export default function RequestEditPage() {
                                       key: `${recipe.id}-${index}`,
                                       name: ingredient.name,
                                       type: ingredient.type,
-                                      ml,
+                                      amount,
+                                      unit: (ingredient.unit || "ml").trim().toLowerCase(),
                                     },
                                   ];
                                 })
@@ -431,7 +436,7 @@ export default function RequestEditPage() {
                                   const typeA = typePriority[a.type] ?? 99;
                                   const typeB = typePriority[b.type] ?? 99;
                                   if (typeA !== typeB) return typeA - typeB;
-                                  if (a.ml !== b.ml) return b.ml - a.ml;
+                                  if (a.amount !== b.amount) return b.amount - a.amount;
                                   return a.name.localeCompare(b.name);
                                 })
                                 .map((row) => (
@@ -442,7 +447,9 @@ export default function RequestEditPage() {
                                     <span className="font-medium text-[#151210]">
                                       {row.name}
                                     </span>
-                                    <span>{row.ml} ml</span>
+                                    <span>
+                                      {row.amount} {row.unit}
+                                    </span>
                                   </div>
                                 ))}
                             </div>

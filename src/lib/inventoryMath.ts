@@ -1,10 +1,17 @@
-export type IngredientType = "liquor" | "mixer" | "juice" | "syrup" | "garnish";
+export type IngredientType =
+  | "liquor"
+  | "mixer"
+  | "juice"
+  | "syrup"
+  | "garnish"
+  | "ice";
 
 export type IngredientTotal = {
   ingredientId: string;
   name: string;
   type: IngredientType;
-  totalMl: number;
+  total: number;
+  unit: string;
   bottleSizeMl?: number;
   bottlesNeeded?: number;
 };
@@ -12,12 +19,38 @@ export type IngredientTotal = {
 const BUFFER_RATE = 0.1;
 const DEFAULT_BOTTLE_SIZE = 700;
 
-export function applyBuffer(totalMl: number) {
-  return Math.ceil(totalMl * (1 + BUFFER_RATE));
+export function applyBuffer(amount: number) {
+  return amount * (1 + BUFFER_RATE);
 }
 
 export function calculateBottleCount(totalMl: number, bottleSize = DEFAULT_BOTTLE_SIZE) {
   return Math.ceil(totalMl / bottleSize);
+}
+
+function roundUpToIncrement(value: number, increment: number) {
+  if (increment <= 0) return Math.ceil(value);
+  return Math.ceil(value / increment) * increment;
+}
+
+function normalizeUnit(unit: string | null | undefined) {
+  return (unit || "ml").trim().toLowerCase();
+}
+
+function roundByUnitAndType(amountWithBuffer: number, unit: string, type: IngredientType) {
+  const u = normalizeUnit(unit);
+
+  // Fruit pieces, etc.
+  if (u === "pc" || u === "pcs" || u === "piece" || u === "pieces") {
+    return Math.ceil(amountWithBuffer);
+  }
+
+  // Herbs like mint: round up to nearest 15g.
+  if ((u === "g" || u === "gram" || u === "grams") && type === "garnish") {
+    return roundUpToIncrement(amountWithBuffer, 15);
+  }
+
+  // Default: keep it whole-numbered.
+  return Math.ceil(amountWithBuffer);
 }
 
 export function buildIngredientTotals(
@@ -25,8 +58,9 @@ export function buildIngredientTotals(
     ingredientId: string;
     name: string;
     type: IngredientType;
-    mlPerServing: number;
+    amountPerServing: number;
     servings: number;
+    unit?: string | null;
     bottleSizeMl?: number | null;
   }>,
 ) {
@@ -34,16 +68,17 @@ export function buildIngredientTotals(
 
   for (const item of items) {
     const previous = totals.get(item.ingredientId);
-    const added = item.mlPerServing * item.servings;
+    const added = item.amountPerServing * item.servings;
 
     const base: IngredientTotal = previous ?? {
       ingredientId: item.ingredientId,
       name: item.name,
       type: item.type,
-      totalMl: 0,
+      total: 0,
+      unit: normalizeUnit(item.unit),
     };
 
-    base.totalMl += added;
+    base.total += added;
     if (item.type === "liquor") {
       base.bottleSizeMl = item.bottleSizeMl ?? DEFAULT_BOTTLE_SIZE;
     }
@@ -52,20 +87,22 @@ export function buildIngredientTotals(
   }
 
   return Array.from(totals.values()).map((total) => {
-    const buffered = applyBuffer(total.totalMl);
+    const buffered = applyBuffer(total.total);
+    const rounded = roundByUnitAndType(buffered, total.unit, total.type);
     if (total.type === "liquor") {
       const bottleSize = total.bottleSizeMl ?? DEFAULT_BOTTLE_SIZE;
       return {
         ...total,
-        totalMl: buffered,
+        unit: "ml",
+        total: Math.ceil(buffered),
         bottleSizeMl: bottleSize,
-        bottlesNeeded: calculateBottleCount(buffered, bottleSize),
+        bottlesNeeded: calculateBottleCount(Math.ceil(buffered), bottleSize),
       };
     }
 
     return {
       ...total,
-      totalMl: buffered,
+      total: rounded,
     };
   });
 }

@@ -14,8 +14,9 @@ type EventItem = {
 type DbIngredient = {
   id: string;
   name: string;
-  type: "liquor" | "mixer" | "juice" | "syrup" | "garnish";
+  type: "liquor" | "mixer" | "juice" | "syrup" | "garnish" | "ice";
   bottle_size_ml: number | null;
+  unit: string | null;
 };
 
 type DbRecipeIngredient = {
@@ -62,7 +63,7 @@ export default function InventoryAdmin() {
     const { data, error: fetchError } = await supabase
       .from("event_recipes")
       .select(
-        "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, bottle_size_ml)))",
+        "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml)))",
       )
       .eq("event_id", eventId);
 
@@ -91,8 +92,9 @@ export default function InventoryAdmin() {
             ingredientId: ingredient.id,
             name: ingredient.name,
             type: ingredient.type,
-            mlPerServing: ingredientRow.ml_per_serving,
+            amountPerServing: ingredientRow.ml_per_serving,
             servings: row.servings,
+            unit: ingredient.unit,
             bottleSizeMl: ingredient.bottle_size_ml,
           }));
         }),
@@ -102,9 +104,10 @@ export default function InventoryAdmin() {
     const cleanItems = items.filter(Boolean) as Array<{
       ingredientId: string;
       name: string;
-      type: "liquor" | "mixer" | "juice" | "syrup" | "garnish";
-      mlPerServing: number;
+      type: "liquor" | "mixer" | "juice" | "syrup" | "garnish" | "ice";
+      amountPerServing: number;
       servings: number;
+      unit?: string | null;
       bottleSizeMl?: number | null;
     }>;
 
@@ -182,14 +185,14 @@ export default function InventoryAdmin() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-[#151210]">
-                      {item.totalMl} ml
+                      {item.total} {item.unit}
                     </p>
                     {item.bottlesNeeded ? (
                       <p className="text-xs text-[#4b3f3a]">
                         {item.bottlesNeeded} bottles @ {item.bottleSizeMl}ml
                       </p>
                     ) : (
-                      <p className="text-xs text-[#4b3f3a]">Total volume</p>
+                      <p className="text-xs text-[#4b3f3a]">Total</p>
                     )}
                   </div>
                 </div>

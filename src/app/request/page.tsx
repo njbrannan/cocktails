@@ -8,11 +8,14 @@ import { useEffect, useMemo, useState } from "react";
 type Ingredient = {
   id: string;
   name: string;
-  type: "liquor" | "mixer" | "juice" | "syrup" | "garnish";
+  type: "liquor" | "mixer" | "juice" | "syrup" | "garnish" | "ice";
   bottle_size_ml: number | null;
+  unit: string | null;
 };
 
 type RecipeIngredient = {
+  // NOTE: This column is named `ml_per_serving` in Supabase, but we treat it as
+  // "amount per serving" and rely on `ingredients.unit` to format + round.
   ml_per_serving: number;
   // Supabase embedded relation can type as object or array depending on schema typing.
   ingredients: Ingredient | Ingredient[] | null;
@@ -34,6 +37,7 @@ const typePriority: Record<string, number> = {
   juice: 2,
   syrup: 3,
   garnish: 4,
+  ice: 5,
 };
 
 export default function RequestPage() {
@@ -92,7 +96,7 @@ export default function RequestPage() {
     const { data, error: recipeError } = await supabase
       .from("recipes")
       .select(
-        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, bottle_size_ml))",
+        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml))",
       )
       .eq("is_active", true);
 
@@ -132,15 +136,16 @@ export default function RequestPage() {
         const ingredient = normalizeIngredient(ri.ingredients);
         if (!ingredient) return [];
 
-        const normalizedKey = `${ingredient.type}:${ingredient.name.trim().toLowerCase()}`;
+        const normalizedKey = `${ingredient.type}:${ingredient.name.trim().toLowerCase()}:${(ingredient.unit || "ml").trim().toLowerCase()}`;
 
         return [
           {
             ingredientId: normalizedKey,
             name: ingredient.name,
             type: ingredient.type,
-            mlPerServing: ri.ml_per_serving,
+            amountPerServing: ri.ml_per_serving,
             servings,
+            unit: ingredient.unit,
             bottleSizeMl: ingredient.bottle_size_ml,
           },
         ];
@@ -152,7 +157,7 @@ export default function RequestPage() {
       const typeB = typePriority[b.type] ?? 99;
       if (typeA !== typeB) return typeA - typeB;
       // Within each type, biggest quantities first.
-      if (a.totalMl !== b.totalMl) return b.totalMl - a.totalMl;
+      if (a.total !== b.total) return b.total - a.total;
       return a.name.localeCompare(b.name);
     });
 
@@ -393,7 +398,7 @@ export default function RequestPage() {
                                   .flatMap((ri, index) => {
                                     const ingredient = normalizeIngredient(ri.ingredients);
                                     if (!ingredient) return [];
-                                    const ml =
+                                    const amount =
                                       servings > 0
                                         ? ri.ml_per_serving * servings
                                         : ri.ml_per_serving;
@@ -402,7 +407,8 @@ export default function RequestPage() {
                                         key: `${recipe.id}-${index}`,
                                         name: ingredient.name,
                                         type: ingredient.type,
-                                        ml,
+                                        amount,
+                                        unit: (ingredient.unit || "ml").trim().toLowerCase(),
                                       },
                                     ];
                                   })
@@ -410,7 +416,7 @@ export default function RequestPage() {
                                     const typeA = typePriority[a.type] ?? 99;
                                     const typeB = typePriority[b.type] ?? 99;
                                     if (typeA !== typeB) return typeA - typeB;
-                                    if (a.ml !== b.ml) return b.ml - a.ml;
+                                    if (a.amount !== b.amount) return b.amount - a.amount;
                                     return a.name.localeCompare(b.name);
                                   })
                                   .map((row) => (
@@ -421,7 +427,9 @@ export default function RequestPage() {
                                       <span className="font-medium text-[#151210]">
                                         {row.name}
                                       </span>
-                                      <span>{row.ml} ml</span>
+                                      <span>
+                                        {row.amount} {row.unit}
+                                      </span>
                                     </div>
                                   ))
                               )}
@@ -490,14 +498,14 @@ export default function RequestPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-[#151210]">
-                      {item.totalMl} ml
+                      {item.total} {item.unit}
                     </p>
                     {item.bottlesNeeded ? (
                       <p className="text-xs text-[#4b3f3a]">
                         {item.bottlesNeeded} bottles @ {item.bottleSizeMl}ml
                       </p>
                     ) : (
-                      <p className="text-xs text-[#4b3f3a]">Total volume</p>
+                      <p className="text-xs text-[#4b3f3a]">Total</p>
                     )}
                   </div>
                 </div>

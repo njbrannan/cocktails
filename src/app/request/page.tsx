@@ -25,6 +25,10 @@ type Recipe = {
   recipe_ingredients: RecipeIngredient[];
 };
 
+type DisplayRecipe = Recipe & {
+  isMissing?: boolean;
+};
+
 const MENU_RECIPE_NAMES = [
   "Moscow Mule",
   "Aperol Spritz",
@@ -35,7 +39,7 @@ const MENU_RECIPE_NAMES = [
 export default function RequestPage() {
   const router = useRouter();
 
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [recipes, setRecipes] = useState<DisplayRecipe[]>([]);
   const [servingsByRecipeId, setServingsByRecipeId] = useState<
     Record<string, number>
   >({});
@@ -63,7 +67,7 @@ export default function RequestPage() {
         recipe,
         servings: Number(servingsByRecipeId[recipe.id] ?? 0),
       }))
-      .filter((item) => item.servings > 0);
+      .filter((item) => !item.recipe.isMissing && item.servings > 0);
   }, [recipes, servingsByRecipeId]);
 
   const canCreateOrder = selectedRecipes.length > 0;
@@ -84,9 +88,20 @@ export default function RequestPage() {
     }
 
     const list = ((data ?? []) as unknown as Recipe[]) || [];
-    const sorted = [...MENU_RECIPE_NAMES]
-      .map((name) => list.find((recipe) => recipe.name === name))
-      .filter(Boolean) as Recipe[];
+    const sorted: DisplayRecipe[] = [...MENU_RECIPE_NAMES].map((name) => {
+      const found = list.find((recipe) => recipe.name === name);
+      if (found) {
+        return found;
+      }
+      // Still render the four fixed options, even if a recipe isn't configured yet.
+      return {
+        id: `missing:${name}`,
+        name,
+        description: null,
+        recipe_ingredients: [],
+        isMissing: true,
+      };
+    });
 
     setRecipes(sorted);
     setServingsByRecipeId((prev) => {
@@ -232,6 +247,11 @@ export default function RequestPage() {
                       <h3 className="font-display text-2xl text-[#151210]">
                         {recipe.name}
                       </h3>
+                      {recipe.isMissing ? (
+                        <p className="text-xs text-[#4b3f3a]">
+                          Not configured yet. Add this cocktail in Admin → Recipes.
+                        </p>
+                      ) : null}
                       <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
                         Quantity
                         <input
@@ -244,6 +264,7 @@ export default function RequestPage() {
                               [recipe.id]: Number(event.target.value),
                             }))
                           }
+                          disabled={recipe.isMissing}
                           className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
                         />
                       </label>
@@ -251,24 +272,34 @@ export default function RequestPage() {
 
                     <div className="rounded-3xl border border-[#6a2e2a]/10 bg-white/80 px-5 py-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
-                        Ingredients (per cocktail)
+                        {servings > 0
+                          ? `Ingredients (for ${servings})`
+                          : "Ingredients (per cocktail)"}
                       </p>
                       <div className="mt-3 grid gap-2 text-sm text-[#4b3f3a]">
-                        {(recipe.recipe_ingredients ?? []).map((ri, index) => {
-                          const ingredient = normalizeIngredient(ri.ingredients);
-                          if (!ingredient) return null;
-                          return (
-                            <div
-                              key={`${recipe.id}-${index}`}
-                              className="flex items-center justify-between gap-4"
-                            >
-                              <span className="font-medium text-[#151210]">
-                                {ingredient.name}
-                              </span>
-                              <span>{ri.ml_per_serving} ml</span>
-                            </div>
-                          );
-                        })}
+                        {recipe.recipe_ingredients.length === 0 ? (
+                          <p className="text-sm text-[#4b3f3a]">
+                            No ingredients added yet.
+                          </p>
+                        ) : (
+                          (recipe.recipe_ingredients ?? []).map((ri, index) => {
+                            const ingredient = normalizeIngredient(ri.ingredients);
+                            if (!ingredient) return null;
+                            const ml =
+                              servings > 0 ? ri.ml_per_serving * servings : ri.ml_per_serving;
+                            return (
+                              <div
+                                key={`${recipe.id}-${index}`}
+                                className="flex items-center justify-between gap-4"
+                              >
+                                <span className="font-medium text-[#151210]">
+                                  {ingredient.name}
+                                </span>
+                                <span>{ml} ml</span>
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
                   </div>

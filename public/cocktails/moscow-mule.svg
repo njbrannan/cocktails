@@ -1,0 +1,12 @@
+<svg width="560" height="420" viewBox="0 0 560 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="560" height="420" rx="28" fill="#F8F1E7"/>
+  <rect x="150" y="88" width="260" height="190" rx="26" fill="#D9DCE3" stroke="#6A2E2A" stroke-width="8"/>
+  <path d="M410 128C454 128 478 160 478 196C478 232 454 264 410 264" stroke="#6A2E2A" stroke-width="10" stroke-linecap="round"/>
+  <path d="M184 132C184 116.536 196.536 104 212 104H348C363.464 104 376 116.536 376 132V222C376 237.464 363.464 250 348 250H212C196.536 250 184 237.464 184 222V132Z" fill="#F2D9B1" opacity="0.75"/>
+  <circle cx="250" cy="148" r="10" fill="#C47B4A"/>
+  <circle cx="282" cy="168" r="12" fill="#C47B4A"/>
+  <circle cx="318" cy="148" r="10" fill="#C47B4A"/>
+  <path d="M232 230C252 216 270 210 284 210C304 210 324 220 340 236" stroke="#6A2E2A" stroke-width="6" stroke-linecap="round"/>
+  <text x="280" y="386" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="28" fill="#151210" letter-spacing="1.2">Moscow Mule</text>
+</svg>
+

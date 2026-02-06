@@ -1,0 +1,11 @@
+<svg width="560" height="420" viewBox="0 0 560 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="560" height="420" rx="28" fill="#F8F1E7"/>
+  <path d="M152 104C152 88.536 164.536 76 180 76H380C395.464 76 408 88.536 408 104V116C408 147.928 382.128 173.8 350.2 173.8H209.8C177.872 173.8 152 147.928 152 116V104Z" fill="#F2D9B1" stroke="#C47B4A" stroke-width="6"/>
+  <path d="M280 174L330 242H230L280 174Z" fill="#C47B4A" opacity="0.9"/>
+  <path d="M280 242V312" stroke="#6A2E2A" stroke-width="10" stroke-linecap="round"/>
+  <path d="M220 320H340" stroke="#6A2E2A" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="382" cy="112" r="20" fill="#6A2E2A" opacity="0.9"/>
+  <path d="M372 112C372 104 378 98 386 98C394 98 400 104 400 112C400 120 394 126 386 126C378 126 372 120 372 112Z" fill="#F8F1E7" opacity="0.85"/>
+  <text x="280" y="386" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="28" fill="#151210" letter-spacing="1.2">Margarita</text>
+</svg>
+

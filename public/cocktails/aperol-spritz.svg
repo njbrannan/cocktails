@@ -1,0 +1,12 @@
+<svg width="560" height="420" viewBox="0 0 560 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="560" height="420" rx="28" fill="#F8F1E7"/>
+  <path d="M198 90C198 74.536 210.536 62 226 62H334C349.464 62 362 74.536 362 90V112C362 143.928 336.128 169.8 304.2 169.8H255.8C223.872 169.8 198 143.928 198 112V90Z" fill="#F2D9B1" stroke="#C47B4A" stroke-width="6"/>
+  <path d="M220 108C220 98.0589 228.059 90 238 90H322C331.941 90 340 98.0589 340 108V132C340 151.882 323.882 168 304 168H256C236.118 168 220 151.882 220 132V108Z" fill="#F07A2A" opacity="0.85"/>
+  <path d="M280 170L324 248H236L280 170Z" fill="#C47B4A" opacity="0.9"/>
+  <path d="M280 248V312" stroke="#6A2E2A" stroke-width="10" stroke-linecap="round"/>
+  <path d="M220 320H340" stroke="#6A2E2A" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="336" cy="116" r="20" fill="#F8F1E7" opacity="0.9"/>
+  <path d="M322 116C322 108 328 102 336 102C345 102 351 108 351 116C351 124 345 130 336 130C328 130 322 124 322 116Z" fill="#C47B4A" opacity="0.8"/>
+  <text x="280" y="386" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="28" fill="#151210" letter-spacing="1.2">Aperol Spritz</text>
+</svg>
+

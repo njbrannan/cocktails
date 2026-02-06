@@ -3,6 +3,7 @@
 import { buildIngredientTotals } from "@/lib/inventoryMath";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 type Ingredient = {
@@ -36,6 +37,13 @@ const MENU_RECIPE_NAMES = [
   "Margarita",
 ] as const;
 
+const MENU_IMAGE_BY_NAME: Record<(typeof MENU_RECIPE_NAMES)[number], string> = {
+  "Moscow Mule": "/cocktails/moscow-mule.svg",
+  "Aperol Spritz": "/cocktails/aperol-spritz.svg",
+  Mojito: "/cocktails/mojito.svg",
+  Margarita: "/cocktails/margarita.svg",
+};
+
 const typePriority: Record<string, number> = {
   liquor: 0,
   mixer: 1,
@@ -48,6 +56,9 @@ export default function RequestPage() {
   const router = useRouter();
 
   const [recipes, setRecipes] = useState<DisplayRecipe[]>([]);
+  const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [servingsByRecipeId, setServingsByRecipeId] = useState<
     Record<string, string>
   >({});
@@ -76,8 +87,22 @@ export default function RequestPage() {
         recipe,
         servings: Number(servingsByRecipeId[recipe.id] ?? "0") || 0,
       }))
-      .filter((item) => !item.recipe.isMissing && item.servings > 0);
-  }, [recipes, servingsByRecipeId]);
+      .filter(
+        (item) =>
+          !item.recipe.isMissing &&
+          selectedRecipeIds.has(item.recipe.id) &&
+          item.servings > 0,
+      );
+  }, [recipes, servingsByRecipeId, selectedRecipeIds]);
+
+  const selectedForQuantity = useMemo(() => {
+    return recipes.filter(
+      (recipe) => !recipe.isMissing && selectedRecipeIds.has(recipe.id),
+    );
+  }, [recipes, selectedRecipeIds]);
+
+  const canProceedToQuantities = selectedRecipeIds.size > 0;
+  const [step, setStep] = useState<"select" | "quantity">("select");
 
   const canCreateOrder = selectedRecipes.length > 0;
 
@@ -249,9 +274,13 @@ export default function RequestPage() {
         {success ? <p className="text-sm text-[#4b3f3a]">{success}</p> : null}
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
-          <h2 className="font-display text-2xl text-[#6a2e2a]">Menu</h2>
+          <h2 className="font-display text-2xl text-[#6a2e2a]">
+            {step === "select" ? "Select cocktails" : "Set quantities"}
+          </h2>
           <p className="mt-2 text-sm text-[#4b3f3a]">
-            Four signature cocktails. Ingredients display automatically.
+            {step === "select"
+              ? "Tap the photos to choose your cocktails."
+              : "Add quantities and we’ll calculate ingredients per drink."}
           </p>
 
           {recipes.length === 0 ? (
@@ -260,124 +289,218 @@ export default function RequestPage() {
               exact names: Moscow Mule, Aperol Spritz, Mojito, Margarita.
             </p>
           ) : (
-            <div className="mt-6 grid gap-6">
-              {recipes.map((recipe) => {
-                const servingsRaw = servingsByRecipeId[recipe.id] ?? "";
-                const servings = Number(servingsRaw || "0") || 0;
-                return (
-                  <div
-                    key={recipe.id}
-                    className="grid gap-4 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-5 md:grid-cols-[240px_1fr]"
-                  >
-                    <div className="space-y-3">
-                      <h3 className="font-display text-2xl text-[#151210]">
-                        {recipe.name}
-                      </h3>
-                      {recipe.isMissing ? (
-                        <p className="text-xs text-[#4b3f3a]">
-                          Not configured yet. Add this cocktail in Admin → Recipes.
-                        </p>
-                      ) : null}
-                      <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
-                        Quantity
-                        <input
-                          type="number"
-                          min={0}
-                          value={servingsRaw}
-                          onFocus={() => {
-                            if (recipe.isMissing) return;
-                            if ((servingsByRecipeId[recipe.id] ?? "0") === "0") {
-                              setServingsByRecipeId((prev) => ({
-                                ...prev,
-                                [recipe.id]: "",
-                              }));
-                            }
-                          }}
-                          onBlur={() => {
-                            if (recipe.isMissing) return;
-                            if ((servingsByRecipeId[recipe.id] ?? "") === "") {
-                              setServingsByRecipeId((prev) => ({
-                                ...prev,
-                                [recipe.id]: "0",
-                              }));
-                            }
-                          }}
-                          onChange={(event) =>
-                            setServingsByRecipeId((prev) => ({
-                              ...prev,
-                              [recipe.id]: event.target.value,
-                            }))
-                          }
-                          disabled={recipe.isMissing}
-                          className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
-                        />
-                      </label>
-                    </div>
+            <>
+              {step === "select" ? (
+                <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                  {recipes.map((recipe) => {
+                    const isSelected =
+                      !recipe.isMissing && selectedRecipeIds.has(recipe.id);
+                    const isDisabled = Boolean(recipe.isMissing);
+                    const imageSrc =
+                      MENU_IMAGE_BY_NAME[recipe.name as (typeof MENU_RECIPE_NAMES)[number]];
 
-                    <div className="rounded-3xl border border-[#6a2e2a]/10 bg-white/80 px-5 py-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
-                        {servings > 0
-                          ? `Ingredients (for ${servings})`
-                          : "Ingredients (per cocktail)"}
-                      </p>
-                      <div className="mt-3 grid gap-2 text-sm text-[#4b3f3a]">
-                        {recipe.recipe_ingredients.length === 0 ? (
-                          <p className="text-sm text-[#4b3f3a]">
-                            No ingredients added yet.
+                    return (
+                      <button
+                        key={recipe.id}
+                        type="button"
+                        onClick={() => {
+                          if (isDisabled) return;
+                          setSelectedRecipeIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(recipe.id)) next.delete(recipe.id);
+                            else next.add(recipe.id);
+                            return next;
+                          });
+                        }}
+                        className={`group relative overflow-hidden rounded-[26px] border bg-white/80 text-left shadow-sm transition-transform hover:-translate-y-0.5 ${
+                          isSelected
+                            ? "border-[#6a2e2a] ring-2 ring-[#6a2e2a]/20"
+                            : "border-[#c47b4a]/20"
+                        } ${isDisabled ? "opacity-60" : ""}`}
+                      >
+                        <div className="relative h-[180px] w-full">
+                          <Image
+                            src={imageSrc}
+                            alt={recipe.name}
+                            fill
+                            className="object-cover"
+                            priority={recipe.name === "Margarita"}
+                          />
+                          {isSelected ? (
+                            <div className="absolute left-3 top-3 rounded-full bg-[#6a2e2a] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#f8f1e7]">
+                              Selected
+                            </div>
+                          ) : null}
+                          {isDisabled ? (
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#151210]/70 to-transparent px-4 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-white">
+                              Not Configured
+                            </div>
+                          ) : null}
+                        </div>
+                        <div className="px-4 py-4">
+                          <p className="font-display text-xl text-[#151210]">
+                            {recipe.name}
                           </p>
-                        ) : (
-                          (recipe.recipe_ingredients ?? [])
-                            .flatMap((ri, index) => {
-                              const ingredient = normalizeIngredient(ri.ingredients);
-                              if (!ingredient) return [];
-                              const ml =
-                                servings > 0
-                                  ? ri.ml_per_serving * servings
-                                  : ri.ml_per_serving;
-                              return [
-                                {
-                                  key: `${recipe.id}-${index}`,
-                                  name: ingredient.name,
-                                  type: ingredient.type,
-                                  ml,
-                                },
-                              ];
-                            })
-                            .sort((a, b) => {
-                              const typeA = typePriority[a.type] ?? 99;
-                              const typeB = typePriority[b.type] ?? 99;
-                              if (typeA !== typeB) return typeA - typeB;
-                              if (a.ml !== b.ml) return b.ml - a.ml;
-                              return a.name.localeCompare(b.name);
-                            })
-                            .map((row) => (
-                              <div
-                                key={row.key}
-                                className="flex items-center justify-between gap-4"
-                              >
-                                <span className="font-medium text-[#151210]">
-                                  {row.name}
-                                </span>
-                                <span>{row.ml} ml</span>
-                              </div>
-                            ))
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                          <p className="mt-1 text-xs text-[#4b3f3a]">
+                            Tap to {isSelected ? "remove" : "add"}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="mt-6 grid gap-6">
+                  {selectedForQuantity.length === 0 ? (
+                    <p className="text-sm text-[#4b3f3a]">
+                      No cocktails selected yet.
+                    </p>
+                  ) : (
+                    selectedForQuantity.map((recipe) => {
+                      const servingsRaw = servingsByRecipeId[recipe.id] ?? "";
+                      const servings = Number(servingsRaw || "0") || 0;
+                      return (
+                        <div
+                          key={recipe.id}
+                          className="grid gap-4 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-5 md:grid-cols-[240px_1fr]"
+                        >
+                          <div className="space-y-3">
+                            <h3 className="font-display text-2xl text-[#151210]">
+                              {recipe.name}
+                            </h3>
+                            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                              Quantity
+                              <input
+                                type="number"
+                                min={0}
+                                value={servingsRaw}
+                                onFocus={() => {
+                                  if ((servingsByRecipeId[recipe.id] ?? "0") === "0") {
+                                    setServingsByRecipeId((prev) => ({
+                                      ...prev,
+                                      [recipe.id]: "",
+                                    }));
+                                  }
+                                }}
+                                onBlur={() => {
+                                  if ((servingsByRecipeId[recipe.id] ?? "") === "") {
+                                    setServingsByRecipeId((prev) => ({
+                                      ...prev,
+                                      [recipe.id]: "0",
+                                    }));
+                                  }
+                                }}
+                                onChange={(event) =>
+                                  setServingsByRecipeId((prev) => ({
+                                    ...prev,
+                                    [recipe.id]: event.target.value,
+                                  }))
+                                }
+                                className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedRecipeIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.delete(recipe.id);
+                                  return next;
+                                })
+                              }
+                              className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#6a2e2a] hover:-translate-y-0.5"
+                            >
+                              Remove
+                            </button>
+                          </div>
+
+                          <div className="rounded-3xl border border-[#6a2e2a]/10 bg-white/80 px-5 py-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                              {servings > 0
+                                ? `Ingredients (for ${servings})`
+                                : "Ingredients (per cocktail)"}
+                            </p>
+                            <div className="mt-3 grid gap-2 text-sm text-[#4b3f3a]">
+                              {recipe.recipe_ingredients.length === 0 ? (
+                                <p className="text-sm text-[#4b3f3a]">
+                                  No ingredients added yet.
+                                </p>
+                              ) : (
+                                (recipe.recipe_ingredients ?? [])
+                                  .flatMap((ri, index) => {
+                                    const ingredient = normalizeIngredient(ri.ingredients);
+                                    if (!ingredient) return [];
+                                    const ml =
+                                      servings > 0
+                                        ? ri.ml_per_serving * servings
+                                        : ri.ml_per_serving;
+                                    return [
+                                      {
+                                        key: `${recipe.id}-${index}`,
+                                        name: ingredient.name,
+                                        type: ingredient.type,
+                                        ml,
+                                      },
+                                    ];
+                                  })
+                                  .sort((a, b) => {
+                                    const typeA = typePriority[a.type] ?? 99;
+                                    const typeB = typePriority[b.type] ?? 99;
+                                    if (typeA !== typeB) return typeA - typeB;
+                                    if (a.ml !== b.ml) return b.ml - a.ml;
+                                    return a.name.localeCompare(b.name);
+                                  })
+                                  .map((row) => (
+                                    <div
+                                      key={row.key}
+                                      className="flex items-center justify-between gap-4"
+                                    >
+                                      <span className="font-medium text-[#151210]">
+                                        {row.name}
+                                      </span>
+                                      <span>{row.ml} ml</span>
+                                    </div>
+                                  ))
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </>
           )}
 
           <div className="mt-6 flex flex-wrap gap-4">
-            <button
-              onClick={handleCreateOrderList}
-              disabled={!canCreateOrder}
-              className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
-            >
-              Create Order List
-            </button>
+            {step === "select" ? (
+              <button
+                type="button"
+                onClick={() => setStep("quantity")}
+                disabled={!canProceedToQuantities}
+                className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
+              >
+                Next: Add Quantities
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setStep("select")}
+                  className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleCreateOrderList}
+                  disabled={!canCreateOrder}
+                  className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
+                >
+                  Create Order List
+                </button>
+              </>
+            )}
           </div>
         </div>
 

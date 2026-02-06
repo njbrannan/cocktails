@@ -1,0 +1,15 @@
+<svg width="560" height="420" viewBox="0 0 560 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="560" height="420" rx="28" fill="#F8F1E7"/>
+  <rect x="208" y="68" width="144" height="240" rx="34" fill="#F2D9B1" stroke="#C47B4A" stroke-width="6"/>
+  <path d="M224 106C224 94.9543 232.954 86 244 86H316C327.046 86 336 94.9543 336 106V246C336 257.046 327.046 266 316 266H244C232.954 266 224 257.046 224 246V106Z" fill="#E7F7E9" opacity="0.9"/>
+  <circle cx="252" cy="128" r="10" fill="#C47B4A"/>
+  <circle cx="300" cy="150" r="12" fill="#C47B4A"/>
+  <circle cx="268" cy="176" r="11" fill="#C47B4A"/>
+  <path d="M320 124C340 114 352 120 356 136C360 152 346 164 330 166" stroke="#2F7A4E" stroke-width="7" stroke-linecap="round"/>
+  <path d="M320 156C340 146 352 152 356 168C360 184 346 196 330 198" stroke="#2F7A4E" stroke-width="7" stroke-linecap="round"/>
+  <path d="M232 98L256 78" stroke="#6A2E2A" stroke-width="8" stroke-linecap="round"/>
+  <path d="M252 98L276 76" stroke="#6A2E2A" stroke-width="8" stroke-linecap="round"/>
+  <path d="M272 98L296 78" stroke="#6A2E2A" stroke-width="8" stroke-linecap="round"/>
+  <text x="280" y="386" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="28" fill="#151210" letter-spacing="1.2">Mojito</text>
+</svg>
+

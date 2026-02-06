@@ -9,7 +9,10 @@ export function getSupabaseServerClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Missing Supabase server credentials.");
+    const missing: string[] = [];
+    if (!supabaseUrl) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+    if (!serviceRoleKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+    throw new Error(`Missing Supabase server credentials: ${missing.join(", ")}`);
   }
 
   if (!cachedClient) {

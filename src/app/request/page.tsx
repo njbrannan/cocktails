@@ -409,21 +409,18 @@ export default function RequestPage() {
                               />
                             </label>
 
-                            <p className="text-[11px] text-[#4b3f3a]">
-                              {ingredientsOpen ? "Ingredients shown" : "Ingredients hidden"}{" "}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setIngredientsOpenByRecipeId((prev) => ({
-                                    ...prev,
-                                    [recipe.id]: !prev[recipe.id],
-                                  }))
-                                }
-                                className="appearance-none bg-transparent p-0 font-semibold text-[#6a2e2a] underline underline-offset-2"
-                              >
-                                — tap to {ingredientsOpen ? "hide" : "show"}
-                              </button>
-                            </p>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setIngredientsOpenByRecipeId((prev) => ({
+                                  ...prev,
+                                  [recipe.id]: !prev[recipe.id],
+                                }))
+                              }
+                              className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2"
+                            >
+                              {ingredientsOpen ? "Hide ingredients" : "Show ingredients"}
+                            </button>
                           </div>
 
                           {ingredientsOpen ? (

@@ -411,7 +411,7 @@ export default function RequestOrderPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a]">
               Get Involved with our
             </p>
-            <h1 className="font-display text-4xl text-[#151210]">Order list</h1>
+            <h1 className="font-display text-4xl text-[#151210]">Order List</h1>
             <p className="mt-2 text-sm text-[#4b3f3a]">
               No order list found yet. Go back to select cocktails and create one.
             </p>
@@ -434,7 +434,7 @@ export default function RequestOrderPage() {
       {/* Print view: compact shopping-list style (hides the UI) */}
       <div className="print-only">
         <div className="mx-auto w-full max-w-3xl py-6">
-          <h1 className="text-xl font-semibold">Order list</h1>
+          <h1 className="text-xl font-semibold">Order List</h1>
           <p className="mt-1 text-sm text-black/70">
             Totals include a 10% buffer. Liquor is rounded to 700ml bottles.
           </p>
@@ -477,7 +477,7 @@ export default function RequestOrderPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a]">
             Get Involved with our
           </p>
-          <h1 className="font-display text-4xl text-[#151210]">Order list</h1>
+          <h1 className="font-display text-4xl text-[#151210]">Order List</h1>
           <p className="mt-2 text-sm text-[#4b3f3a]">
             Totals include a 10% buffer. Liquor is rounded to 700ml bottles.
           </p>
@@ -583,7 +583,7 @@ export default function RequestOrderPage() {
         </div>
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
-          <h2 className="font-display text-2xl text-[#6a2e2a]">Order list</h2>
+          <h2 className="font-display text-2xl text-[#6a2e2a]">Order List</h2>
 
           <div className="mt-6 grid gap-3">
             {(orderList ?? []).map((item) => (

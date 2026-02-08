@@ -80,6 +80,11 @@ export default function RequestEditPage() {
   >({});
   const [step, setStep] = useState<"select" | "quantity">("select");
 
+  useEffect(() => {
+    // When switching steps, jump back to the top so the next screen starts at the header.
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }, [step]);
+
   const normalizeIngredient = (value: Ingredient | Ingredient[] | null) => {
     if (!value) return null;
     return Array.isArray(value) ? value[0] ?? null : value;

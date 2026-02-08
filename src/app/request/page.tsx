@@ -99,6 +99,11 @@ export default function RequestPage() {
 
   const canCreateOrder = selectedRecipes.length > 0;
 
+  useEffect(() => {
+    // When switching steps, jump back to the top so the next screen starts at the header.
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }, [step]);
+
   const loadMenu = async () => {
     setError(null);
     const { data, error: recipeError } = await supabase

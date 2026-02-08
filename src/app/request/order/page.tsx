@@ -70,6 +70,7 @@ export default function RequestOrderPage() {
 
   const [orderList, setOrderList] = useState<IngredientTotal[]>([]);
   const [recalcError, setRecalcError] = useState<string | null>(null);
+  const [editingQuantities, setEditingQuantities] = useState(false);
 
   const [eventDate, setEventDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -326,7 +327,7 @@ export default function RequestOrderPage() {
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
           <h2 className="font-display text-2xl text-[#6a2e2a]">
-            Edit quantities
+            Selected cocktails
           </h2>
           <p className="mt-2 text-sm text-[#4b3f3a]">
             {guestCount > 0
@@ -335,7 +336,7 @@ export default function RequestOrderPage() {
           </p>
 
           <div className="mt-5 grid gap-3">
-            {cocktailsEditable.map((c) => (
+            {(editingQuantities ? cocktailsEditable : cocktailsSummary).map((c) => (
               <div
                 key={c.recipeId}
                 className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
@@ -346,42 +347,56 @@ export default function RequestOrderPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <input
-                    type="number"
-                    min={0}
-                    value={
-                      servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0)
-                    }
-                    onFocus={() => {
-                      const current =
-                        servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0);
-                      if (current === "0") {
-                        setServingsByRecipeId((prev) => ({
-                          ...prev,
-                          [c.recipeId]: "",
-                        }));
-                      }
-                    }}
-                    onBlur={() => {
-                      const current =
-                        servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0);
-                      if (current === "") {
-                        setServingsByRecipeId((prev) => ({
-                          ...prev,
-                          [c.recipeId]: "0",
-                        }));
-                      }
-                    }}
-                    onChange={(event) =>
-                      setServingsByRecipeId((prev) => ({
-                        ...prev,
-                        [c.recipeId]: event.target.value,
-                      }))
-                    }
-                    // iOS Safari zooms when inputs are < 16px font-size.
-                    className="w-24 rounded-xl border border-[#c47b4a]/30 bg-white/90 px-3 py-2 text-right text-[16px] text-[#151210]"
-                  />
-                  <p className="mt-1 text-xs text-[#4b3f3a]">Quantity</p>
+                  {editingQuantities ? (
+                    <>
+                      <input
+                        type="number"
+                        min={0}
+                        value={
+                          servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0)
+                        }
+                        onFocus={() => {
+                          const current =
+                            servingsByRecipeId[c.recipeId] ??
+                            String(c.servings ?? 0);
+                          if (current === "0") {
+                            setServingsByRecipeId((prev) => ({
+                              ...prev,
+                              [c.recipeId]: "",
+                            }));
+                          }
+                        }}
+                        onBlur={() => {
+                          const current =
+                            servingsByRecipeId[c.recipeId] ??
+                            String(c.servings ?? 0);
+                          if (current === "") {
+                            setServingsByRecipeId((prev) => ({
+                              ...prev,
+                              [c.recipeId]: "0",
+                            }));
+                          }
+                        }}
+                        onChange={(event) =>
+                          setServingsByRecipeId((prev) => ({
+                            ...prev,
+                            [c.recipeId]: event.target.value,
+                          }))
+                        }
+                        // iOS Safari zooms when inputs are < 16px font-size.
+                        className="w-24 rounded-xl border border-[#c47b4a]/30 bg-white/90 px-3 py-2 text-right text-[16px] text-[#151210]"
+                      />
+                      <p className="mt-1 text-xs text-[#4b3f3a]">Quantity</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-semibold text-[#151210]">
+                        {Number(servingsByRecipeId[c.recipeId] ?? c.servings ?? 0) ||
+                          0}
+                      </p>
+                      <p className="mt-1 text-xs text-[#4b3f3a]">Quantity</p>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -390,10 +405,17 @@ export default function RequestOrderPage() {
           <div className="mt-6 flex flex-wrap gap-4">
             <button
               type="button"
-              onClick={handleBack}
+              onClick={() => setEditingQuantities((v) => !v)}
               className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5"
             >
-              Edit quantities
+              {editingQuantities ? "Done editing" : "Edit quantities"}
+            </button>
+            <button
+              type="button"
+              onClick={handleBack}
+              className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
+            >
+              Back to builder
             </button>
           </div>
         </div>

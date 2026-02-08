@@ -96,7 +96,9 @@ export default function RequestOrderPage() {
   };
 
   const fieldClass =
-    "h-[52px] w-full max-w-full min-w-0 rounded-2xl border bg-white/80 px-4 py-3 text-[16px]";
+    // `tracking-normal` is important because these inputs sit inside uppercase/letter-spaced labels.
+    // Without this, iOS can render them with huge letter spacing.
+    "h-[52px] w-full max-w-full min-w-0 rounded-2xl border bg-white/80 px-4 py-3 text-[16px] tracking-normal text-[#151210]";
 
   const flagEmoji = (iso2: string) => {
     const upper = iso2.toUpperCase();

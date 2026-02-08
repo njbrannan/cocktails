@@ -312,14 +312,19 @@ export default function RequestPage() {
                               Selected
                             </div>
                           ) : null}
-                        </div>
-                        <div className="px-4 py-4">
-                          <p className="font-display text-xl text-[#151210]">
-                            {recipe.name}
-                          </p>
-                          <p className="mt-1 text-xs text-[#4b3f3a]">
-                            Tap to {isSelected ? "remove" : "add"}
-                          </p>
+
+                          {/* Text overlay */} 
+                          <div className="absolute inset-x-0 bottom-0">
+                            <div className="h-24 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
+                            <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
+                              <p className="font-display text-xl text-white drop-shadow">
+                                {recipe.name}
+                              </p>
+                              <p className="mt-1 text-xs text-white/85">
+                                Tap to {isSelected ? "remove" : "add"}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </button>
                     );

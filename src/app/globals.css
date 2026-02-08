@@ -58,6 +58,19 @@ button:focus-visible, a:focus-visible {
   outline-offset: 2px;
 }
 
+/* iOS/Safari quirks: date inputs can inherit aggressive letter-spacing from labels
+   and sometimes render wider than their container. Keep them predictable. */
+input[type="date"] {
+  width: 100%;
+  max-width: 100%;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  letter-spacing: normal;
+  text-transform: none;
+  font-size: 16px; /* prevents iOS zoom-on-focus */
+}
+
 .print-only {
   display: none;
 }

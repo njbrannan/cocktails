@@ -715,10 +715,8 @@ export default function RequestOrderPage() {
                 />
               </label>
 
-              <label className="block min-w-0 text-[#6a2e2a]">
-                <span className="text-xs font-semibold uppercase tracking-[0.2em]">
-                  Date of Event
-                </span>
+              <label className="block min-w-0 text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                Date of Event
                 <input
                   type="date"
                   min={minDate}
@@ -726,7 +724,9 @@ export default function RequestOrderPage() {
                   onChange={(event) => handleEventDateChange(event.target.value)}
                   onBlur={(event) => handleEventDateChange(event.target.value)}
                   // iOS Safari zooms when inputs are < 16px font-size.
-                  className={`mt-2 ${fieldClass} h-[40px] px-3 py-2 border-[#c47b4a]/30`}
+                  className={`mt-2 ${fieldClass} appearance-none border-[#c47b4a]/30`}
+                  // iOS sometimes applies inherited letter-spacing to date inputs; force normal.
+                  style={{ letterSpacing: "normal" }}
                 />
               </label>
 

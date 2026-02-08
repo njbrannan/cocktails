@@ -1,4 +1,11 @@
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
+import { getAdminEmail, isEmailConfigured, sendEmail } from "@/lib/resend";
+import {
+  computeDrinksCountForEvent,
+  computeOrderListForEvent,
+  escapeHtml,
+  formatOrderListHtml,
+} from "@/lib/eventOrderEmail";
 import { NextRequest, NextResponse } from "next/server";
 
 type Selection = { recipeId: string; servings: number };
@@ -140,7 +147,130 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Guest count is collected separately; drink totals are computed from selections when needed.
+    // If already submitted, notify admin + client that the request was amended (when email is configured).
+    if (event.status === "submitted" && isEmailConfigured()) {
+      const { data: fullEvent, error: fullEventError } = await supabaseServer
+        .from("events")
+        .select(
+          "id, title, event_date, guest_count, notes, status, client_email, client_phone, edit_token, edit_slug",
+        )
+        .eq("id", event.id)
+        .single();
+
+      if (!fullEventError && fullEvent) {
+        const origin = request.headers.get("origin") || "";
+        const editTokenForUrl = fullEvent.edit_slug || fullEvent.edit_token;
+        const editLink = origin ? `${origin}/request/edit/${editTokenForUrl}` : "";
+
+        const adminEmail = getAdminEmail();
+        const clientEmail = String(fullEvent.client_email || "").trim();
+
+        let drinksCount = 0;
+        try {
+          drinksCount = await computeDrinksCountForEvent(supabaseServer, event.id);
+        } catch {
+          drinksCount = 0;
+        }
+
+        let orderTotals: any[] = [];
+        try {
+          orderTotals = await computeOrderListForEvent(supabaseServer, event.id);
+        } catch {
+          orderTotals = [];
+        }
+
+        const { data: cocktailsRows } = await supabaseServer
+          .from("event_recipes")
+          .select("servings, recipes(name)")
+          .eq("event_id", event.id);
+
+        const cocktails = (cocktailsRows ?? [])
+          .flatMap((r: any) => {
+            const servings = Number(r.servings) || 0;
+            const recipe = r.recipes
+              ? Array.isArray(r.recipes)
+                ? r.recipes[0]
+                : r.recipes
+              : null;
+            const name = String(recipe?.name || "").trim();
+            if (!name || servings <= 0) return [];
+            return [{ name, servings }];
+          })
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+
+        const safeTitle = escapeHtml(String(fullEvent.title || "Cocktail request"));
+        const safeDate = escapeHtml(String(fullEvent.event_date || "Date TBD"));
+        const safeGuests = escapeHtml(String(fullEvent.guest_count || ""));
+        const safeNotes = escapeHtml(String(fullEvent.notes || ""));
+        const safePhone = escapeHtml(String(fullEvent.client_phone || ""));
+        const safeDrinks = escapeHtml(String(drinksCount || ""));
+        const safeLink = escapeHtml(editLink);
+
+        const cocktailsHtml = cocktails.length
+          ? `<ul>${cocktails
+              .map(
+                (c: any) =>
+                  `<li>${escapeHtml(c.name)} · ${escapeHtml(String(c.servings))}</li>`,
+              )
+              .join("")}</ul>`
+          : "<p style=\"margin:0;color:#666\">(No cocktails selected)</p>";
+
+        const orderListHtml = orderTotals.length
+          ? formatOrderListHtml(orderTotals)
+          : "<p style=\"margin:0;color:#666\">(Order list unavailable)</p>";
+
+        if (adminEmail) {
+          const guestsHtml = fullEvent.guest_count
+            ? safeGuests
+            : "<em>(not provided)</em>";
+          await sendEmail({
+            to: adminEmail,
+            subject: `Booking request updated: ${String(fullEvent.title || "Cocktail request")}`,
+            replyTo: clientEmail || undefined,
+            html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
+  <h2 style="margin:0 0 12px 0">Booking request updated</h2>
+  <p style="margin:0 0 8px 0"><strong>Title:</strong> ${safeTitle}</p>
+  <p style="margin:0 0 8px 0"><strong>Date:</strong> ${safeDate}</p>
+  <p style="margin:0 0 8px 0"><strong>Number of drinks:</strong> ${safeDrinks}</p>
+  <p style="margin:0 0 8px 0"><strong>Number of guests:</strong> ${guestsHtml}</p>
+  <p style="margin:0 0 8px 0"><strong>Client email:</strong> ${escapeHtml(clientEmail)}</p>
+  <p style="margin:0 0 8px 0"><strong>Telephone:</strong> ${safePhone}</p>
+  <p style="margin:0 0 8px 0"><strong>Notes:</strong> ${safeNotes || "<em>(none)</em>"}</p>
+  ${editLink ? `<p style="margin:12px 0 0 0"><strong>Edit link:</strong> <a href="${safeLink}">${safeLink}</a></p>` : ""}
+  <h3 style="margin:16px 0 8px 0">Cocktails</h3>
+  ${cocktailsHtml}
+  <h3 style="margin:16px 0 8px 0">Order list</h3>
+  ${orderListHtml}
+</div>`,
+            text: `Booking request updated\nTitle: ${String(fullEvent.title || "")}\nDate: ${String(fullEvent.event_date || "")}\nNumber of drinks: ${drinksCount || ""}\nNumber of guests: ${String(fullEvent.guest_count || "")}\nClient: ${clientEmail}\nTelephone: ${String(fullEvent.client_phone || "")}\nNotes: ${String(fullEvent.notes || "")}\n${editLink ? `Edit: ${editLink}` : ""}`,
+          });
+        }
+
+        if (clientEmail && editLink) {
+          await sendEmail({
+            to: clientEmail,
+            subject: `Updated request received: ${String(fullEvent.title || "Cocktail request")}`,
+            replyTo: adminEmail || undefined,
+            html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
+  <h2 style="margin:0 0 12px 0">Order amended</h2>
+  <p style="margin:0 0 12px 0">We’ve received your updated booking request and will be in contact shortly.</p>
+  <p style="margin:0 0 12px 0">Your updated selection:</p>
+  ${cocktailsHtml}
+  <p style="margin:12px 0 12px 0">
+    <a href="${safeLink}" style="display:inline-block;padding:10px 14px;border-radius:12px;background:#6a2e2a;color:#f8f1e7;text-decoration:none;font-weight:600">
+      Open your booking link
+    </a>
+  </p>
+  <p style="margin:0;color:#666;font-size:12px;word-break:break-all">${safeLink}</p>
+  <p style="margin:12px 0 0 0">Cheers!</p>
+</div>`,
+            text:
+              `Order amended\n\nWe’ve received your updated booking request and will be in contact shortly.\n\n` +
+              `Edit link: ${editLink}\n\nCheers!`,
+          });
+        }
+      }
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

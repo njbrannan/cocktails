@@ -305,7 +305,7 @@ export default function RequestEditPage() {
     }
 
     setSaving(false);
-    setSuccess("Saved.");
+    setSuccess("Order amended.");
     await loadEvent();
   };
 

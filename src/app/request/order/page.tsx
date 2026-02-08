@@ -625,7 +625,7 @@ export default function RequestOrderPage() {
             className="mt-8 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-6"
           >
             <h3 className="font-display text-xl text-[#151210]">
-              Book Bartenders for your event
+              Book Bartenders for your Event
             </h3>
             <p className="mt-2 text-sm text-[#4b3f3a]">
               Send this order list to Get Involved and we’ll follow up.
@@ -701,7 +701,7 @@ export default function RequestOrderPage() {
               disabled={loading}
               className="mt-4 rounded-full bg-[#c47b4a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
             >
-              {loading ? "Sending request..." : "Order Bartenders"}
+              {loading ? "Sending request..." : "Book Bartenders"}
             </button>
           </div>
 

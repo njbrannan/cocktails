@@ -81,15 +81,27 @@ export default function RequestEditPage() {
   const [ingredientsOpenByRecipeId, setIngredientsOpenByRecipeId] = useState<
     Record<string, boolean>
   >({});
-  const [removeSliderByRecipeId, setRemoveSliderByRecipeId] = useState<
-    Record<string, number>
-  >({});
+  const [undoRemoval, setUndoRemoval] = useState<{
+    recipeId: string;
+    recipeName: string;
+    expiresAt: number;
+  } | null>(null);
   const [step, setStep] = useState<"select" | "quantity">("select");
 
   useEffect(() => {
     // When switching steps, jump back to the top so the next screen starts at the header.
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
   }, [step]);
+
+  useEffect(() => {
+    if (!undoRemoval) return;
+    const id = window.setInterval(() => {
+      if (Date.now() >= undoRemoval.expiresAt) {
+        setUndoRemoval(null);
+      }
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [undoRemoval]);
 
   const normalizeIngredient = (value: Ingredient | Ingredient[] | null) => {
     if (!value) return null;
@@ -382,8 +394,34 @@ export default function RequestEditPage() {
                       return (
                         <div
                           key={recipe.id}
-                          className="grid gap-4 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-5 md:grid-cols-[240px_1fr]"
+                          className={`relative grid gap-4 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-5 ${
+                            ingredientsOpen ? "md:grid-cols-[240px_1fr]" : "md:grid-cols-[240px]"
+                          }`}
                         >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedRecipeIds((prev) => {
+                                const next = new Set(prev);
+                                next.delete(recipe.id);
+                                return next;
+                              });
+                              setIngredientsOpenByRecipeId((prev) => ({
+                                ...prev,
+                                [recipe.id]: false,
+                              }));
+                              setUndoRemoval({
+                                recipeId: recipe.id,
+                                recipeName: recipe.name,
+                                expiresAt: Date.now() + 4000,
+                              });
+                            }}
+                            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/60 text-[#6a2e2a] shadow-sm hover:bg-white/80"
+                            aria-label={`Remove ${recipe.name}`}
+                            title="Remove"
+                          >
+                            <span className="text-lg leading-none">×</span>
+                          </button>
                           <div className="space-y-3">
                             <h3 className="font-display text-2xl text-[#151210]">
                               {recipe.name}
@@ -432,55 +470,6 @@ export default function RequestEditPage() {
                             >
                               {ingredientsOpen ? "Hide ingredients" : "Show ingredients"}
                             </button>
-
-                            <div className="pt-1">
-                              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#6a2e2a]/80">
-                                Slide to remove
-                              </p>
-                              <input
-                                aria-label={`Slide to remove ${recipe.name}`}
-                                type="range"
-                                min={0}
-                                max={100}
-                                step={1}
-                                value={removeSliderByRecipeId[recipe.id] ?? 0}
-                                onChange={(event) => {
-                                  const value = Number(event.target.value) || 0;
-                                  setRemoveSliderByRecipeId((prev) => ({
-                                    ...prev,
-                                    [recipe.id]: value,
-                                  }));
-                                  if (value >= 95) {
-                                    setSelectedRecipeIds((prev) => {
-                                      const next = new Set(prev);
-                                      next.delete(recipe.id);
-                                      return next;
-                                    });
-                                    setIngredientsOpenByRecipeId((prev) => ({
-                                      ...prev,
-                                      [recipe.id]: false,
-                                    }));
-                                    setRemoveSliderByRecipeId((prev) => ({
-                                      ...prev,
-                                      [recipe.id]: 0,
-                                    }));
-                                  }
-                                }}
-                                onMouseUp={() =>
-                                  setRemoveSliderByRecipeId((prev) => ({
-                                    ...prev,
-                                    [recipe.id]: 0,
-                                  }))
-                                }
-                                onTouchEnd={() =>
-                                  setRemoveSliderByRecipeId((prev) => ({
-                                    ...prev,
-                                    [recipe.id]: 0,
-                                  }))
-                                }
-                                className="mt-2 w-full accent-[#c47b4a]"
-                              />
-                            </div>
                           </div>
 
                           {ingredientsOpen ? (
@@ -533,15 +522,7 @@ export default function RequestEditPage() {
                                   ))}
                               </div>
                             </div>
-                          ) : (
-                            <div className="rounded-3xl border border-[#6a2e2a]/10 bg-white/60 px-5 py-4 text-sm text-[#4b3f3a]">
-                              Ingredients are hidden to make quantities faster. Use{" "}
-                              <span className="font-semibold text-[#6a2e2a]">
-                                Show ingredients
-                              </span>{" "}
-                              if you want to review them.
-                            </div>
-                          )}
+                          ) : null}
                         </div>
                       );
                     })}
@@ -569,6 +550,31 @@ export default function RequestEditPage() {
                 )}
               </div>
             </div>
+
+            {undoRemoval && step === "quantity" ? (
+              <div className="fixed inset-x-0 bottom-6 z-50 px-6">
+                <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-4 rounded-2xl border border-black/10 bg-white/90 px-5 py-4 shadow-lg">
+                  <p className="text-sm text-[#151210]">
+                    Removed{" "}
+                    <span className="font-semibold">{undoRemoval.recipeName}</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRecipeIds((prev) => {
+                        const next = new Set(prev);
+                        next.add(undoRemoval.recipeId);
+                        return next;
+                      });
+                      setUndoRemoval(null);
+                    }}
+                    className="rounded-full bg-[#6a2e2a] px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#f8f1e7] hover:-translate-y-0.5"
+                  >
+                    Undo
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
             <div className="glass-panel rounded-[28px] px-8 py-6">
               <h2 className="font-display text-2xl text-[#6a2e2a]">

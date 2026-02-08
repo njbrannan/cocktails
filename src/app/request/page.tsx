@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+const ORDER_STORAGE_KEY = "get-involved:order:v1";
+
 type Ingredient = {
   id: string;
   name: string;
@@ -59,18 +61,7 @@ export default function RequestPage() {
     Record<string, string>
   >({});
 
-  const [eventDate, setEventDate] = useState("");
-  const [notes, setNotes] = useState("");
-  const [clientEmail, setClientEmail] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
-
-  const [orderList, setOrderList] = useState<
-    ReturnType<typeof buildIngredientTotals> | null
-  >(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [editLink, setEditLink] = useState<string | null>(null);
 
   const normalizeIngredient = (value: Ingredient | Ingredient[] | null) => {
     if (!value) return null;
@@ -136,10 +127,35 @@ export default function RequestPage() {
     loadMenu();
   }, []);
 
+  useEffect(() => {
+    // If the user came back from the order page, restore their previous selection + quantities.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("resume") !== "1") return;
+
+      const raw = window.sessionStorage.getItem(ORDER_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as any;
+      if (!parsed || parsed.version !== 1) return;
+
+      const ids = Array.isArray(parsed.selectedRecipeIds)
+        ? (parsed.selectedRecipeIds as string[])
+        : [];
+      const servings =
+        parsed.servingsByRecipeId && typeof parsed.servingsByRecipeId === "object"
+          ? (parsed.servingsByRecipeId as Record<string, string>)
+          : {};
+
+      setSelectedRecipeIds(new Set(ids));
+      setServingsByRecipeId((prev) => ({ ...prev, ...servings }));
+      setStep("quantity");
+    } catch {
+      // Ignore restore issues.
+    }
+  }, []);
+
   const handleCreateOrderList = () => {
     setError(null);
-    setSuccess(null);
-    setEditLink(null);
 
     // Aggregate by a normalized key so if you accidentally have duplicate ingredients
     // in Supabase (e.g. "Lime Juice" entered twice with different UUIDs), the order
@@ -174,69 +190,29 @@ export default function RequestPage() {
       return a.name.localeCompare(b.name);
     });
 
-    setOrderList(totals);
-  };
-
-  const handleOrderBartenders = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    setEditLink(null);
-
     try {
-      if (!orderList) {
-        setError("Create your order list first.");
-        return;
-      }
-      if (!clientEmail) {
-        setError("Please enter your email.");
-        return;
-      }
+      const cocktails = selectedRecipes.map(({ recipe, servings }) => ({
+        recipeId: recipe.id,
+        recipeName: recipe.name,
+        servings,
+      }));
 
-      const response = await fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "Cocktail booking request",
-          eventDate,
-          notes,
-          clientEmail,
-          clientPhone,
-          submit: true,
-          cocktails: selectedRecipes.map(({ recipe, servings }) => ({
-            recipeId: recipe.id,
-            recipeName: recipe.name,
-            servings,
-          })),
+      window.sessionStorage.setItem(
+        ORDER_STORAGE_KEY,
+        JSON.stringify({
+          version: 1,
+          createdAt: new Date().toISOString(),
+          cocktails,
+          orderList: totals,
+          selectedRecipeIds: Array.from(selectedRecipeIds.values()),
+          servingsByRecipeId,
         }),
-      });
-
-      let data: any = null;
-      try {
-        data = await response.json();
-      } catch {
-        data = null;
-      }
-
-      if (!response.ok) {
-        setError(data?.error || `Unable to send request (HTTP ${response.status}).`);
-        return;
-      }
-
-      const token = data?.editToken as string | undefined;
-      if (!token) {
-        setError("Request created, but no edit token was returned.");
-        return;
-      }
-
-      const link = `${window.location.origin}/request/edit/${token}`;
-      setEditLink(link);
-      setSuccess("Request sent. We’ll be in touch soon.");
-    } catch (err: any) {
-      setError(err?.message || "Network error while sending request.");
-    } finally {
-      setLoading(false);
+      );
+    } catch {
+      // If storage fails, we can still navigate; the order page will show a helpful message.
     }
+
+    router.push("/request/order");
   };
 
   return (
@@ -255,7 +231,6 @@ export default function RequestPage() {
         </header>
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        {success ? <p className="text-sm text-[#4b3f3a]">{success}</p> : null}
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
           <h2 className="font-display text-2xl text-[#6a2e2a]">
@@ -492,122 +467,6 @@ export default function RequestPage() {
             )}
           </div>
         </div>
-
-        {orderList ? (
-          <div className="glass-panel rounded-[28px] px-8 py-6">
-            <h2 className="font-display text-2xl text-[#6a2e2a]">Order list</h2>
-            <p className="mt-2 text-sm text-[#4b3f3a]">
-              Totals include a 10% buffer. Liquor is rounded to 700ml bottles.
-            </p>
-
-            <div className="mt-6 grid gap-3">
-              {orderList.map((item) => (
-                <div
-                  key={item.ingredientId}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-[#151210]">
-                      {item.name}
-                    </p>
-                    <p className="text-xs uppercase tracking-[0.2em] text-[#6a2e2a]">
-                      {item.type}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-[#151210]">
-                      {item.total} {item.unit}
-                    </p>
-                    {item.bottlesNeeded ? (
-                      <p className="text-xs text-[#4b3f3a]">
-                        {item.bottlesNeeded} bottles @ {item.bottleSizeMl}ml
-                      </p>
-                    ) : (
-                      <p className="text-xs text-[#4b3f3a]">Total</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-6">
-              <h3 className="font-display text-xl text-[#151210]">
-                Order bartenders
-              </h3>
-              <p className="mt-2 text-sm text-[#4b3f3a]">
-                Send this order list to Get Involved and we’ll follow up.
-              </p>
-
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
-                  Date of Event
-                  <input
-                    type="date"
-                    value={eventDate}
-                    onChange={(event) => setEventDate(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
-                  />
-                </label>
-                <input
-                  type="email"
-                  value={clientEmail}
-                  onChange={(event) => setClientEmail(event.target.value)}
-                  placeholder="Your email"
-                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
-                />
-                <input
-                  type="tel"
-                  value={clientPhone}
-                  onChange={(event) => setClientPhone(event.target.value)}
-                  placeholder="Telephone number"
-                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
-                />
-                <textarea
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Notes (venue, timing, dietary requests...)"
-                  className="min-h-[120px] rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm md:col-span-2"
-                />
-              </div>
-
-              <button
-                onClick={handleOrderBartenders}
-                disabled={loading}
-                className="mt-4 rounded-full bg-[#c47b4a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
-              >
-                {loading ? "Sending request..." : "Order Bartenders"}
-              </button>
-            </div>
-
-            {editLink ? (
-              <div className="mt-6 rounded-3xl border border-[#c47b4a]/20 bg-white/70 px-5 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
-                  Private edit link
-                </p>
-                <p className="mt-2 break-all text-sm text-[#151210]">{editLink}</p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    onClick={async () => {
-                      await navigator.clipboard.writeText(editLink);
-                      setSuccess("Link copied. You're all set.");
-                    }}
-                    className="rounded-full border border-[#6a2e2a]/30 bg-white/80 px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] hover:-translate-y-0.5"
-                  >
-                    Copy Link
-                  </button>
-                  <button
-                    onClick={() =>
-                      router.push(editLink.replace(window.location.origin, ""))
-                    }
-                    className="rounded-full bg-[#6a2e2a] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
-                  >
-                    Edit Request
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
       </div>
     </div>
   );

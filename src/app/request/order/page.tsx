@@ -697,7 +697,7 @@ export default function RequestOrderPage() {
                   value={eventDate}
                   onChange={(event) => setEventDate(event.target.value)}
                   // iOS Safari zooms when inputs are < 16px font-size.
-                  className={`mt-2 ${fieldClass} border-[#c47b4a]/30`}
+                  className={`mt-2 ${fieldClass} h-[46px] py-2 border-[#c47b4a]/30`}
                 />
               </label>
 

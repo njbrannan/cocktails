@@ -150,6 +150,7 @@ export default function RequestPage() {
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("resume") !== "1") return;
+      const resumeStep = params.get("step"); // optional: "select" | "quantity"
 
       const raw = window.sessionStorage.getItem(ORDER_STORAGE_KEY);
       if (!raw) return;
@@ -166,7 +167,7 @@ export default function RequestPage() {
 
       setSelectedRecipeIds(new Set(ids));
       setServingsByRecipeId((prev) => ({ ...prev, ...servings }));
-      setStep("quantity");
+      setStep(resumeStep === "select" ? "select" : "quantity");
     } catch {
       // Ignore restore issues.
     }

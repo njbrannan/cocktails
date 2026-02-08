@@ -378,8 +378,8 @@ export default function RequestOrderPage() {
   }, [stored, recipes, servingsByRecipeId]);
 
   const handleBack = () => {
-    // The request page will restore selection state from this stored order.
-    router.push("/request?resume=1");
+    // Take them back to the drink selection step (with their previous order restored).
+    router.push("/request?resume=1&step=select");
   };
 
   const handleOrderBartenders = async () => {
@@ -660,7 +660,7 @@ export default function RequestOrderPage() {
               onClick={handleBack}
               className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
             >
-              Amend request
+              Add more drinks
             </button>
           </div>
         </div>
@@ -689,6 +689,34 @@ export default function RequestOrderPage() {
               Send order list
             </button>
           </div>
+
+          <h3 className="mt-10 text-xs font-semibold uppercase tracking-[0.25em] text-[#6a2e2a]">
+            Shopping list
+          </h3>
+          <ul className="mt-4 divide-y divide-[#c47b4a]/15 overflow-hidden rounded-2xl border border-[#c47b4a]/20 bg-white/70">
+            {(orderList ?? []).map((item) => (
+              <li
+                key={item.ingredientId}
+                className="flex items-start justify-between gap-6 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-[#151210]">
+                    {item.name}
+                  </p>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-[#6a2e2a]">
+                    {item.type}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right tabular-nums">
+                  <p className="text-sm font-semibold text-[#151210]">
+                    {item.bottlesNeeded
+                      ? `${item.bottlesNeeded} × ${item.bottleSizeMl}ml`
+                      : `${item.total} ${item.unit}`}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
 
           <div
             ref={orderBartendersRef}
@@ -859,34 +887,6 @@ export default function RequestOrderPage() {
               {loading ? "Sending request..." : "Book Bartenders"}
             </button>
           </div>
-
-          <h3 className="mt-10 text-xs font-semibold uppercase tracking-[0.25em] text-[#6a2e2a]">
-            Shopping list
-          </h3>
-          <ul className="mt-4 divide-y divide-[#c47b4a]/15 overflow-hidden rounded-2xl border border-[#c47b4a]/20 bg-white/70">
-            {(orderList ?? []).map((item) => (
-              <li
-                key={item.ingredientId}
-                className="flex items-start justify-between gap-6 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-[#151210]">
-                    {item.name}
-                  </p>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-[#6a2e2a]">
-                    {item.type}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right tabular-nums">
-                  <p className="text-sm font-semibold text-[#151210]">
-                    {item.bottlesNeeded
-                      ? `${item.bottlesNeeded} × ${item.bottleSizeMl}ml`
-                      : `${item.total} ${item.unit}`}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
 
           {editLink ? (
             <div className="mt-6 rounded-3xl border border-[#c47b4a]/20 bg-white/70 px-5 py-4">

@@ -428,44 +428,6 @@ export default function RequestEditPage() {
               </div>
             </div>
 
-            <div className="glass-panel rounded-[28px] px-8 py-6">
-              <h2 className="font-display text-2xl text-[#6a2e2a]">Order list</h2>
-              <p className="mt-2 text-sm text-[#4b3f3a]">
-                Shopping list style totals include a 10% buffer.
-              </p>
-
-              <ul className="mt-5 grid gap-3">
-                {orderList.length ? (
-                  orderList.map((item) => (
-                    <li
-                      key={item.ingredientId}
-                      className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-[#151210]">
-                          {item.name}
-                        </p>
-                        <p className="text-xs uppercase tracking-[0.2em] text-[#6a2e2a]">
-                          {item.type}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-[#151210] tabular-nums">
-                          {item.bottlesNeeded
-                            ? `${item.bottlesNeeded} × ${item.bottleSizeMl}ml`
-                            : `${item.total} ${item.unit}`}
-                        </p>
-                      </div>
-                    </li>
-                  ))
-                ) : (
-                  <li className="text-sm text-[#4b3f3a]">
-                    Set cocktail quantities to generate your order list.
-                  </li>
-                )}
-              </ul>
-            </div>
-
             <div
               ref={amendRef}
               className="glass-panel rounded-[28px] px-8 py-6"
@@ -802,6 +764,44 @@ export default function RequestEditPage() {
                   {CONFIRMED_LOCK_MESSAGE}
                 </p>
               ) : null}
+            </div>
+
+            <div className="glass-panel rounded-[28px] px-8 py-6">
+              <h2 className="font-display text-2xl text-[#6a2e2a]">Order list</h2>
+              <p className="mt-2 text-sm text-[#4b3f3a]">
+                Shopping list style totals include a 10% buffer.
+              </p>
+
+              <ul className="mt-5 grid gap-3">
+                {orderList.length ? (
+                  orderList.map((item) => (
+                    <li
+                      key={item.ingredientId}
+                      className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-[#151210]">
+                          {item.name}
+                        </p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-[#6a2e2a]">
+                          {item.type}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-[#151210] tabular-nums">
+                          {item.bottlesNeeded
+                            ? `${item.bottlesNeeded} × ${item.bottleSizeMl}ml`
+                            : `${item.total} ${item.unit}`}
+                        </p>
+                      </div>
+                    </li>
+                  ))
+                ) : (
+                  <li className="text-sm text-[#4b3f3a]">
+                    Set cocktail quantities to generate your order list.
+                  </li>
+                )}
+              </ul>
             </div>
           </>
         )}

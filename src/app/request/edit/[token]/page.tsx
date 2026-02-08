@@ -78,6 +78,12 @@ export default function RequestEditPage() {
   const [servingsByRecipeId, setServingsByRecipeId] = useState<
     Record<string, string>
   >({});
+  const [ingredientsOpenByRecipeId, setIngredientsOpenByRecipeId] = useState<
+    Record<string, boolean>
+  >({});
+  const [removeSliderByRecipeId, setRemoveSliderByRecipeId] = useState<
+    Record<string, number>
+  >({});
   const [step, setStep] = useState<"select" | "quantity">("select");
 
   useEffect(() => {
@@ -370,6 +376,9 @@ export default function RequestEditPage() {
                     .map((recipe) => {
                       const servingsRaw = servingsByRecipeId[recipe.id] ?? "0";
                       const servings = Number(servingsRaw || "0") || 0;
+                      const ingredientsOpen = Boolean(
+                        ingredientsOpenByRecipeId[recipe.id],
+                      );
                       return (
                         <div
                           key={recipe.id}
@@ -410,68 +419,129 @@ export default function RequestEditPage() {
                                 className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
                               />
                             </label>
+
                             <button
                               type="button"
                               onClick={() =>
-                                setSelectedRecipeIds((prev) => {
-                                  const next = new Set(prev);
-                                  next.delete(recipe.id);
-                                  return next;
-                                })
+                                setIngredientsOpenByRecipeId((prev) => ({
+                                  ...prev,
+                                  [recipe.id]: !prev[recipe.id],
+                                }))
                               }
-                              className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#6a2e2a] hover:-translate-y-0.5"
+                              className="w-fit rounded-full border border-[#6a2e2a]/25 bg-white/60 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#6a2e2a] hover:-translate-y-0.5"
                             >
-                              Remove
+                              {ingredientsOpen ? "Hide ingredients" : "Show ingredients"}
                             </button>
-                          </div>
 
-                          <div className="rounded-3xl border border-[#6a2e2a]/10 bg-white/80 px-5 py-4">
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
-                              {servings > 0
-                                ? `Ingredients (for ${servings})`
-                                : "Ingredients (per cocktail)"}
-                            </p>
-                            <div className="mt-3 grid gap-2 text-sm text-[#4b3f3a]">
-                              {(recipe.recipe_ingredients ?? [])
-                                .flatMap((ri, index) => {
-                                  const ingredient = normalizeIngredient(ri.ingredients);
-                                  if (!ingredient) return [];
-                                  const amount =
-                                    servings > 0
-                                      ? ri.ml_per_serving * servings
-                                      : ri.ml_per_serving;
-                                  return [
-                                    {
-                                      key: `${recipe.id}-${index}`,
-                                      name: ingredient.name,
-                                      type: ingredient.type,
-                                      amount,
-                                      unit: (ingredient.unit || "ml").trim().toLowerCase(),
-                                    },
-                                  ];
-                                })
-                                .sort((a, b) => {
-                                  const typeA = typePriority[a.type] ?? 99;
-                                  const typeB = typePriority[b.type] ?? 99;
-                                  if (typeA !== typeB) return typeA - typeB;
-                                  if (a.amount !== b.amount) return b.amount - a.amount;
-                                  return a.name.localeCompare(b.name);
-                                })
-                                .map((row) => (
-                                  <div
-                                    key={row.key}
-                                    className="flex items-center justify-between gap-4"
-                                  >
-                                    <span className="font-medium text-[#151210]">
-                                      {row.name}
-                                    </span>
-                                    <span>
-                                      {row.amount} {row.unit}
-                                    </span>
-                                  </div>
-                                ))}
+                            <div className="pt-1">
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#6a2e2a]/80">
+                                Slide to remove
+                              </p>
+                              <input
+                                aria-label={`Slide to remove ${recipe.name}`}
+                                type="range"
+                                min={0}
+                                max={100}
+                                step={1}
+                                value={removeSliderByRecipeId[recipe.id] ?? 0}
+                                onChange={(event) => {
+                                  const value = Number(event.target.value) || 0;
+                                  setRemoveSliderByRecipeId((prev) => ({
+                                    ...prev,
+                                    [recipe.id]: value,
+                                  }));
+                                  if (value >= 95) {
+                                    setSelectedRecipeIds((prev) => {
+                                      const next = new Set(prev);
+                                      next.delete(recipe.id);
+                                      return next;
+                                    });
+                                    setIngredientsOpenByRecipeId((prev) => ({
+                                      ...prev,
+                                      [recipe.id]: false,
+                                    }));
+                                    setRemoveSliderByRecipeId((prev) => ({
+                                      ...prev,
+                                      [recipe.id]: 0,
+                                    }));
+                                  }
+                                }}
+                                onMouseUp={() =>
+                                  setRemoveSliderByRecipeId((prev) => ({
+                                    ...prev,
+                                    [recipe.id]: 0,
+                                  }))
+                                }
+                                onTouchEnd={() =>
+                                  setRemoveSliderByRecipeId((prev) => ({
+                                    ...prev,
+                                    [recipe.id]: 0,
+                                  }))
+                                }
+                                className="mt-2 w-full accent-[#c47b4a]"
+                              />
                             </div>
                           </div>
+
+                          {ingredientsOpen ? (
+                            <div className="rounded-3xl border border-[#6a2e2a]/10 bg-white/80 px-5 py-4">
+                              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                                {servings > 0
+                                  ? `Ingredients (for ${servings})`
+                                  : "Ingredients (per cocktail)"}
+                              </p>
+                              <div className="mt-3 grid gap-2 text-sm text-[#4b3f3a]">
+                                {(recipe.recipe_ingredients ?? [])
+                                  .flatMap((ri, index) => {
+                                    const ingredient = normalizeIngredient(ri.ingredients);
+                                    if (!ingredient) return [];
+                                    const amount =
+                                      servings > 0
+                                        ? ri.ml_per_serving * servings
+                                        : ri.ml_per_serving;
+                                    return [
+                                      {
+                                        key: `${recipe.id}-${index}`,
+                                        name: ingredient.name,
+                                        type: ingredient.type,
+                                        amount,
+                                        unit: (ingredient.unit || "ml")
+                                          .trim()
+                                          .toLowerCase(),
+                                      },
+                                    ];
+                                  })
+                                  .sort((a, b) => {
+                                    const typeA = typePriority[a.type] ?? 99;
+                                    const typeB = typePriority[b.type] ?? 99;
+                                    if (typeA !== typeB) return typeA - typeB;
+                                    if (a.amount !== b.amount) return b.amount - a.amount;
+                                    return a.name.localeCompare(b.name);
+                                  })
+                                  .map((row) => (
+                                    <div
+                                      key={row.key}
+                                      className="flex items-center justify-between gap-4"
+                                    >
+                                      <span className="font-medium text-[#151210]">
+                                        {row.name}
+                                      </span>
+                                      <span>
+                                        {row.amount} {row.unit}
+                                      </span>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="rounded-3xl border border-[#6a2e2a]/10 bg-white/60 px-5 py-4 text-sm text-[#4b3f3a]">
+                              Ingredients are hidden to make quantities faster. Use{" "}
+                              <span className="font-semibold text-[#6a2e2a]">
+                                Show ingredients
+                              </span>{" "}
+                              if you want to review them.
+                            </div>
+                          )}
                         </div>
                       );
                     })}

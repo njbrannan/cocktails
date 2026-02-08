@@ -76,7 +76,8 @@ export default function RequestOrderPage() {
   const [eventDate, setEventDate] = useState("");
   const [notes, setNotes] = useState("");
   const [clientEmail, setClientEmail] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
+  const [phoneCountryCode, setPhoneCountryCode] = useState("+61");
+  const [phoneLocal, setPhoneLocal] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +104,27 @@ export default function RequestOrderPage() {
       // Ignore parse errors; user can go back and recreate.
     }
   }, []);
+
+  const parseNonNegativeInt = (raw: string) => {
+    const trimmed = raw.trim();
+    if (trimmed === "") return null;
+    if (!/^\d+$/.test(trimmed)) return null;
+    const n = Number(trimmed);
+    if (!Number.isSafeInteger(n)) return null;
+    return n;
+  };
+
+  const isValidEmail = (value: string) => {
+    const v = value.trim();
+    if (!v) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  };
+
+  const combinedPhone = useMemo(() => {
+    const local = phoneLocal.trim();
+    if (!local) return "";
+    return `${phoneCountryCode} ${local}`;
+  }, [phoneCountryCode, phoneLocal]);
 
   useEffect(() => {
     const load = async () => {
@@ -229,8 +251,24 @@ export default function RequestOrderPage() {
         setError("No order list found. Go back and create your order list first.");
         return;
       }
-      if (!clientEmail) {
-        setError("Please enter your email.");
+      if (!isValidEmail(clientEmail)) {
+        setError("Please enter a valid email address.");
+        return;
+      }
+
+      // Validate quantities (must be whole numbers, 0+)
+      for (const c of stored.cocktails) {
+        const raw = servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0);
+        const n = parseNonNegativeInt(raw);
+        if (n === null) {
+          setError(`Please enter a valid quantity for ${c.recipeName}.`);
+          return;
+        }
+      }
+
+      // Light phone validation (optional field)
+      if (phoneLocal.trim() && !/^[0-9 ()+-]+$/.test(phoneLocal.trim())) {
+        setError("Please enter a valid telephone number.");
         return;
       }
 
@@ -242,7 +280,7 @@ export default function RequestOrderPage() {
           eventDate,
           notes,
           clientEmail,
-          clientPhone,
+          clientPhone: combinedPhone || null,
           submit: true,
           cocktails: cocktailsSummary.map((c) => ({
             recipeId: c.recipeId,
@@ -481,7 +519,7 @@ export default function RequestOrderPage() {
             className="mt-8 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-6"
           >
             <h3 className="font-display text-xl text-[#151210]">
-              Order bartenders
+              Book bartenders for your event
             </h3>
             <p className="mt-2 text-sm text-[#4b3f3a]">
               Send this order list to Get Involved and we’ll follow up.
@@ -502,15 +540,39 @@ export default function RequestOrderPage() {
                 value={clientEmail}
                 onChange={(event) => setClientEmail(event.target.value)}
                 placeholder="Your email"
-                className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
+                inputMode="email"
+                autoComplete="email"
+                // iOS Safari zooms when inputs are < 16px font-size.
+                className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
               />
-              <input
-                type="tel"
-                value={clientPhone}
-                onChange={(event) => setClientPhone(event.target.value)}
-                placeholder="Telephone number"
-                className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
-              />
+              <div className="grid gap-3 md:grid-cols-[220px_1fr]">
+                <select
+                  value={phoneCountryCode}
+                  onChange={(event) => setPhoneCountryCode(event.target.value)}
+                  aria-label="Country code"
+                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
+                >
+                  <option value="+61">Australia (+61)</option>
+                  <option value="+31">Netherlands (+31)</option>
+                  <option value="+44">United Kingdom (+44)</option>
+                  <option value="+1">United States (+1)</option>
+                  <option value="+64">New Zealand (+64)</option>
+                  <option value="+33">France (+33)</option>
+                  <option value="+49">Germany (+49)</option>
+                  <option value="+353">Ireland (+353)</option>
+                  <option value="+65">Singapore (+65)</option>
+                  <option value="+81">Japan (+81)</option>
+                </select>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={phoneLocal}
+                  onChange={(event) => setPhoneLocal(event.target.value)}
+                  placeholder="Telephone number"
+                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
+                />
+              </div>
               <textarea
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}

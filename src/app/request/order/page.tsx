@@ -1,6 +1,7 @@
 "use client";
 
-import type { IngredientTotal } from "@/lib/inventoryMath";
+import { buildIngredientTotals, type IngredientTotal } from "@/lib/inventoryMath";
+import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -8,6 +9,32 @@ type StoredCocktail = {
   recipeId: string;
   recipeName: string;
   servings: number;
+};
+
+type Ingredient = {
+  id: string;
+  name: string;
+  type:
+    | "liquor"
+    | "mixer"
+    | "juice"
+    | "syrup"
+    | "garnish"
+    | "ice"
+    | "glassware";
+  bottle_size_ml: number | null;
+  unit: string | null;
+};
+
+type RecipeIngredient = {
+  ml_per_serving: number;
+  ingredients: Ingredient | Ingredient[] | null;
+};
+
+type Recipe = {
+  id: string;
+  name: string;
+  recipe_ingredients: RecipeIngredient[];
 };
 
 type StoredOrder = {
@@ -22,9 +49,27 @@ type StoredOrder = {
 
 const STORAGE_KEY = "get-involved:order:v1";
 
+const typePriority: Record<string, number> = {
+  liquor: 0,
+  mixer: 1,
+  juice: 2,
+  syrup: 3,
+  garnish: 4,
+  ice: 5,
+  glassware: 6,
+};
+
 export default function RequestOrderPage() {
   const router = useRouter();
   const [stored, setStored] = useState<StoredOrder | null>(null);
+
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [servingsByRecipeId, setServingsByRecipeId] = useState<
+    Record<string, string>
+  >({});
+
+  const [orderList, setOrderList] = useState<IngredientTotal[]>([]);
+  const [recalcError, setRecalcError] = useState<string | null>(null);
 
   const [eventDate, setEventDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -36,6 +81,11 @@ export default function RequestOrderPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [editLink, setEditLink] = useState<string | null>(null);
 
+  const normalizeIngredient = (value: Ingredient | Ingredient[] | null) => {
+    if (!value) return null;
+    return Array.isArray(value) ? value[0] ?? null : value;
+  };
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });
 
@@ -45,20 +95,121 @@ export default function RequestOrderPage() {
       const parsed = JSON.parse(raw) as StoredOrder;
       if (parsed?.version !== 1) return;
       setStored(parsed);
+      setServingsByRecipeId(parsed.servingsByRecipeId || {});
+      setOrderList(parsed.orderList || []);
     } catch {
       // Ignore parse errors; user can go back and recreate.
     }
   }, []);
 
+  useEffect(() => {
+    const load = async () => {
+      if (!stored?.cocktails?.length) return;
+      setRecalcError(null);
+
+      const recipeIds = stored.cocktails.map((c) => c.recipeId).filter(Boolean);
+      if (recipeIds.length === 0) return;
+
+      const { data, error } = await supabase
+        .from("recipes")
+        .select(
+          "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml))",
+        )
+        .in("id", recipeIds);
+
+      if (error) {
+        setRecalcError(error.message);
+        return;
+      }
+
+      setRecipes(((data ?? []) as unknown as Recipe[]) || []);
+    };
+
+    load();
+  }, [stored]);
+
   const cocktailsSummary = useMemo(() => {
     const list = stored?.cocktails ?? [];
-    const filtered = list.filter((c) => Number(c.servings) > 0);
+    const filtered = list.filter((c) => {
+      const raw = servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0);
+      return (Number(raw || "0") || 0) > 0;
+    });
     return [...filtered].sort((a, b) => a.recipeName.localeCompare(b.recipeName));
+  }, [stored, servingsByRecipeId]);
+
+  const cocktailsEditable = useMemo(() => {
+    const list = stored?.cocktails ?? [];
+    return [...list].sort((a, b) => a.recipeName.localeCompare(b.recipeName));
   }, [stored]);
 
   const guestCount = useMemo(() => {
-    return cocktailsSummary.reduce((sum, c) => sum + (Number(c.servings) || 0), 0);
+    return cocktailsSummary.reduce((sum, c) => {
+      const raw = servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0);
+      return sum + (Number(raw || "0") || 0);
+    }, 0);
   }, [cocktailsSummary]);
+
+  useEffect(() => {
+    if (!stored) return;
+    if (!stored.cocktails.length) return;
+    if (recipes.length === 0) return;
+
+    try {
+      const recipeById = new Map(recipes.map((r) => [r.id, r]));
+
+      const items = stored.cocktails.flatMap((c) => {
+        const raw = servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0);
+        const servings = Number(raw || "0") || 0;
+        if (servings <= 0) return [];
+
+        const recipe = recipeById.get(c.recipeId);
+        if (!recipe) return [];
+
+        return (recipe.recipe_ingredients ?? []).flatMap((ri) => {
+          const ingredient = normalizeIngredient(ri.ingredients);
+          if (!ingredient) return [];
+
+          const normalizedKey = `${ingredient.type}:${ingredient.name
+            .trim()
+            .toLowerCase()}:${(ingredient.unit || "ml").trim().toLowerCase()}`;
+
+          return [
+            {
+              ingredientId: normalizedKey,
+              name: ingredient.name,
+              type: ingredient.type,
+              amountPerServing: ri.ml_per_serving,
+              servings,
+              unit: ingredient.unit,
+              bottleSizeMl: ingredient.bottle_size_ml,
+            },
+          ];
+        });
+      });
+
+      const totals = buildIngredientTotals(items).sort((a, b) => {
+        const typeA = typePriority[a.type] ?? 99;
+        const typeB = typePriority[b.type] ?? 99;
+        if (typeA !== typeB) return typeA - typeB;
+        if (a.total !== b.total) return b.total - a.total;
+        return a.name.localeCompare(b.name);
+      });
+
+      setOrderList(totals);
+
+      // Persist so refresh/back keeps the updated quantities + order list.
+      window.sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          ...stored,
+          orderList: totals,
+          servingsByRecipeId,
+        }),
+      );
+    } catch {
+      // Ignore storage errors.
+    }
+  }, [stored, recipes, servingsByRecipeId]);
 
   const handleBack = () => {
     // The request page will restore selection state from this stored order.
@@ -94,7 +245,10 @@ export default function RequestOrderPage() {
           cocktails: cocktailsSummary.map((c) => ({
             recipeId: c.recipeId,
             recipeName: c.recipeName,
-            servings: c.servings,
+            servings:
+              Number(
+                servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0),
+              ) || 0,
           })),
         }),
       });
@@ -168,17 +322,20 @@ export default function RequestOrderPage() {
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
         {success ? <p className="text-sm text-[#4b3f3a]">{success}</p> : null}
+        {recalcError ? <p className="text-sm text-red-600">{recalcError}</p> : null}
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
           <h2 className="font-display text-2xl text-[#6a2e2a]">
-            Selected cocktails
+            Edit quantities
           </h2>
           <p className="mt-2 text-sm text-[#4b3f3a]">
-            {guestCount > 0 ? `Total drinks: ${guestCount}` : "No quantities set yet."}
+            {guestCount > 0
+              ? `Total drinks: ${guestCount}`
+              : "Set quantities to generate totals."}
           </p>
 
           <div className="mt-5 grid gap-3">
-            {cocktailsSummary.map((c) => (
+            {cocktailsEditable.map((c) => (
               <div
                 key={c.recipeId}
                 className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
@@ -189,10 +346,42 @@ export default function RequestOrderPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-[#151210]">
-                    {c.servings}
-                  </p>
-                  <p className="text-xs text-[#4b3f3a]">Quantity</p>
+                  <input
+                    type="number"
+                    min={0}
+                    value={
+                      servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0)
+                    }
+                    onFocus={() => {
+                      const current =
+                        servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0);
+                      if (current === "0") {
+                        setServingsByRecipeId((prev) => ({
+                          ...prev,
+                          [c.recipeId]: "",
+                        }));
+                      }
+                    }}
+                    onBlur={() => {
+                      const current =
+                        servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0);
+                      if (current === "") {
+                        setServingsByRecipeId((prev) => ({
+                          ...prev,
+                          [c.recipeId]: "0",
+                        }));
+                      }
+                    }}
+                    onChange={(event) =>
+                      setServingsByRecipeId((prev) => ({
+                        ...prev,
+                        [c.recipeId]: event.target.value,
+                      }))
+                    }
+                    // iOS Safari zooms when inputs are < 16px font-size.
+                    className="w-24 rounded-xl border border-[#c47b4a]/30 bg-white/90 px-3 py-2 text-right text-[16px] text-[#151210]"
+                  />
+                  <p className="mt-1 text-xs text-[#4b3f3a]">Quantity</p>
                 </div>
               </div>
             ))}
@@ -213,7 +402,7 @@ export default function RequestOrderPage() {
           <h2 className="font-display text-2xl text-[#6a2e2a]">Order list</h2>
 
           <div className="mt-6 grid gap-3">
-            {(stored.orderList ?? []).map((item) => (
+            {(orderList ?? []).map((item) => (
               <div
                 key={item.ingredientId}
                 className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"

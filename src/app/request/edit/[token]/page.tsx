@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { buildIngredientTotals } from "@/lib/inventoryMath";
 import { supabase } from "@/lib/supabaseClient";
@@ -62,6 +62,7 @@ export default function RequestEditPage() {
   const token = params.token as string;
   const CONFIRMED_LOCK_MESSAGE =
     "This order can't be changed because it has been confirmed.";
+  const amendRef = useRef<HTMLDivElement | null>(null);
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [title, setTitle] = useState("");
@@ -119,6 +120,67 @@ export default function RequestEditPage() {
     if (!value) return null;
     return Array.isArray(value) ? value[0] ?? null : value;
   };
+
+  const cocktailsSummary = useMemo(() => {
+    const byId = new Map(recipes.map((r) => [r.id, r]));
+    const selected = Array.from(selectedRecipeIds);
+    const rows = selected
+      .map((id) => {
+        const recipe = byId.get(id);
+        if (!recipe) return null;
+        const raw = servingsByRecipeId[id] ?? "0";
+        const servings = Number(raw || "0") || 0;
+        return { recipeId: id, recipeName: recipe.name, servings };
+      })
+      .filter(Boolean) as Array<{ recipeId: string; recipeName: string; servings: number }>;
+
+    return rows
+      .filter((r) => r.servings > 0)
+      .sort((a, b) => a.recipeName.localeCompare(b.recipeName));
+  }, [recipes, selectedRecipeIds, servingsByRecipeId]);
+
+  const totalDrinks = useMemo(() => {
+    return cocktailsSummary.reduce((sum, c) => sum + (Number(c.servings) || 0), 0);
+  }, [cocktailsSummary]);
+
+  const orderList = useMemo(() => {
+    if (recipes.length === 0) return [];
+    const recipeById = new Map(recipes.map((r) => [r.id, r]));
+
+    const items = cocktailsSummary.flatMap((c) => {
+      const recipe = recipeById.get(c.recipeId);
+      if (!recipe) return [];
+
+      return (recipe.recipe_ingredients ?? []).flatMap((ri) => {
+        const ingredient = normalizeIngredient(ri.ingredients);
+        if (!ingredient) return [];
+
+        const normalizedKey = `${ingredient.type}:${ingredient.name
+          .trim()
+          .toLowerCase()}:${(ingredient.unit || "ml").trim().toLowerCase()}`;
+
+        return [
+          {
+            ingredientId: normalizedKey,
+            name: ingredient.name,
+            type: ingredient.type,
+            amountPerServing: ri.ml_per_serving,
+            servings: c.servings,
+            unit: ingredient.unit,
+            bottleSizeMl: ingredient.bottle_size_ml,
+          },
+        ];
+      });
+    });
+
+    return buildIngredientTotals(items).sort((a, b) => {
+      const typeA = typePriority[a.type] ?? 99;
+      const typeB = typePriority[b.type] ?? 99;
+      if (typeA !== typeB) return typeA - typeB;
+      if (a.total !== b.total) return b.total - a.total;
+      return a.name.localeCompare(b.name);
+    });
+  }, [recipes, cocktailsSummary]);
 
   const loadEvent = async () => {
     setLoading(true);
@@ -314,8 +376,102 @@ export default function RequestEditPage() {
         ) : (
           <>
             <div className="glass-panel rounded-[28px] px-8 py-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="font-display text-2xl text-[#6a2e2a]">
+                    Order summary
+                  </h2>
+                  <p className="mt-2 text-sm text-[#4b3f3a]">
+                    {totalDrinks > 0
+                      ? `Total drinks: ${totalDrinks}`
+                      : "No quantities set yet."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={isLocked}
+                  onClick={() => {
+                    setStep("select");
+                    window.setTimeout(() => {
+                      amendRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    }, 50);
+                  }}
+                  className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Amend order
+                </button>
+              </div>
+
+              <div className="mt-5 grid gap-3">
+                {cocktailsSummary.length ? (
+                  cocktailsSummary.map((c) => (
+                    <div
+                      key={c.recipeId}
+                      className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
+                    >
+                      <p className="text-sm font-semibold text-[#151210]">
+                        {c.recipeName}
+                      </p>
+                      <p className="text-sm font-semibold text-[#151210] tabular-nums">
+                        {c.servings}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-[#4b3f3a]">
+                    Add cocktails and set quantities below.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="glass-panel rounded-[28px] px-8 py-6">
+              <h2 className="font-display text-2xl text-[#6a2e2a]">Order list</h2>
+              <p className="mt-2 text-sm text-[#4b3f3a]">
+                Shopping list style totals include a 10% buffer.
+              </p>
+
+              <ul className="mt-5 grid gap-3">
+                {orderList.length ? (
+                  orderList.map((item) => (
+                    <li
+                      key={item.ingredientId}
+                      className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-[#151210]">
+                          {item.name}
+                        </p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-[#6a2e2a]">
+                          {item.type}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-[#151210] tabular-nums">
+                          {item.bottlesNeeded
+                            ? `${item.bottlesNeeded} × ${item.bottleSizeMl}ml`
+                            : `${item.total} ${item.unit}`}
+                        </p>
+                      </div>
+                    </li>
+                  ))
+                ) : (
+                  <li className="text-sm text-[#4b3f3a]">
+                    Set cocktail quantities to generate your order list.
+                  </li>
+                )}
+              </ul>
+            </div>
+
+            <div
+              ref={amendRef}
+              className="glass-panel rounded-[28px] px-8 py-6"
+            >
               <h2 className="font-display text-2xl text-[#6a2e2a]">
-                Event details
+                Amend and add cocktails
               </h2>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <input

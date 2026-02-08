@@ -8,10 +8,11 @@ type SendEmailArgs = {
 
 function getResendConfig() {
   const apiKey = process.env.RESEND_API_KEY || "";
-  const from = process.env.RESEND_FROM_EMAIL || "";
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "";
+  const fromName = process.env.RESEND_FROM_NAME || "Get Involved Catering";
   const adminEmail = process.env.ADMIN_EMAIL || "";
 
-  return { apiKey, from, adminEmail };
+  return { apiKey, fromEmail, fromName, adminEmail };
 }
 
 function extractEmailAddress(value: string) {
@@ -20,13 +21,25 @@ function extractEmailAddress(value: string) {
   return (match?.[1] || value).trim();
 }
 
+function formatFromHeader(fromEmail: string, fromName: string) {
+  const email = (fromEmail || "").trim();
+  if (!email) return "";
+
+  // Already formatted like "Name <email@domain.com>"
+  if (email.includes("<") && email.includes(">")) return email;
+
+  const name = (fromName || "").trim();
+  return name ? `${name} <${email}>` : email;
+}
+
 export function isEmailConfigured() {
-  const { apiKey, from } = getResendConfig();
-  return Boolean(apiKey && from);
+  const { apiKey, fromEmail } = getResendConfig();
+  return Boolean(apiKey && fromEmail);
 }
 
 export async function sendEmail(args: SendEmailArgs) {
-  const { apiKey, from } = getResendConfig();
+  const { apiKey, fromEmail, fromName } = getResendConfig();
+  const from = formatFromHeader(fromEmail, fromName);
 
   if (!apiKey || !from) {
     // Don't crash requests if email isn't configured yet.
@@ -58,8 +71,8 @@ export async function sendEmail(args: SendEmailArgs) {
 }
 
 export function getAdminEmail() {
-  const { adminEmail, from } = getResendConfig();
+  const { adminEmail, fromEmail } = getResendConfig();
   // If ADMIN_EMAIL isn't set, default to the configured "from" mailbox.
   // This prevents "missing admin email" from silently dropping notifications.
-  return extractEmailAddress(adminEmail || from);
+  return extractEmailAddress(adminEmail || fromEmail);
 }

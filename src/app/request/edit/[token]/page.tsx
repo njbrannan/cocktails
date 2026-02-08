@@ -60,6 +60,8 @@ export default function RequestEditPage() {
   const params = useParams();
   const router = useRouter();
   const token = params.token as string;
+  const CONFIRMED_LOCK_MESSAGE =
+    "This order can't be changed because it has been confirmed.";
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [title, setTitle] = useState("");
@@ -71,6 +73,7 @@ export default function RequestEditPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const minDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const isLocked = event?.status === "confirmed";
 
   const handleEventDateChange = (value: string) => {
     if (!value) {
@@ -189,6 +192,13 @@ export default function RequestEditPage() {
     setSaving(true);
     setError(null);
     setSuccess(null);
+
+    if (isLocked) {
+      setError(CONFIRMED_LOCK_MESSAGE);
+      setSaving(false);
+      return;
+    }
+
     const response = await fetch("/api/events", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -222,7 +232,12 @@ export default function RequestEditPage() {
 
     if (!selectionResponse.ok) {
       const selectionData = await selectionResponse.json();
-      setError(selectionData.error || "Unable to save cocktail selection.");
+      const msg = String(selectionData.error || "");
+      setError(
+        msg.toLowerCase().includes("confirmed")
+          ? CONFIRMED_LOCK_MESSAGE
+          : selectionData.error || "Unable to save cocktail selection.",
+      );
       setSaving(false);
       return;
     }
@@ -236,6 +251,13 @@ export default function RequestEditPage() {
     setSaving(true);
     setError(null);
     setSuccess(null);
+
+    if (isLocked) {
+      setError(CONFIRMED_LOCK_MESSAGE);
+      setSaving(false);
+      return;
+    }
+
     const response = await fetch("/api/events", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -282,7 +304,9 @@ export default function RequestEditPage() {
           </p>
         </header>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error && !error.toLowerCase().includes("confirmed") ? (
+          <p className="text-sm text-red-600">{error}</p>
+        ) : null}
         {success ? <p className="text-sm text-[#4b3f3a]">{success}</p> : null}
 
         {loading ? (
@@ -299,6 +323,7 @@ export default function RequestEditPage() {
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                   placeholder="Event name"
+                  disabled={isLocked}
                   className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
                 />
                 <input
@@ -307,6 +332,7 @@ export default function RequestEditPage() {
                   onChange={(event) => handleEventDateChange(event.target.value)}
                   onBlur={(event) => handleEventDateChange(event.target.value)}
                   min={minDate}
+                  disabled={isLocked}
                   className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
                 />
                 <input
@@ -314,12 +340,14 @@ export default function RequestEditPage() {
                   min={10}
                   value={guestCount}
                   onChange={(event) => setGuestCount(Number(event.target.value))}
+                  disabled={isLocked}
                   className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
                 />
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                   placeholder="Event notes"
+                  disabled={isLocked}
                   className="min-h-[120px] rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm md:col-span-2"
                 />
               </div>
@@ -345,6 +373,7 @@ export default function RequestEditPage() {
                       <button
                         key={recipe.id}
                         type="button"
+                        disabled={isLocked}
                         onClick={() => {
                           setSelectedRecipeIds((prev) => {
                             const next = new Set(prev);
@@ -353,7 +382,7 @@ export default function RequestEditPage() {
                             return next;
                           });
                         }}
-                        className={`group relative overflow-hidden rounded-[26px] border bg-white/80 text-left shadow-sm transition-transform hover:-translate-y-0.5 ${
+                        className={`group relative overflow-hidden rounded-[26px] border bg-white/80 text-left shadow-sm transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 ${
                           isSelected
                             ? "border-[#6a2e2a] ring-2 ring-[#6a2e2a]/20"
                             : "border-[#c47b4a]/20"
@@ -411,6 +440,7 @@ export default function RequestEditPage() {
                         >
                           <button
                             type="button"
+                            disabled={isLocked}
                             onClick={() => {
                               setSelectedRecipeIds((prev) => {
                                 const next = new Set(prev);
@@ -427,7 +457,7 @@ export default function RequestEditPage() {
                                 expiresAt: Date.now() + 4000,
                               });
                             }}
-                            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/60 text-[#6a2e2a] shadow-sm hover:bg-white/80"
+                            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/60 text-[#6a2e2a] shadow-sm hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label={`Remove ${recipe.name}`}
                             title="Remove"
                           >
@@ -443,6 +473,7 @@ export default function RequestEditPage() {
                                 type="number"
                                 min={0}
                                 value={servingsRaw}
+                                disabled={isLocked}
                                 onFocus={() => {
                                   if ((servingsByRecipeId[recipe.id] ?? "0") === "0") {
                                     setServingsByRecipeId((prev) => ({
@@ -472,13 +503,14 @@ export default function RequestEditPage() {
 
                             <button
                               type="button"
+                              disabled={isLocked}
                               onClick={() =>
                                 setIngredientsOpenByRecipeId((prev) => ({
                                   ...prev,
                                   [recipe.id]: !prev[recipe.id],
                                 }))
                               }
-                              className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2"
+                              className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {ingredientsOpen ? "Hide ingredients" : "Show ingredients"}
                             </button>
@@ -595,19 +627,25 @@ export default function RequestEditPage() {
               <div className="mt-4 flex flex-wrap gap-4">
                 <button
                   onClick={handleSave}
-                  disabled={saving}
-                  className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5 disabled:opacity-60"
+                  disabled={saving || isLocked}
+                  className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving ? "Saving..." : "Save Changes"}
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={saving || event?.status === "submitted"}
-                  className="rounded-full bg-[#c47b4a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
+                  disabled={saving || event?.status !== "draft"}
+                  className="rounded-full bg-[#c47b4a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {event?.status === "submitted" ? "Submitted" : "Book Bartenders"}
                 </button>
               </div>
+
+              {isLocked ? (
+                <p className="mt-4 text-sm font-semibold text-red-600 normal-case tracking-normal">
+                  {CONFIRMED_LOCK_MESSAGE}
+                </p>
+              ) : null}
             </div>
           </>
         )}

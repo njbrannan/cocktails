@@ -95,6 +95,9 @@ export default function RequestOrderPage() {
     return Array.isArray(value) ? value[0] ?? null : value;
   };
 
+  const fieldClass =
+    "h-[52px] w-full max-w-full min-w-0 rounded-2xl border bg-white/80 px-4 py-3 text-[16px]";
+
   const flagEmoji = (iso2: string) => {
     const upper = iso2.toUpperCase();
     if (!/^[A-Z]{2}$/.test(upper)) return "";
@@ -506,7 +509,7 @@ export default function RequestOrderPage() {
         </div>
       </div>
 
-      <div className="no-print mx-auto flex w-full max-w-5xl flex-col gap-8">
+      <div className="no-print mx-auto flex w-full max-w-5xl flex-col gap-8 overflow-x-hidden">
         <header>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a]">
             Get Involved with our
@@ -690,7 +693,7 @@ export default function RequestOrderPage() {
                   value={eventDate}
                   onChange={(event) => setEventDate(event.target.value)}
                   // iOS Safari zooms when inputs are < 16px font-size.
-                  className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
+                  className={`mt-2 ${fieldClass} border-[#c47b4a]/30`}
                 />
               </label>
 
@@ -708,7 +711,7 @@ export default function RequestOrderPage() {
                   inputMode="email"
                   autoComplete="email"
                   // iOS Safari zooms when inputs are < 16px font-size.
-                  className={`mt-2 w-full rounded-2xl border bg-white/80 px-4 py-3 text-[16px] ${
+                  className={`mt-2 ${fieldClass} ${
                     emailError ? "border-red-400" : "border-[#c47b4a]/30"
                   }`}
                 />
@@ -721,7 +724,7 @@ export default function RequestOrderPage() {
 
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] md:col-span-2">
                 Telephone (optional)
-                <div className="mt-2 flex w-full max-w-full flex-nowrap gap-2">
+                <div className="mt-2 flex w-full max-w-full flex-nowrap items-stretch gap-2">
                   <div className="relative h-[52px] w-[52px] shrink-0">
                     <div className="pointer-events-none flex h-full w-full items-center justify-center rounded-2xl border border-[#c47b4a]/30 bg-white/80 text-[18px]">
                       {flagEmoji(phoneCountryIso2 as string)}
@@ -765,7 +768,7 @@ export default function RequestOrderPage() {
                     }}
                     onBlur={() => setPhoneError(validatePhone(phoneLocal))}
                     placeholder={phonePlaceholder}
-                    className={`min-w-0 flex-1 rounded-2xl border bg-white/80 px-4 py-3 text-[16px] placeholder:text-[#4b3f3a]/55 focus:placeholder-transparent ${
+                    className={`${fieldClass} flex-1 placeholder:text-[#4b3f3a]/55 focus:placeholder-transparent ${
                       phoneError ? "border-red-400" : "border-[#c47b4a]/30"
                     }`}
                   />
@@ -781,7 +784,7 @@ export default function RequestOrderPage() {
                 onChange={(event) => setNotes(event.target.value)}
                 placeholder="Notes (venue, timing, dietary requests...)"
                 // iOS Safari zooms when inputs are < 16px font-size.
-                className="min-h-[120px] rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] md:col-span-2"
+                className="min-h-[120px] w-full max-w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] md:col-span-2"
               />
             </div>
 

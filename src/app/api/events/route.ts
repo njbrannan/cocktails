@@ -135,14 +135,16 @@ function createFancyEditSlug() {
   ];
 
   const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)]!;
-  const rand = crypto.randomBytes(9).toString("base64url"); // ~72 bits
+  // Short secret code to keep the URL human-friendly while still unguessable.
+  // 6 bytes => 48 bits => 8 base64url chars.
+  const rand = crypto.randomBytes(6).toString("base64url");
 
   const parts = [
     toKebab(pick(flavors)),
     toKebab(pick(michelin)),
     toKebab(pick(cocktails)),
     toKebab(pick(styles)),
-    rand.slice(0, 12),
+    rand,
   ].filter(Boolean);
 
   return parts.join("-");

@@ -85,6 +85,8 @@ export default function RequestOrderPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editLink, setEditLink] = useState<string | null>(null);
 
@@ -129,6 +131,21 @@ export default function RequestOrderPage() {
     const v = value.trim();
     if (!v) return false;
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  };
+
+  const validateEmail = (value: string) => {
+    if (!value.trim()) return "Email is required.";
+    if (!isValidEmail(value)) return "Enter a valid email address.";
+    return null;
+  };
+
+  const validatePhone = (value: string) => {
+    if (!value.trim()) return null; // optional field
+    const parsed = parsePhoneNumberFromString(value.trim(), phoneCountryIso2 as any);
+    if (!parsed || !parsed.isValid()) {
+      return `Enter a valid telephone number for ${selectedCountryName}.`;
+    }
+    return null;
   };
 
   const selectedCountryName = useMemo(() => {
@@ -300,18 +317,22 @@ export default function RequestOrderPage() {
   };
 
   const handleOrderBartenders = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    setEditLink(null);
+      setLoading(true);
+      setError(null);
+      setEmailError(null);
+      setPhoneError(null);
+      setSuccess(null);
+      setEditLink(null);
 
     try {
       if (!stored || cocktailsSummary.length === 0) {
         setError("No order list found. Go back and create your order list first.");
         return;
       }
-      if (!isValidEmail(clientEmail)) {
-        setError("Please enter a valid email address.");
+      const emailMessage = validateEmail(clientEmail);
+      if (emailMessage) {
+        setEmailError(emailMessage);
+        setError("Please fix the highlighted fields.");
         return;
       }
 
@@ -326,15 +347,11 @@ export default function RequestOrderPage() {
       }
 
       // Light phone validation (optional field)
-      if (phoneLocal.trim()) {
-        const parsed = parsePhoneNumberFromString(
-          phoneLocal.trim(),
-          phoneCountryIso2 as any,
-        );
-        if (!parsed || !parsed.isValid()) {
-          setError(`Please enter a valid telephone number for ${selectedCountryName}.`);
-          return;
-        }
+      const phoneMessage = validatePhone(phoneLocal);
+      if (phoneMessage) {
+        setPhoneError(phoneMessage);
+        setError("Please fix the highlighted fields.");
+        return;
       }
 
       const response = await fetch("/api/events", {
@@ -642,51 +659,89 @@ export default function RequestOrderPage() {
                   className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
                 />
               </label>
-              <input
-                type="email"
-                value={clientEmail}
-                onChange={(event) => setClientEmail(event.target.value)}
-                placeholder="Your email"
-                inputMode="email"
-                autoComplete="email"
-                // iOS Safari zooms when inputs are < 16px font-size.
-                className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
-              />
-              <div className="flex w-full max-w-full flex-nowrap gap-2">
-                <select
-                  value={phoneCountryIso2}
-                  onChange={(event) =>
-                    setPhoneCountryIso2(event.target.value as keyof typeof countries)
-                  }
-                  aria-label="Country code"
-                  // Keep this compact so country + phone fits on one line on iPhone.
-                  className="w-[76px] shrink-0 truncate rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-2 py-3 text-center text-[16px]"
-                >
-                  <optgroup label="Priority">
-                    {countryOptions.priority.map((c) => (
-                      <option key={c.iso2} value={c.iso2}>
-                        {c.labelCompact}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="All countries">
-                    {countryOptions.rest.map((c) => (
-                      <option key={c.iso2} value={c.iso2}>
-                        {c.labelCompact} {c.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
+
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                Email
                 <input
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  value={phoneLocal}
-                  onChange={(event) => setPhoneLocal(event.target.value)}
-                  placeholder="0412 345 678"
-                  className="min-w-0 flex-1 rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] placeholder:text-[#4b3f3a]/55 focus:placeholder-transparent"
+                  type="email"
+                  value={clientEmail}
+                  onChange={(event) => {
+                    setClientEmail(event.target.value);
+                    if (emailError) setEmailError(null);
+                  }}
+                  onBlur={() => setEmailError(validateEmail(clientEmail))}
+                  placeholder="you@example.com"
+                  inputMode="email"
+                  autoComplete="email"
+                  // iOS Safari zooms when inputs are < 16px font-size.
+                  className={`mt-2 w-full rounded-2xl border bg-white/80 px-4 py-3 text-[16px] ${
+                    emailError ? "border-red-400" : "border-[#c47b4a]/30"
+                  }`}
                 />
-              </div>
+                {emailError ? (
+                  <p className="mt-2 text-[12px] font-medium text-red-600 normal-case tracking-normal">
+                    {emailError}
+                  </p>
+                ) : null}
+              </label>
+
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] md:col-span-2">
+                Telephone (optional)
+                <div className="mt-2 flex w-full max-w-full flex-nowrap gap-2">
+                  <div className="relative h-[52px] w-[52px] shrink-0">
+                    <div className="pointer-events-none flex h-full w-full items-center justify-center rounded-2xl border border-[#c47b4a]/30 bg-white/80 text-[18px]">
+                      {flagEmoji(phoneCountryIso2 as string)}
+                    </div>
+                    <select
+                      value={phoneCountryIso2}
+                      onChange={(event) => {
+                        setPhoneCountryIso2(
+                          event.target.value as keyof typeof countries,
+                        );
+                        if (phoneError) setPhoneError(null);
+                      }}
+                      aria-label="Country"
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    >
+                      <optgroup label="Priority">
+                        {countryOptions.priority.map((c) => (
+                          <option key={c.iso2} value={c.iso2}>
+                            {c.flag} {c.dial} {c.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="All countries">
+                        {countryOptions.rest.map((c) => (
+                          <option key={c.iso2} value={c.iso2}>
+                            {c.flag} {c.dial} {c.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={phoneLocal}
+                    onChange={(event) => {
+                      setPhoneLocal(event.target.value);
+                      if (phoneError) setPhoneError(null);
+                    }}
+                    onBlur={() => setPhoneError(validatePhone(phoneLocal))}
+                    placeholder="0412 345 678"
+                    className={`min-w-0 flex-1 rounded-2xl border bg-white/80 px-4 py-3 text-[16px] placeholder:text-[#4b3f3a]/55 focus:placeholder-transparent ${
+                      phoneError ? "border-red-400" : "border-[#c47b4a]/30"
+                    }`}
+                  />
+                </div>
+                {phoneError ? (
+                  <p className="mt-2 text-[12px] font-medium text-red-600 normal-case tracking-normal">
+                    {phoneError}
+                  </p>
+                ) : null}
+              </label>
               <textarea
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}

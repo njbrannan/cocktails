@@ -167,7 +167,15 @@ export default function RequestOrderPage() {
       };
     });
 
-    const priorityIso2: Array<keyof typeof countries> = ["AU", "NL", "GB", "US"];
+    const priorityIso2: Array<keyof typeof countries> = [
+      "AU",
+      "NZ",
+      "JP",
+      "GB",
+      "US",
+      "NL",
+      "CH",
+    ];
     const byIso2 = new Map(all.map((c) => [c.iso2, c]));
 
     const priority = priorityIso2

@@ -4,6 +4,7 @@ import { buildIngredientTotals, type IngredientTotal } from "@/lib/inventoryMath
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { countries } from "countries-list";
 
 type StoredCocktail = {
   recipeId: string;
@@ -76,7 +77,9 @@ export default function RequestOrderPage() {
   const [eventDate, setEventDate] = useState("");
   const [notes, setNotes] = useState("");
   const [clientEmail, setClientEmail] = useState("");
-  const [phoneCountryCode, setPhoneCountryCode] = useState("+61");
+  const [phoneCountryIso2, setPhoneCountryIso2] = useState<keyof typeof countries>(
+    "AU",
+  );
   const [phoneLocal, setPhoneLocal] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -87,6 +90,13 @@ export default function RequestOrderPage() {
   const normalizeIngredient = (value: Ingredient | Ingredient[] | null) => {
     if (!value) return null;
     return Array.isArray(value) ? value[0] ?? null : value;
+  };
+
+  const flagEmoji = (iso2: string) => {
+    const upper = iso2.toUpperCase();
+    if (!/^[A-Z]{2}$/.test(upper)) return "";
+    const points = [...upper].map((c) => 127397 + c.charCodeAt(0));
+    return String.fromCodePoint(...points);
   };
 
   useEffect(() => {
@@ -120,11 +130,46 @@ export default function RequestOrderPage() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   };
 
+  const countryOptions = useMemo(() => {
+    const all = Object.entries(countries).map(([iso2, c]) => {
+      const phoneValue = Array.isArray(c.phone) ? c.phone[0] : c.phone;
+      const phoneRaw = phoneValue ? String(phoneValue).trim() : "";
+      const dial = phoneRaw ? `+${phoneRaw}` : "";
+      return {
+        iso2: iso2 as keyof typeof countries,
+        name: c.name,
+        flag: flagEmoji(iso2),
+        dial,
+      };
+    });
+
+    const priorityIso2: Array<keyof typeof countries> = ["AU", "NL", "GB", "US"];
+    const byIso2 = new Map(all.map((c) => [c.iso2, c]));
+
+    const priority = priorityIso2
+      .map((iso2) => byIso2.get(iso2))
+      .filter(Boolean) as Array<(typeof all)[number]>;
+
+    const rest = all
+      .filter((c) => !priorityIso2.includes(c.iso2))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return { priority, rest };
+  }, []);
+
+  const selectedDialCode = useMemo(() => {
+    const c = countries[phoneCountryIso2];
+    if (!c?.phone) return "";
+    const phoneValue = Array.isArray(c.phone) ? c.phone[0] : c.phone;
+    const phoneRaw = phoneValue ? String(phoneValue).trim() : "";
+    return phoneRaw ? `+${phoneRaw}` : "";
+  }, [phoneCountryIso2]);
+
   const combinedPhone = useMemo(() => {
     const local = phoneLocal.trim();
     if (!local) return "";
-    return `${phoneCountryCode} ${local}`;
-  }, [phoneCountryCode, phoneLocal]);
+    return `${selectedDialCode} ${local}`.trim();
+  }, [selectedDialCode, phoneLocal]);
 
   useEffect(() => {
     const load = async () => {
@@ -560,7 +605,7 @@ export default function RequestOrderPage() {
             className="mt-8 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-6"
           >
             <h3 className="font-display text-xl text-[#151210]">
-              Book bartenders for your event
+              Book Bartenders for your event
             </h3>
             <p className="mt-2 text-sm text-[#4b3f3a]">
               Send this order list to Get Involved and we’ll follow up.
@@ -573,7 +618,8 @@ export default function RequestOrderPage() {
                   type="date"
                   value={eventDate}
                   onChange={(event) => setEventDate(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
+                  // iOS Safari zooms when inputs are < 16px font-size.
+                  className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
                 />
               </label>
               <input
@@ -588,21 +634,27 @@ export default function RequestOrderPage() {
               />
               <div className="grid gap-3 md:grid-cols-[220px_1fr]">
                 <select
-                  value={phoneCountryCode}
-                  onChange={(event) => setPhoneCountryCode(event.target.value)}
+                  value={phoneCountryIso2}
+                  onChange={(event) =>
+                    setPhoneCountryIso2(event.target.value as keyof typeof countries)
+                  }
                   aria-label="Country code"
-                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
+                  className="w-[138px] truncate rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-3 py-3 text-[16px]"
                 >
-                  <option value="+61">Australia (+61)</option>
-                  <option value="+31">Netherlands (+31)</option>
-                  <option value="+44">United Kingdom (+44)</option>
-                  <option value="+1">United States (+1)</option>
-                  <option value="+64">New Zealand (+64)</option>
-                  <option value="+33">France (+33)</option>
-                  <option value="+49">Germany (+49)</option>
-                  <option value="+353">Ireland (+353)</option>
-                  <option value="+65">Singapore (+65)</option>
-                  <option value="+81">Japan (+81)</option>
+                  <optgroup label="Priority">
+                    {countryOptions.priority.map((c) => (
+                      <option key={c.iso2} value={c.iso2}>
+                        {c.flag} {c.dial} {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="All countries">
+                    {countryOptions.rest.map((c) => (
+                      <option key={c.iso2} value={c.iso2}>
+                        {c.flag} {c.dial} {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
                 <input
                   type="tel"
@@ -618,7 +670,8 @@ export default function RequestOrderPage() {
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 placeholder="Notes (venue, timing, dietary requests...)"
-                className="min-h-[120px] rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm md:col-span-2"
+                // iOS Safari zooms when inputs are < 16px font-size.
+                className="min-h-[120px] rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] md:col-span-2"
               />
             </div>
 

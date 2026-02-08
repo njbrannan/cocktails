@@ -81,6 +81,7 @@ export default function RequestOrderPage() {
   const [editingQuantities, setEditingQuantities] = useState(false);
 
   const [eventDate, setEventDate] = useState("");
+  const [eventName, setEventName] = useState("");
   const [notes, setNotes] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [guestCountInput, setGuestCountInput] = useState("");
@@ -435,7 +436,7 @@ export default function RequestOrderPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: "Cocktail booking request",
+          title: eventName.trim() ? eventName.trim() : "Cocktail booking request",
           eventDate,
           notes,
           clientEmail,
@@ -583,7 +584,7 @@ export default function RequestOrderPage() {
             onClick={() => setEditingQuantities((v) => !v)}
             className="mt-2 w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2"
           >
-            {editingQuantities ? "Done editing quantities" : "Edit quantities"}
+            {editingQuantities ? "Done amending" : "Amend quantities"}
           </button>
 
           <div className="mt-5 grid gap-3">
@@ -659,43 +660,13 @@ export default function RequestOrderPage() {
               onClick={handleBack}
               className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
             >
-              Back to builder
+              Amend request
             </button>
           </div>
         </div>
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
           <h2 className="font-display text-2xl text-[#6a2e2a]">Order List</h2>
-
-          <div className="mt-6 grid gap-3">
-            {(orderList ?? []).map((item) => (
-              <div
-                key={item.ingredientId}
-                className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-[#151210]">
-                    {item.name}
-                  </p>
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#6a2e2a]">
-                    {item.type}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-[#151210]">
-                    {item.total} {item.unit}
-                  </p>
-                  {item.bottlesNeeded ? (
-                    <p className="text-xs text-[#4b3f3a]">
-                      {item.bottlesNeeded} bottles @ {item.bottleSizeMl}ml
-                    </p>
-                  ) : (
-                    <p className="text-xs text-[#4b3f3a]">Total</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
 
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <button
@@ -731,6 +702,19 @@ export default function RequestOrderPage() {
             </p>
 
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                Event name
+                <input
+                  type="text"
+                  value={eventName}
+                  onChange={(event) => setEventName(event.target.value)}
+                  placeholder="Birthday, corporate event, engagement..."
+                  autoComplete="organization"
+                  // iOS Safari zooms when inputs are < 16px font-size.
+                  className={`mt-2 ${fieldClass} border-[#c47b4a]/30`}
+                />
+              </label>
+
               <label className="block min-w-0 text-[#6a2e2a]">
                 <span className="text-xs font-semibold uppercase tracking-[0.2em]">
                   Date of Event
@@ -855,13 +839,16 @@ export default function RequestOrderPage() {
                   </p>
                 ) : null}
               </label>
-              <textarea
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder="What’s the special occasion? Event schedule? Special/signature cocktail requests? Allergies, dietary requirements, venue details..."
-                // iOS Safari zooms when inputs are < 16px font-size.
-                className="min-h-[120px] w-full max-w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] md:col-span-2"
-              />
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] md:col-span-2">
+                Message
+                <textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  placeholder="What’s the special occasion? Event schedule? Special/signature cocktail requests? Allergies, dietary requirements, venue details..."
+                  // iOS Safari zooms when inputs are < 16px font-size.
+                  className="mt-2 min-h-[120px] w-full max-w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] tracking-normal text-[#151210]"
+                />
+              </label>
             </div>
 
             <button
@@ -872,6 +859,34 @@ export default function RequestOrderPage() {
               {loading ? "Sending request..." : "Book Bartenders"}
             </button>
           </div>
+
+          <h3 className="mt-10 text-xs font-semibold uppercase tracking-[0.25em] text-[#6a2e2a]">
+            Shopping list
+          </h3>
+          <ul className="mt-4 divide-y divide-[#c47b4a]/15 overflow-hidden rounded-2xl border border-[#c47b4a]/20 bg-white/70">
+            {(orderList ?? []).map((item) => (
+              <li
+                key={item.ingredientId}
+                className="flex items-start justify-between gap-6 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-[#151210]">
+                    {item.name}
+                  </p>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-[#6a2e2a]">
+                    {item.type}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right tabular-nums">
+                  <p className="text-sm font-semibold text-[#151210]">
+                    {item.bottlesNeeded
+                      ? `${item.bottlesNeeded} × ${item.bottleSizeMl}ml`
+                      : `${item.total} ${item.unit}`}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
 
           {editLink ? (
             <div className="mt-6 rounded-3xl border border-[#c47b4a]/20 bg-white/70 px-5 py-4">

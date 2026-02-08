@@ -144,7 +144,9 @@ export async function POST(request: NextRequest) {
     const adminEmail = getAdminEmail();
 
     // Draft created: email the client their private edit link (when email is configured).
-    if (clientEmail && isEmailConfigured() && editLink) {
+    // If the request is submitted immediately, we'll send a single "Thank you" confirmation
+    // below to avoid spamming the guest with multiple emails.
+    if (!submit && clientEmail && isEmailConfigured() && editLink) {
       const safeTitle = escapeHtml(title || "Cocktail request");
       const safeLink = escapeHtml(editLink);
 
@@ -237,12 +239,18 @@ export async function POST(request: NextRequest) {
           to: clientEmail,
           subject: `Request sent: ${title || "Cocktail request"}`,
           html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
-  <h2 style="margin:0 0 12px 0">Request sent</h2>
-  <p style="margin:0 0 12px 0">We’ve received your request: <strong>${safeTitle}</strong>.</p>
-  <p style="margin:0 0 12px 0">If you need to make changes, use your private edit link:</p>
+  <h2 style="margin:0 0 12px 0">Thank you!</h2>
+  <p style="margin:0 0 12px 0">We have received your booking request. A member of our team will be in contact soon to organise everything with you properly.</p>
+  <p style="margin:0 0 12px 0">In the meantime, if you would like to update your booking request, please feel free to use your personal booking request link to make amendments:</p>
   <p style="margin:0 0 12px 0"><a href="${safeLink}">${safeLink}</a></p>
+  <p style="margin:0">Thanks again.</p>
 </div>`,
-          text: `We’ve received your request: ${title || ""}\nEdit link: ${editLink}`,
+          text:
+            `Thank you! We have received your booking request. ` +
+            `A member of our team will be in contact soon to organise everything with you properly.\n\n` +
+            `In the meantime, if you would like to update your booking request, please use your personal booking request link:\n` +
+            `${editLink}\n\n` +
+            `Thanks again.`,
           replyTo: adminEmail || undefined,
         });
       }
@@ -369,12 +377,18 @@ export async function PATCH(request: NextRequest) {
           to: data.client_email,
           subject: `Request sent: ${data.title || "Cocktail request"}`,
           html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
-  <h2 style="margin:0 0 12px 0">Request sent</h2>
-  <p style="margin:0 0 12px 0">We’ve received your request: <strong>${safeTitle}</strong>.</p>
-  <p style="margin:0 0 12px 0">If you need to make changes, use your private edit link:</p>
+  <h2 style="margin:0 0 12px 0">Thank you!</h2>
+  <p style="margin:0 0 12px 0">We have received your booking request. A member of our team will be in contact soon to organise everything with you properly.</p>
+  <p style="margin:0 0 12px 0">In the meantime, if you would like to update your booking request, please feel free to use your personal booking request link to make amendments:</p>
   <p style="margin:0 0 12px 0"><a href="${safeLink}">${safeLink}</a></p>
+  <p style="margin:0">Thanks again.</p>
 </div>`,
-          text: `We’ve received your request: ${data.title || ""}\nEdit link: ${editLink}`,
+          text:
+            `Thank you! We have received your booking request. ` +
+            `A member of our team will be in contact soon to organise everything with you properly.\n\n` +
+            `In the meantime, if you would like to update your booking request, please use your personal booking request link:\n` +
+            `${editLink}\n\n` +
+            `Thanks again.`,
         });
       }
     }

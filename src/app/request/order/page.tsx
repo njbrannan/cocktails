@@ -204,7 +204,7 @@ export default function RequestOrderPage() {
               onClick={handleBack}
               className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5"
             >
-              Back to quantities
+              Edit quantities
             </button>
           </div>
         </div>

@@ -688,8 +688,10 @@ export default function RequestOrderPage() {
             </p>
 
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-              <label className="block min-w-0 text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
-                Date of Event
+              <label className="block min-w-0 text-[#6a2e2a]">
+                <span className="text-xs font-semibold uppercase tracking-[0.2em]">
+                  Date of Event
+                </span>
                 <input
                   type="date"
                   value={eventDate}

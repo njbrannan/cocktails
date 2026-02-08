@@ -63,12 +63,24 @@ button:focus-visible, a:focus-visible {
 input[type="date"] {
   width: 100%;
   max-width: 100%;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 input[type="date"]::-webkit-date-and-time-value {
-  letter-spacing: normal;
-  text-transform: none;
   font-size: 16px; /* prevents iOS zoom-on-focus */
+}
+
+/* Safari (iOS) date input internals */
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  font-size: 16px;
 }
 
 .print-only {

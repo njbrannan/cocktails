@@ -197,6 +197,29 @@ export default function RequestOrderPage() {
     return phoneRaw ? `+${phoneRaw}` : "";
   }, [phoneCountryIso2]);
 
+  const phonePlaceholder = useMemo(() => {
+    // Simple, friendly examples for our most common markets.
+    // (These are examples only; validation still uses the country's rules.)
+    switch (phoneCountryIso2) {
+      case "AU":
+        return "0412 345 678";
+      case "NZ":
+        return "021 123 4567";
+      case "JP":
+        return "090-1234-5678";
+      case "GB":
+        return "07123 456789";
+      case "US":
+        return "(201) 555-0123";
+      case "NL":
+        return "06 12345678";
+      case "CH":
+        return "079 123 45 67";
+      default:
+        return "Telephone number";
+    }
+  }, [phoneCountryIso2]);
+
   const phoneE164 = useMemo(() => {
     const local = phoneLocal.trim();
     if (!local) return "";
@@ -738,7 +761,7 @@ export default function RequestOrderPage() {
                       if (phoneError) setPhoneError(null);
                     }}
                     onBlur={() => setPhoneError(validatePhone(phoneLocal))}
-                    placeholder="0412 345 678"
+                    placeholder={phonePlaceholder}
                     className={`min-w-0 flex-1 rounded-2xl border bg-white/80 px-4 py-3 text-[16px] placeholder:text-[#4b3f3a]/55 focus:placeholder-transparent ${
                       phoneError ? "border-red-400" : "border-[#c47b4a]/30"
                     }`}

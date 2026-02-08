@@ -346,7 +346,7 @@ export default function RequestEditPage() {
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Event notes"
+                  placeholder="What’s the special occasion? Event schedule? Special/signature cocktail requests? Allergies, dietary requirements, venue details..."
                   disabled={isLocked}
                   className="min-h-[120px] rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm md:col-span-2"
                 />

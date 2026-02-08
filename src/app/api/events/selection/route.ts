@@ -140,12 +140,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Keep guest_count roughly aligned with total servings for now.
-    const computedGuestCount = toInsert.reduce((sum, s) => sum + s.servings, 0);
-    await supabaseServer
-      .from("events")
-      .update({ guest_count: computedGuestCount || null })
-      .eq("id", event.id);
+    // Guest count is collected separately; drink totals are computed from selections when needed.
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

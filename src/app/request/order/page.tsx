@@ -83,6 +83,7 @@ export default function RequestOrderPage() {
   const [eventDate, setEventDate] = useState("");
   const [notes, setNotes] = useState("");
   const [clientEmail, setClientEmail] = useState("");
+  const [guestCountInput, setGuestCountInput] = useState("");
   const [phoneCountryIso2, setPhoneCountryIso2] = useState<keyof typeof countries>(
     "AU",
   );
@@ -91,6 +92,7 @@ export default function RequestOrderPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [guestCountError, setGuestCountError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editLink, setEditLink] = useState<string | null>(null);
@@ -157,6 +159,17 @@ export default function RequestOrderPage() {
   const validateEmail = (value: string) => {
     if (!value.trim()) return "Email is required.";
     if (!isValidEmail(value)) return "Enter a valid email address.";
+    return null;
+  };
+
+  const validateGuestCount = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return "Number of guests is required.";
+    if (!/^\d+$/.test(trimmed)) return "Enter a whole number of guests.";
+    const n = Number(trimmed);
+    if (!Number.isSafeInteger(n) || n <= 0) {
+      return "Enter a valid number of guests.";
+    }
     return null;
   };
 
@@ -294,7 +307,7 @@ export default function RequestOrderPage() {
     return [...list].sort((a, b) => a.recipeName.localeCompare(b.recipeName));
   }, [stored]);
 
-  const guestCount = useMemo(() => {
+  const totalDrinks = useMemo(() => {
     return cocktailsSummary.reduce((sum, c) => {
       const raw = servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0);
       return sum + (Number(raw || "0") || 0);
@@ -372,6 +385,7 @@ export default function RequestOrderPage() {
       setLoading(true);
       setError(null);
       setEmailError(null);
+      setGuestCountError(null);
       setPhoneError(null);
       setSuccess(null);
       setEditLink(null);
@@ -384,6 +398,12 @@ export default function RequestOrderPage() {
 
       if (eventDate && eventDate < minDate) {
         setError("Date of Event must be today or in the future.");
+        return;
+      }
+      const guestsMessage = validateGuestCount(guestCountInput);
+      if (guestsMessage) {
+        setGuestCountError(guestsMessage);
+        setError("Please fix the highlighted fields.");
         return;
       }
       const emailMessage = validateEmail(clientEmail);
@@ -419,6 +439,7 @@ export default function RequestOrderPage() {
           eventDate,
           notes,
           clientEmail,
+          guestCount: Number(guestCountInput),
           clientPhone: combinedPhone || null,
           submit: true,
           cocktails: cocktailsSummary.map((c) => ({
@@ -553,8 +574,8 @@ export default function RequestOrderPage() {
             Selected cocktails
           </h2>
           <p className="mt-2 text-sm text-[#4b3f3a]">
-            {guestCount > 0
-              ? `Total drinks: ${guestCount}`
+            {totalDrinks > 0
+              ? `Total drinks: ${totalDrinks}`
               : "Set quantities to generate totals."}
           </p>
           <button
@@ -750,6 +771,33 @@ export default function RequestOrderPage() {
                 ) : null}
               </label>
 
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] md:col-start-2">
+                Number of guests
+                <input
+                  type="number"
+                  min={1}
+                  value={guestCountInput}
+                  onChange={(event) => {
+                    setGuestCountInput(event.target.value);
+                    if (guestCountError) setGuestCountError(null);
+                  }}
+                  onBlur={() =>
+                    setGuestCountError(validateGuestCount(guestCountInput))
+                  }
+                  placeholder="50"
+                  inputMode="numeric"
+                  // iOS Safari zooms when inputs are < 16px font-size.
+                  className={`mt-2 ${fieldClass} ${
+                    guestCountError ? "border-red-400" : "border-[#c47b4a]/30"
+                  }`}
+                />
+                {guestCountError ? (
+                  <p className="mt-2 text-[12px] font-medium text-red-600 normal-case tracking-normal">
+                    {guestCountError}
+                  </p>
+                ) : null}
+              </label>
+
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] md:col-span-2">
                 Telephone (optional)
                 <div className="mt-2 flex w-full max-w-full flex-nowrap items-stretch gap-2">
@@ -810,7 +858,7 @@ export default function RequestOrderPage() {
               <textarea
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
-                placeholder="Notes (venue, timing, dietary requests...)"
+                placeholder="What’s the special occasion? Event schedule? Special/signature cocktail requests? Allergies, dietary requirements, venue details..."
                 // iOS Safari zooms when inputs are < 16px font-size.
                 className="min-h-[120px] w-full max-w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] md:col-span-2"
               />

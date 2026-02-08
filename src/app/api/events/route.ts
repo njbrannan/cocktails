@@ -255,6 +255,18 @@ async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
   return buildIngredientTotals(items);
 }
 
+async function computeDrinksCountForEvent(supabaseServer: any, eventId: string) {
+  const { data, error } = await supabaseServer
+    .from("event_recipes")
+    .select("servings")
+    .eq("event_id", eventId);
+
+  if (error) throw new Error(error.message);
+
+  const rows = (data ?? []) as Array<{ servings: number }>;
+  return rows.reduce((sum, r) => sum + (Number(r.servings) || 0), 0);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabaseServer = getSupabaseServerClient();
@@ -300,17 +312,30 @@ export async function POST(request: NextRequest) {
         servings: Number(c.servings),
       }));
 
-    const computedGuestCount =
-      typeof guestCount === "number" && guestCount > 0
-        ? guestCount
-        : cleanedCocktails.reduce((sum, c) => sum + c.servings, 0) || null;
+    const computedDrinksCount =
+      cleanedCocktails.reduce((sum, c) => sum + c.servings, 0) || 0;
+
+    let cleanedGuestCount: number | null = null;
+    if (typeof guestCount === "number") {
+      if (
+        !Number.isFinite(guestCount) ||
+        !Number.isInteger(guestCount) ||
+        guestCount <= 0
+      ) {
+        return NextResponse.json(
+          { error: "Number of guests must be a whole number." },
+          { status: 400 },
+        );
+      }
+      cleanedGuestCount = guestCount;
+    }
 
     const { data, error } = await supabaseServer
       .from("events")
       .insert({
         title: title || "New Cocktail Event",
         event_date: eventDate || null,
-        guest_count: computedGuestCount,
+        guest_count: cleanedGuestCount,
         notes: notes || null,
         status: submit ? "submitted" : "draft",
         client_email: clientEmail || null,
@@ -378,7 +403,8 @@ export async function POST(request: NextRequest) {
     if (submit && isEmailConfigured()) {
       const safeTitle = escapeHtml(title || "Cocktail request");
       const safeDate = escapeHtml(eventDate || "Date TBD");
-      const safeGuests = escapeHtml(String(computedGuestCount ?? ""));
+      const safeDrinks = escapeHtml(String(computedDrinksCount));
+      const safeGuests = escapeHtml(String(cleanedGuestCount ?? ""));
       const safeNotes = escapeHtml(notes || "");
       const safeLink = escapeHtml(editLink);
 
@@ -403,6 +429,9 @@ export async function POST(request: NextRequest) {
         : "<p style=\"margin:0;color:#666\">(Order list unavailable)</p>";
 
       if (adminEmail) {
+        const guestsHtml = cleanedGuestCount
+          ? safeGuests
+          : "<em>(not provided)</em>";
         await sendEmail({
           to: adminEmail,
           subject: `New booking request: ${title || "Cocktail request"}`,
@@ -412,7 +441,8 @@ export async function POST(request: NextRequest) {
   <h2 style="margin:0 0 12px 0">New booking request submitted</h2>
   <p style="margin:0 0 8px 0"><strong>Title:</strong> ${safeTitle}</p>
   <p style="margin:0 0 8px 0"><strong>Date:</strong> ${safeDate}</p>
-  <p style="margin:0 0 8px 0"><strong>Guests:</strong> ${safeGuests}</p>
+  <p style="margin:0 0 8px 0"><strong>Number of drinks:</strong> ${safeDrinks}</p>
+  <p style="margin:0 0 8px 0"><strong>Number of guests:</strong> ${guestsHtml}</p>
   <p style="margin:0 0 8px 0"><strong>Client email:</strong> ${escapeHtml(clientEmail || "")}</p>
   <p style="margin:0 0 8px 0"><strong>Telephone:</strong> ${escapeHtml(clientPhone || "")}</p>
   <p style="margin:0 0 8px 0"><strong>Notes:</strong> ${safeNotes || "<em>(none)</em>"}</p>
@@ -420,7 +450,7 @@ export async function POST(request: NextRequest) {
   <h3 style="margin:16px 0 8px 0">Order list</h3>
   ${orderListHtml}
 </div>`,
-          text: `New booking request submitted\nTitle: ${title || ""}\nDate: ${eventDate || ""}\nGuests: ${computedGuestCount || ""}\nClient: ${clientEmail || ""}\nTelephone: ${clientPhone || ""}\nNotes: ${notes || ""}\n${editLink ? `Edit: ${editLink}` : ""}`,
+          text: `New booking request submitted\nTitle: ${title || ""}\nDate: ${eventDate || ""}\nNumber of drinks: ${computedDrinksCount}\nNumber of guests: ${cleanedGuestCount || ""}\nClient: ${clientEmail || ""}\nTelephone: ${clientPhone || ""}\nNotes: ${notes || ""}\n${editLink ? `Edit: ${editLink}` : ""}`,
         });
       }
 
@@ -503,6 +533,33 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Missing token" }, { status: 400 });
     }
 
+    // Enforce "today or future" for eventDate on the server (prevents bypassing UI constraints).
+    if (eventDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const submitted = new Date(`${eventDate}T00:00:00`);
+      if (Number.isNaN(submitted.valueOf()) || submitted < today) {
+        return NextResponse.json(
+          { error: "Date of Event must be today or in the future." },
+          { status: 400 },
+        );
+      }
+    }
+
+    let cleanedGuestCount: number | null = null;
+    if (typeof guestCount === "number" && Number.isFinite(guestCount)) {
+      if (guestCount <= 0) {
+        cleanedGuestCount = null;
+      } else if (!Number.isInteger(guestCount)) {
+        return NextResponse.json(
+          { error: "Number of guests must be a whole number." },
+          { status: 400 },
+        );
+      } else {
+        cleanedGuestCount = guestCount;
+      }
+    }
+
     // We only want to fire "request submitted" emails on the transition to submitted.
     const { data: existing, error: existingError } = await getEventByToken(
       supabaseServer,
@@ -519,7 +576,7 @@ export async function PATCH(request: NextRequest) {
       .update({
         title,
         event_date: eventDate || null,
-        guest_count: guestCount || null,
+        guest_count: cleanedGuestCount,
         notes: notes || null,
         status,
       })
@@ -545,8 +602,17 @@ export async function PATCH(request: NextRequest) {
       const safeGuests = escapeHtml(String(data.guest_count ?? ""));
       const safeNotes = escapeHtml(data.notes || "");
       const safeLink = escapeHtml(editLink);
+      let safeDrinks = "";
+      try {
+        safeDrinks = escapeHtml(
+          String(await computeDrinksCountForEvent(supabaseServer, data.id)),
+        );
+      } catch {
+        safeDrinks = "";
+      }
 
       if (adminEmail) {
+        const guestsHtml = data.guest_count ? safeGuests : "<em>(not provided)</em>";
         await sendEmail({
           to: adminEmail,
           subject: `New booking request: ${data.title || "Cocktail request"}`,
@@ -556,7 +622,8 @@ export async function PATCH(request: NextRequest) {
   <h2 style="margin:0 0 12px 0">New booking request submitted</h2>
   <p style="margin:0 0 8px 0"><strong>Title:</strong> ${safeTitle}</p>
   <p style="margin:0 0 8px 0"><strong>Date:</strong> ${safeDate}</p>
-  <p style="margin:0 0 8px 0"><strong>Guests:</strong> ${safeGuests}</p>
+  <p style="margin:0 0 8px 0"><strong>Number of drinks:</strong> ${safeDrinks || ""}</p>
+  <p style="margin:0 0 8px 0"><strong>Number of guests:</strong> ${guestsHtml}</p>
   <p style="margin:0 0 8px 0"><strong>Client email:</strong> ${escapeHtml(data.client_email || "")}</p>
   <p style="margin:0 0 8px 0"><strong>Notes:</strong> ${safeNotes || "<em>(none)</em>"}</p>
   ${
@@ -565,7 +632,7 @@ export async function PATCH(request: NextRequest) {
       : ""
   }
 </div>`,
-          text: `New booking request submitted\nTitle: ${data.title || ""}\nDate: ${data.event_date || ""}\nGuests: ${data.guest_count || ""}\nClient: ${data.client_email || ""}\nNotes: ${data.notes || ""}\n${editLink ? `Edit: ${editLink}` : ""}`,
+          text: `New booking request submitted\nTitle: ${data.title || ""}\nDate: ${data.event_date || ""}\nNumber of drinks: ${safeDrinks || ""}\nNumber of guests: ${data.guest_count || ""}\nClient: ${data.client_email || ""}\nNotes: ${data.notes || ""}\n${editLink ? `Edit: ${editLink}` : ""}`,
         });
       }
 

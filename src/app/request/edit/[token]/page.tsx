@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { buildIngredientTotals } from "@/lib/inventoryMath";
 import { supabase } from "@/lib/supabaseClient";
@@ -70,6 +70,7 @@ export default function RequestEditPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const minDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(
@@ -296,7 +297,8 @@ export default function RequestEditPage() {
                   type="date"
                   value={eventDate}
                   onChange={(event) => setEventDate(event.target.value)}
-                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
+                  min={minDate}
+                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
                 />
                 <input
                   type="number"

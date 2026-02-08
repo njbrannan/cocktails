@@ -61,6 +61,11 @@ const typePriority: Record<string, number> = {
   glassware: 6,
 };
 
+function todayIsoDate() {
+  // Date-only string used by <input type="date" /> for min=...
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function RequestOrderPage() {
   const router = useRouter();
   const orderBartendersRef = useRef<HTMLDivElement | null>(null);
@@ -89,6 +94,7 @@ export default function RequestOrderPage() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editLink, setEditLink] = useState<string | null>(null);
+  const minDate = useMemo(() => todayIsoDate(), []);
 
   const normalizeIngredient = (value: Ingredient | Ingredient[] | null) => {
     if (!value) return null;
@@ -363,6 +369,11 @@ export default function RequestOrderPage() {
     try {
       if (!stored || cocktailsSummary.length === 0) {
         setError("No order list found. Go back and create your order list first.");
+        return;
+      }
+
+      if (eventDate && eventDate < minDate) {
+        setError("Date of Event must be today or in the future.");
         return;
       }
       const emailMessage = validateEmail(clientEmail);
@@ -694,10 +705,11 @@ export default function RequestOrderPage() {
                 </span>
                 <input
                   type="date"
+                  min={minDate}
                   value={eventDate}
                   onChange={(event) => setEventDate(event.target.value)}
                   // iOS Safari zooms when inputs are < 16px font-size.
-                  className={`mt-2 ${fieldClass} h-[46px] py-2 border-[#c47b4a]/30`}
+                  className={`mt-2 ${fieldClass} h-[40px] px-3 py-2 border-[#c47b4a]/30`}
                 />
               </label>
 

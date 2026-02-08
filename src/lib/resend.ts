@@ -14,6 +14,12 @@ function getResendConfig() {
   return { apiKey, from, adminEmail };
 }
 
+function extractEmailAddress(value: string) {
+  // Accept either "email@domain.com" or "Name <email@domain.com>"
+  const match = value.match(/<([^>]+)>/);
+  return (match?.[1] || value).trim();
+}
+
 export function isEmailConfigured() {
   const { apiKey, from } = getResendConfig();
   return Boolean(apiKey && from);
@@ -52,6 +58,8 @@ export async function sendEmail(args: SendEmailArgs) {
 }
 
 export function getAdminEmail() {
-  const { adminEmail } = getResendConfig();
-  return adminEmail;
+  const { adminEmail, from } = getResendConfig();
+  // If ADMIN_EMAIL isn't set, default to the configured "from" mailbox.
+  // This prevents "missing admin email" from silently dropping notifications.
+  return extractEmailAddress(adminEmail || from);
 }

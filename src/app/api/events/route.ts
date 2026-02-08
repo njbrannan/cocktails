@@ -12,6 +12,54 @@ function escapeHtml(input: string) {
     .replaceAll("'", "&#039;");
 }
 
+function friendlyTokenLabel(token: string) {
+  // Deterministic "cute" label so the link feels nicer in emails,
+  // without changing the actual security token.
+  const fruits = [
+    "Lime",
+    "Lemon",
+    "Orange",
+    "Cherry",
+    "Mango",
+    "Pineapple",
+    "Passionfruit",
+    "Grapefruit",
+    "Peach",
+    "Strawberry",
+    "Coconut",
+  ];
+  const cocktailWords = [
+    "Spritz",
+    "Mule",
+    "Daiquiri",
+    "Martini",
+    "OldFashioned",
+    "Margarita",
+    "Mojito",
+    "Fizz",
+    "Sour",
+    "Negroni",
+  ];
+  const fancyBits = [
+    "Zest",
+    "Garnish",
+    "Coupette",
+    "Shaker",
+    "Bitters",
+    "Velvet",
+    "Golden",
+    "Spiced",
+    "Citrus",
+    "Mint",
+  ];
+
+  // Tiny hash: stable across runtimes.
+  let h = 0;
+  for (let i = 0; i < token.length; i++) h = (h * 31 + token.charCodeAt(i)) >>> 0;
+  const pick = (arr: string[], offset: number) => arr[(h + offset) % arr.length];
+  return `${pick(fancyBits, 1)}-${pick(fruits, 7)}-${pick(cocktailWords, 13)}`;
+}
+
 type CocktailSelection = {
   recipeId: string;
   recipeName?: string;
@@ -108,6 +156,19 @@ export async function POST(request: NextRequest) {
       submit?: boolean;
     } = body;
 
+    // Enforce "today or future" for eventDate on the server (prevents bypassing UI constraints).
+    if (eventDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const submitted = new Date(`${eventDate}T00:00:00`);
+      if (Number.isNaN(submitted.valueOf()) || submitted < today) {
+        return NextResponse.json(
+          { error: "Date of Event must be today or in the future." },
+          { status: 400 },
+        );
+      }
+    }
+
     const cleanedCocktails = (cocktails ?? [])
       .filter((c) => c && c.recipeId && Number(c.servings) > 0)
       .map((c) => ({
@@ -143,28 +204,6 @@ export async function POST(request: NextRequest) {
     const editLink = origin ? `${origin}/request/edit/${data.edit_token}` : "";
     const adminEmail = getAdminEmail();
 
-    // Draft created: email the client their private edit link (when email is configured).
-    // If the request is submitted immediately, we'll send a single "Thank you" confirmation
-    // below to avoid spamming the guest with multiple emails.
-    if (!submit && clientEmail && isEmailConfigured() && editLink) {
-      const safeTitle = escapeHtml(title || "Cocktail request");
-      const safeLink = escapeHtml(editLink);
-
-      await sendEmail({
-        to: clientEmail,
-        subject: `Your edit link: ${title || "Cocktail request"}`,
-        html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
-  <h2 style="margin:0 0 12px 0">Your private edit link</h2>
-  <p style="margin:0 0 12px 0">Request: <strong>${safeTitle}</strong></p>
-  <p style="margin:0 0 12px 0">Use this link to edit your request any time:</p>
-  <p style="margin:0 0 12px 0"><a href="${safeLink}">${safeLink}</a></p>
-  <p style="margin:0;color:#555">If you didn’t request this, you can ignore this email.</p>
-</div>`,
-        text: `Your private edit link for "${title || "Cocktail request"}": ${editLink}`,
-        replyTo: adminEmail || undefined,
-      });
-    }
-
     if (cleanedCocktails.length > 0) {
       const { error: insertEventRecipesError } = await supabaseServer
         .from("event_recipes")
@@ -191,6 +230,7 @@ export async function POST(request: NextRequest) {
       const safeGuests = escapeHtml(String(computedGuestCount ?? ""));
       const safeNotes = escapeHtml(notes || "");
       const safeLink = escapeHtml(editLink);
+      const linkLabel = friendlyTokenLabel(data.edit_token);
 
       let orderTotals: ReturnType<typeof buildIngredientTotals> = [];
       try {
@@ -240,17 +280,23 @@ export async function POST(request: NextRequest) {
           subject: `Request sent: ${title || "Cocktail request"}`,
           html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
   <h2 style="margin:0 0 12px 0">Thank you!</h2>
-  <p style="margin:0 0 12px 0">We have received your booking request. A member of our team will be in contact soon to organise everything with you properly.</p>
+  <p style="margin:0 0 12px 0">We have received your booking request. A member of our team will be in contact shortly to organise everything with you properly.</p>
   <p style="margin:0 0 12px 0">In the meantime, if you would like to update your booking request, please feel free to use your personal booking request link to make amendments:</p>
-  <p style="margin:0 0 12px 0"><a href="${safeLink}">${safeLink}</a></p>
-  <p style="margin:0">Thanks again.</p>
+  <p style="margin:0 0 12px 0">
+    <a href="${safeLink}" style="display:inline-block;padding:10px 14px;border-radius:12px;background:#6a2e2a;color:#f8f1e7;text-decoration:none;font-weight:600">
+      Open your booking link
+    </a>
+  </p>
+  <p style="margin:0 0 8px 0;color:#666;font-size:12px">Link name: <strong>${escapeHtml(linkLabel)}</strong></p>
+  <p style="margin:0;color:#666;font-size:12px;word-break:break-all">${safeLink}</p>
+  <p style="margin:12px 0 0 0">Cheers!</p>
 </div>`,
           text:
             `Thank you! We have received your booking request. ` +
-            `A member of our team will be in contact soon to organise everything with you properly.\n\n` +
+            `A member of our team will be in contact shortly to organise everything with you properly.\n\n` +
             `In the meantime, if you would like to update your booking request, please use your personal booking request link:\n` +
             `${editLink}\n\n` +
-            `Thanks again.`,
+            `Cheers!`,
           replyTo: adminEmail || undefined,
         });
       }
@@ -348,6 +394,7 @@ export async function PATCH(request: NextRequest) {
       const safeGuests = escapeHtml(String(data.guest_count ?? ""));
       const safeNotes = escapeHtml(data.notes || "");
       const safeLink = escapeHtml(editLink);
+      const linkLabel = friendlyTokenLabel(data.edit_token);
 
       if (adminEmail) {
         await sendEmail({
@@ -378,17 +425,23 @@ export async function PATCH(request: NextRequest) {
           subject: `Request sent: ${data.title || "Cocktail request"}`,
           html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
   <h2 style="margin:0 0 12px 0">Thank you!</h2>
-  <p style="margin:0 0 12px 0">We have received your booking request. A member of our team will be in contact soon to organise everything with you properly.</p>
+  <p style="margin:0 0 12px 0">We have received your booking request. A member of our team will be in contact shortly to organise everything with you properly.</p>
   <p style="margin:0 0 12px 0">In the meantime, if you would like to update your booking request, please feel free to use your personal booking request link to make amendments:</p>
-  <p style="margin:0 0 12px 0"><a href="${safeLink}">${safeLink}</a></p>
-  <p style="margin:0">Thanks again.</p>
+  <p style="margin:0 0 12px 0">
+    <a href="${safeLink}" style="display:inline-block;padding:10px 14px;border-radius:12px;background:#6a2e2a;color:#f8f1e7;text-decoration:none;font-weight:600">
+      Open your booking link
+    </a>
+  </p>
+  <p style="margin:0 0 8px 0;color:#666;font-size:12px">Link name: <strong>${escapeHtml(linkLabel)}</strong></p>
+  <p style="margin:0;color:#666;font-size:12px;word-break:break-all">${safeLink}</p>
+  <p style="margin:12px 0 0 0">Cheers!</p>
 </div>`,
           text:
             `Thank you! We have received your booking request. ` +
-            `A member of our team will be in contact soon to organise everything with you properly.\n\n` +
+            `A member of our team will be in contact shortly to organise everything with you properly.\n\n` +
             `In the meantime, if you would like to update your booking request, please use your personal booking request link:\n` +
             `${editLink}\n\n` +
-            `Thanks again.`,
+            `Cheers!`,
         });
       }
     }

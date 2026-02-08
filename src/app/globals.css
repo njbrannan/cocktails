@@ -71,6 +71,19 @@ button:focus-visible, a:focus-visible {
     display: block !important;
   }
 
+  /* Remove decorative backgrounds and effects for a clean, ink-friendly print. */
+  .hero-grid {
+    background: none !important;
+    background-image: none !important;
+  }
+
+  .glass-panel {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
   body {
     background: #fff !important;
     color: #000 !important;

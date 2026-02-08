@@ -2,7 +2,7 @@
 
 import { buildIngredientTotals, type IngredientTotal } from "@/lib/inventoryMath";
 import { supabase } from "@/lib/supabaseClient";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type StoredCocktail = {
@@ -61,6 +61,7 @@ const typePriority: Record<string, number> = {
 
 export default function RequestOrderPage() {
   const router = useRouter();
+  const orderBartendersRef = useRef<HTMLDivElement | null>(null);
   const [stored, setStored] = useState<StoredOrder | null>(null);
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -453,7 +454,32 @@ export default function RequestOrderPage() {
             ))}
           </div>
 
-          <div className="mt-8 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-6">
+          <div className="mt-6 flex flex-wrap gap-4">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5"
+            >
+              Print order list
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                orderBartendersRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                })
+              }
+              className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
+            >
+              Send order list
+            </button>
+          </div>
+
+          <div
+            ref={orderBartendersRef}
+            className="mt-8 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-6"
+          >
             <h3 className="font-display text-xl text-[#151210]">
               Order bartenders
             </h3>

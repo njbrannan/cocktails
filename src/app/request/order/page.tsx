@@ -687,7 +687,7 @@ export default function RequestOrderPage() {
               Send this order list to Get Involved and we’ll follow up.
             </p>
 
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
                 Date of Event
                 <input

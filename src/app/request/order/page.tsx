@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { countries } from "countries-list";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 type StoredCocktail = {
   recipeId: string;
@@ -130,6 +131,10 @@ export default function RequestOrderPage() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   };
 
+  const selectedCountryName = useMemo(() => {
+    return countries[phoneCountryIso2]?.name || "Selected country";
+  }, [phoneCountryIso2]);
+
   const countryOptions = useMemo(() => {
     const all = Object.entries(countries).map(([iso2, c]) => {
       const phoneValue = Array.isArray(c.phone) ? c.phone[0] : c.phone;
@@ -140,6 +145,8 @@ export default function RequestOrderPage() {
         name: c.name,
         flag: flagEmoji(iso2),
         dial,
+        // compact display for the closed select
+        labelCompact: `${flagEmoji(iso2)}${dial ? ` ${dial}` : ""}`.trim(),
       };
     });
 
@@ -165,11 +172,18 @@ export default function RequestOrderPage() {
     return phoneRaw ? `+${phoneRaw}` : "";
   }, [phoneCountryIso2]);
 
+  const phoneE164 = useMemo(() => {
+    const local = phoneLocal.trim();
+    if (!local) return "";
+    const parsed = parsePhoneNumberFromString(local, phoneCountryIso2 as any);
+    return parsed?.isValid() ? parsed.number : "";
+  }, [phoneLocal, phoneCountryIso2]);
+
   const combinedPhone = useMemo(() => {
     const local = phoneLocal.trim();
     if (!local) return "";
-    return `${selectedDialCode} ${local}`.trim();
-  }, [selectedDialCode, phoneLocal]);
+    return phoneE164 || `${selectedDialCode} ${local}`.trim();
+  }, [selectedDialCode, phoneLocal, phoneE164]);
 
   useEffect(() => {
     const load = async () => {
@@ -312,9 +326,15 @@ export default function RequestOrderPage() {
       }
 
       // Light phone validation (optional field)
-      if (phoneLocal.trim() && !/^[0-9 ()+-]+$/.test(phoneLocal.trim())) {
-        setError("Please enter a valid telephone number.");
-        return;
+      if (phoneLocal.trim()) {
+        const parsed = parsePhoneNumberFromString(
+          phoneLocal.trim(),
+          phoneCountryIso2 as any,
+        );
+        if (!parsed || !parsed.isValid()) {
+          setError(`Please enter a valid telephone number for ${selectedCountryName}.`);
+          return;
+        }
       }
 
       const response = await fetch("/api/events", {
@@ -632,26 +652,27 @@ export default function RequestOrderPage() {
                 // iOS Safari zooms when inputs are < 16px font-size.
                 className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
               />
-              <div className="grid gap-3 md:grid-cols-[220px_1fr]">
+              <div className="flex w-full flex-nowrap gap-3">
                 <select
                   value={phoneCountryIso2}
                   onChange={(event) =>
                     setPhoneCountryIso2(event.target.value as keyof typeof countries)
                   }
                   aria-label="Country code"
-                  className="w-[138px] truncate rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-3 py-3 text-[16px]"
+                  // Keep this compact so country + phone fits on one line on iPhone.
+                  className="w-[96px] rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-3 py-3 text-[16px]"
                 >
                   <optgroup label="Priority">
                     {countryOptions.priority.map((c) => (
                       <option key={c.iso2} value={c.iso2}>
-                        {c.flag} {c.dial} {c.name}
+                        {c.labelCompact}
                       </option>
                     ))}
                   </optgroup>
                   <optgroup label="All countries">
                     {countryOptions.rest.map((c) => (
                       <option key={c.iso2} value={c.iso2}>
-                        {c.flag} {c.dial} {c.name}
+                        {c.labelCompact} {c.name}
                       </option>
                     ))}
                   </optgroup>
@@ -663,7 +684,7 @@ export default function RequestOrderPage() {
                   value={phoneLocal}
                   onChange={(event) => setPhoneLocal(event.target.value)}
                   placeholder="Telephone number"
-                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
+                  className="min-w-0 flex-1 rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
                 />
               </div>
               <textarea

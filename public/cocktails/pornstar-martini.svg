@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Margarita in a coupette glass">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Pornstar Martini in a coupette glass">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#fbf3ea"/>
       <stop offset="1" stop-color="#efe0d3"/>
     </linearGradient>
     <linearGradient id="drink" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f7ffe0"/>
-      <stop offset="1" stop-color="#d6f2a8"/>
+      <stop offset="0" stop-color="#ffd36a"/>
+      <stop offset="1" stop-color="#ff9a2e"/>
     </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.16"/>
@@ -20,6 +20,8 @@
     <circle cx="240" cy="260" r="4" fill="#6a2e2a"/>
     <circle cx="1040" cy="170" r="5" fill="#c47b4a"/>
     <circle cx="980" cy="280" r="4" fill="#6a2e2a"/>
+    <circle cx="140" cy="650" r="4" fill="#6a2e2a"/>
+    <circle cx="1070" cy="660" r="6" fill="#c47b4a"/>
   </g>
 
   <g filter="url(#shadow)">
@@ -27,21 +29,29 @@
     <path d="M360 250c70 165 175 245 240 245s170-80 240-245c10-25 8-55-15-80-40-42-117-70-225-70s-185 28-225 70c-23 25-25 55-15 80z" fill="#fff" opacity="0.70"/>
 
     <!-- drink fill -->
-    <path d="M392 265c60 130 148 196 208 196s148-66 208-196c8-18 6-39-11-57-33-34-97-56-197-56s-164 22-197 56c-17 18-19 39-11 57z" fill="url(#drink)" opacity="0.95"/>
+    <path d="M392 265c60 130 148 196 208 196s148-66 208-196c8-18 6-39-11-57-33-34-97-56-197-56s-164 22-197 56c-17 18-19 39-11 57z" fill="url(#drink)" opacity="0.94"/>
 
-    <!-- salted rim -->
+    <!-- rim -->
     <path d="M390 210c45-48 120-78 210-78s165 30 210 78" fill="none" stroke="#6a2e2a" stroke-opacity="0.22" stroke-width="14" stroke-linecap="round"/>
-    <path d="M400 212c42-42 112-68 200-68s158 26 200 68" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round" stroke-dasharray="2 16"/>
 
-    <!-- stem + base -->
+    <!-- stem -->
     <rect x="570" y="485" width="60" height="150" rx="28" fill="#6a2e2a" opacity="0.90"/>
+
+    <!-- base -->
     <rect x="440" y="625" width="320" height="58" rx="29" fill="#6a2e2a" opacity="0.90"/>
 
-    <!-- lime wedge -->
-    <g transform="translate(770 220) rotate(18)">
-      <circle cx="0" cy="0" r="70" fill="#7ecf6a"/>
-      <circle cx="0" cy="0" r="54" fill="#e7ffd6" opacity="0.9"/>
-      <path d="M0-54 A54 54 0 0 1 54 0 L0 0 Z" fill="#fff" opacity="0.18"/>
+    <!-- passionfruit half -->
+    <g transform="translate(780 220) rotate(18)">
+      <ellipse cx="0" cy="0" rx="88" ry="72" fill="#6a2e2a" opacity="0.92"/>
+      <ellipse cx="0" cy="0" rx="72" ry="58" fill="#fff2c9" opacity="0.92"/>
+      <g fill="#2f1b18" opacity="0.7">
+        <circle cx="-26" cy="-10" r="8"/>
+        <circle cx="-6" cy="18" r="7"/>
+        <circle cx="18" cy="-2" r="8"/>
+        <circle cx="34" cy="20" r="6"/>
+        <circle cx="6" cy="-22" r="6"/>
+      </g>
     </g>
   </g>
 </svg>
+

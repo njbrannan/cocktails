@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Margarita in a coupette glass">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Daiquiri in a coupette glass">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#fbf3ea"/>
       <stop offset="1" stop-color="#efe0d3"/>
     </linearGradient>
     <linearGradient id="drink" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f7ffe0"/>
-      <stop offset="1" stop-color="#d6f2a8"/>
+      <stop offset="0" stop-color="#f8fff2"/>
+      <stop offset="1" stop-color="#e5f4d6"/>
     </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.16"/>
@@ -29,19 +29,20 @@
     <!-- drink fill -->
     <path d="M392 265c60 130 148 196 208 196s148-66 208-196c8-18 6-39-11-57-33-34-97-56-197-56s-164 22-197 56c-17 18-19 39-11 57z" fill="url(#drink)" opacity="0.95"/>
 
-    <!-- salted rim -->
+    <!-- rim -->
     <path d="M390 210c45-48 120-78 210-78s165 30 210 78" fill="none" stroke="#6a2e2a" stroke-opacity="0.22" stroke-width="14" stroke-linecap="round"/>
-    <path d="M400 212c42-42 112-68 200-68s158 26 200 68" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round" stroke-dasharray="2 16"/>
 
-    <!-- stem + base -->
+    <!-- stem -->
     <rect x="570" y="485" width="60" height="150" rx="28" fill="#6a2e2a" opacity="0.90"/>
     <rect x="440" y="625" width="320" height="58" rx="29" fill="#6a2e2a" opacity="0.90"/>
 
-    <!-- lime wedge -->
-    <g transform="translate(770 220) rotate(18)">
+    <!-- lime wheel -->
+    <g transform="translate(760 230) rotate(18)">
       <circle cx="0" cy="0" r="70" fill="#7ecf6a"/>
-      <circle cx="0" cy="0" r="54" fill="#e7ffd6" opacity="0.9"/>
-      <path d="M0-54 A54 54 0 0 1 54 0 L0 0 Z" fill="#fff" opacity="0.18"/>
+      <circle cx="0" cy="0" r="55" fill="#e7ffd6" opacity="0.9"/>
+      <path d="M0-55 A55 55 0 0 1 55 0 L0 0 Z" fill="#fff" opacity="0.18"/>
+      <path d="M0-55 A55 55 0 0 0 -55 0 L0 0 Z" fill="#fff" opacity="0.12"/>
     </g>
   </g>
 </svg>
+

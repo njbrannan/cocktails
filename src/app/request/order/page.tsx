@@ -334,6 +334,13 @@ export default function RequestOrderPage() {
               ? `Total drinks: ${guestCount}`
               : "Set quantities to generate totals."}
           </p>
+          <button
+            type="button"
+            onClick={() => setEditingQuantities((v) => !v)}
+            className="mt-2 w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2"
+          >
+            {editingQuantities ? "Done editing quantities" : "Edit quantities"}
+          </button>
 
           <div className="mt-5 grid gap-3">
             {(editingQuantities ? cocktailsEditable : cocktailsSummary).map((c) => (
@@ -403,13 +410,6 @@ export default function RequestOrderPage() {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-4">
-            <button
-              type="button"
-              onClick={() => setEditingQuantities((v) => !v)}
-              className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5"
-            >
-              {editingQuantities ? "Done editing" : "Edit quantities"}
-            </button>
             <button
               type="button"
               onClick={handleBack}

@@ -392,7 +392,7 @@ export default function RequestOrderPage() {
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
           <header>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a]">
-              Book bartenders
+              Get Involved with our
             </p>
             <h1 className="font-display text-4xl text-[#151210]">Order list</h1>
             <p className="mt-2 text-sm text-[#4b3f3a]">
@@ -458,7 +458,7 @@ export default function RequestOrderPage() {
       <div className="no-print mx-auto flex w-full max-w-5xl flex-col gap-8">
         <header>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a]">
-            Book bartenders
+            Get Involved with our
           </p>
           <h1 className="font-display text-4xl text-[#151210]">Order list</h1>
           <p className="mt-2 text-sm text-[#4b3f3a]">

@@ -58,6 +58,25 @@ button:focus-visible, a:focus-visible {
   outline-offset: 2px;
 }
 
+.print-only {
+  display: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+}
+
 @keyframes floatUp {
   0% {
     opacity: 0;

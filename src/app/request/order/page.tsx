@@ -96,6 +96,16 @@ export default function RequestOrderPage() {
   const [editLink, setEditLink] = useState<string | null>(null);
   const minDate = useMemo(() => todayIsoDate(), []);
 
+  const handleEventDateChange = (value: string) => {
+    // Even with `min=...`, some browsers allow typing an older date.
+    // Clamp so the user can't set a past date in the UI.
+    if (!value) {
+      setEventDate("");
+      return;
+    }
+    setEventDate(value < minDate ? minDate : value);
+  };
+
   const normalizeIngredient = (value: Ingredient | Ingredient[] | null) => {
     if (!value) return null;
     return Array.isArray(value) ? value[0] ?? null : value;
@@ -707,7 +717,8 @@ export default function RequestOrderPage() {
                   type="date"
                   min={minDate}
                   value={eventDate}
-                  onChange={(event) => setEventDate(event.target.value)}
+                  onChange={(event) => handleEventDateChange(event.target.value)}
+                  onBlur={(event) => handleEventDateChange(event.target.value)}
                   // iOS Safari zooms when inputs are < 16px font-size.
                   className={`mt-2 ${fieldClass} h-[40px] px-3 py-2 border-[#c47b4a]/30`}
                 />

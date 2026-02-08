@@ -72,6 +72,14 @@ export default function RequestEditPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const minDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
+  const handleEventDateChange = (value: string) => {
+    if (!value) {
+      setEventDate("");
+      return;
+    }
+    setEventDate(value < minDate ? minDate : value);
+  };
+
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(
     () => new Set(),
@@ -296,7 +304,8 @@ export default function RequestEditPage() {
                 <input
                   type="date"
                   value={eventDate}
-                  onChange={(event) => setEventDate(event.target.value)}
+                  onChange={(event) => handleEventDateChange(event.target.value)}
+                  onBlur={(event) => handleEventDateChange(event.target.value)}
                   min={minDate}
                   className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
                 />

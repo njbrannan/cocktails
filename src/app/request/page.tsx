@@ -404,22 +404,26 @@ export default function RequestPage() {
                                     [recipe.id]: event.target.value,
                                   }))
                                 }
-                                className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
+                                // iOS Safari zooms when inputs are < 16px font-size.
+                                className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
                               />
                             </label>
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setIngredientsOpenByRecipeId((prev) => ({
-                                  ...prev,
-                                  [recipe.id]: !prev[recipe.id],
-                                }))
-                              }
-                              className="w-fit rounded-full border border-[#6a2e2a]/25 bg-white/60 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#6a2e2a] hover:-translate-y-0.5"
-                            >
-                              {ingredientsOpen ? "Hide ingredients" : "Show ingredients"}
-                            </button>
+                            <p className="text-[11px] text-[#4b3f3a]">
+                              {ingredientsOpen ? "Ingredients shown" : "Ingredients hidden"}{" "}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setIngredientsOpenByRecipeId((prev) => ({
+                                    ...prev,
+                                    [recipe.id]: !prev[recipe.id],
+                                  }))
+                                }
+                                className="appearance-none bg-transparent p-0 font-semibold text-[#6a2e2a] underline underline-offset-2"
+                              >
+                                — tap to {ingredientsOpen ? "hide" : "show"}
+                              </button>
+                            </p>
                           </div>
 
                           {ingredientsOpen ? (

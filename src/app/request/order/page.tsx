@@ -652,7 +652,7 @@ export default function RequestOrderPage() {
                 // iOS Safari zooms when inputs are < 16px font-size.
                 className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
               />
-              <div className="flex w-full flex-nowrap gap-3">
+              <div className="flex w-full max-w-full flex-nowrap gap-2">
                 <select
                   value={phoneCountryIso2}
                   onChange={(event) =>
@@ -660,7 +660,7 @@ export default function RequestOrderPage() {
                   }
                   aria-label="Country code"
                   // Keep this compact so country + phone fits on one line on iPhone.
-                  className="w-[96px] rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-3 py-3 text-[16px]"
+                  className="w-[76px] shrink-0 truncate rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-2 py-3 text-center text-[16px]"
                 >
                   <optgroup label="Priority">
                     {countryOptions.priority.map((c) => (
@@ -683,8 +683,8 @@ export default function RequestOrderPage() {
                   autoComplete="tel"
                   value={phoneLocal}
                   onChange={(event) => setPhoneLocal(event.target.value)}
-                  placeholder="Telephone number"
-                  className="min-w-0 flex-1 rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
+                  placeholder="0412 345 678"
+                  className="min-w-0 flex-1 rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] placeholder:text-[#4b3f3a]/55 focus:placeholder-transparent"
                 />
               </div>
               <textarea

@@ -465,6 +465,9 @@ export default function RequestOrderPage() {
       {/* Print view: compact shopping-list style (hides the UI) */}
       <div className="print-only">
         <div className="mx-auto w-full max-w-3xl py-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-black/70">
+            Brought to you by Get Involved - The Kings of Cocktail Catering
+          </p>
           <h1 className="text-xl font-semibold">Order List</h1>
           <p className="mt-1 text-sm text-black/70">
             Totals include a 10% buffer. Liquor is rounded to 700ml bottles.

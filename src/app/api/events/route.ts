@@ -2,6 +2,7 @@ import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { getAdminEmail, isEmailConfigured, sendEmail } from "@/lib/resend";
 import { buildIngredientTotals } from "@/lib/inventoryMath";
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 
 function escapeHtml(input: string) {
   return input
@@ -58,6 +59,126 @@ function friendlyTokenLabel(token: string) {
   for (let i = 0; i < token.length; i++) h = (h * 31 + token.charCodeAt(i)) >>> 0;
   const pick = (arr: string[], offset: number) => arr[(h + offset) % arr.length];
   return `${pick(fancyBits, 1)}-${pick(fruits, 7)}-${pick(cocktailWords, 13)}`;
+}
+
+function isUuidLike(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
+function toKebab(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "");
+}
+
+function createFancyEditSlug() {
+  const cocktails = [
+    "Negroni",
+    "Spritz",
+    "Margarita",
+    "Mojito",
+    "Mule",
+    "Daiquiri",
+    "Martini",
+    "Old Fashioned",
+    "Gimlet",
+    "Sour",
+    "Fizz",
+    "Collins",
+    "Paloma",
+    "Manhattan",
+  ];
+  const michelin = [
+    "Yuzu",
+    "Saffron",
+    "Truffle",
+    "Bergamot",
+    "Vanilla",
+    "Matcha",
+    "Hibiscus",
+    "Fig",
+    "Pistachio",
+    "Hazelnut",
+    "Tonka",
+    "Jasmine",
+    "Lavender",
+    "Cacao",
+  ];
+  const flavors = [
+    "Citrus",
+    "Smoked",
+    "Spiced",
+    "Salted",
+    "Honeyed",
+    "Floral",
+    "Herbal",
+    "Bitter",
+    "Caramel",
+    "Peppery",
+    "Velvet",
+    "Golden",
+    "Bright",
+  ];
+  const styles = [
+    "Shaken",
+    "Stirred",
+    "Clarified",
+    "Barrel Aged",
+    "Fat Washed",
+    "Nitro",
+    "Zested",
+    "Garnished",
+  ];
+
+  const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)]!;
+  const rand = crypto.randomBytes(9).toString("base64url"); // ~72 bits
+
+  const parts = [
+    toKebab(pick(flavors)),
+    toKebab(pick(michelin)),
+    toKebab(pick(cocktails)),
+    toKebab(pick(styles)),
+    rand.slice(0, 12),
+  ].filter(Boolean);
+
+  return parts.join("-");
+}
+
+async function getEventByToken(supabaseServer: any, token: string, columns: string) {
+  if (isUuidLike(token)) {
+    const result = await supabaseServer
+      .from("events")
+      .select(columns)
+      .or(`edit_slug.eq.${token},edit_token.eq.${token}`)
+      .single();
+    // If the DB hasn't been migrated yet (missing `edit_slug`), fall back gracefully.
+    if (result?.error?.code === "42703") {
+      return supabaseServer
+        .from("events")
+        .select(columns)
+        .eq("edit_token", token)
+        .single();
+    }
+    return result;
+  }
+
+  const result = await supabaseServer
+    .from("events")
+    .select(columns)
+    .eq("edit_slug", token)
+    .single();
+  if (result?.error?.code === "42703") {
+    return supabaseServer
+      .from("events")
+      .select(columns)
+      .eq("edit_token", token)
+      .single();
+  }
+  return result;
 }
 
 type CocktailSelection = {
@@ -201,8 +322,36 @@ export async function POST(request: NextRequest) {
     }
 
     const origin = request.headers.get("origin") || "";
-    const editLink = origin ? `${origin}/request/edit/${data.edit_token}` : "";
     const adminEmail = getAdminEmail();
+
+    // Generate a human-friendly edit URL slug so the actual URL looks nicer.
+    // We update after insert to avoid accidental duplicate event rows if a slug collides.
+    let editSlug: string | null = null;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const candidate = createFancyEditSlug();
+      const { error: slugError } = await supabaseServer
+        .from("events")
+        .update({ edit_slug: candidate })
+        .eq("id", data.id);
+
+      if (!slugError) {
+        editSlug = candidate;
+        break;
+      }
+
+      // If the DB isn't migrated yet, don't fail the request.
+      if (slugError.code === "42703") {
+        break;
+      }
+
+      // 23505 = unique_violation
+      if (slugError.code !== "23505") {
+        break;
+      }
+    }
+
+    const editTokenForUrl = editSlug || data.edit_token;
+    const editLink = origin ? `${origin}/request/edit/${editTokenForUrl}` : "";
 
     if (cleanedCocktails.length > 0) {
       const { error: insertEventRecipesError } = await supabaseServer
@@ -230,7 +379,6 @@ export async function POST(request: NextRequest) {
       const safeGuests = escapeHtml(String(computedGuestCount ?? ""));
       const safeNotes = escapeHtml(notes || "");
       const safeLink = escapeHtml(editLink);
-      const linkLabel = friendlyTokenLabel(data.edit_token);
 
       let orderTotals: ReturnType<typeof buildIngredientTotals> = [];
       try {
@@ -287,7 +435,6 @@ export async function POST(request: NextRequest) {
       Open your booking link
     </a>
   </p>
-  <p style="margin:0 0 8px 0;color:#666;font-size:12px">Link name: <strong>${escapeHtml(linkLabel)}</strong></p>
   <p style="margin:0;color:#666;font-size:12px;word-break:break-all">${safeLink}</p>
   <p style="margin:12px 0 0 0">Cheers!</p>
 </div>`,
@@ -305,6 +452,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       id: data.id,
       editToken: data.edit_token,
+      editSlug,
     });
   } catch (err: any) {
     return NextResponse.json(
@@ -324,11 +472,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing token" }, { status: 400 });
     }
 
-    const { data, error } = await supabaseServer
-      .from("events")
-      .select("id, title, event_date, guest_count, notes, status")
-      .eq("edit_token", token)
-      .single();
+    const { data, error } = await getEventByToken(
+      supabaseServer,
+      token,
+      "id, title, event_date, guest_count, notes, status",
+    );
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 404 });
@@ -354,11 +502,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     // We only want to fire "request submitted" emails on the transition to submitted.
-    const { data: existing, error: existingError } = await supabaseServer
-      .from("events")
-      .select("id, title, event_date, guest_count, notes, status, client_email, edit_token")
-      .eq("edit_token", token)
-      .single();
+    const { data: existing, error: existingError } = await getEventByToken(
+      supabaseServer,
+      token,
+      "id, title, event_date, guest_count, notes, status, client_email, edit_token, edit_slug",
+    );
 
     if (existingError) {
       return NextResponse.json({ error: existingError.message }, { status: 404 });
@@ -373,8 +521,8 @@ export async function PATCH(request: NextRequest) {
         notes: notes || null,
         status,
       })
-      .eq("edit_token", token)
-      .select("id, title, event_date, guest_count, notes, status, client_email, edit_token")
+      .eq("id", existing.id)
+      .select("id, title, event_date, guest_count, notes, status, client_email, edit_token, edit_slug")
       .single();
 
     if (error) {
@@ -386,7 +534,8 @@ export async function PATCH(request: NextRequest) {
 
     if (becameSubmitted && isEmailConfigured()) {
       const origin = request.headers.get("origin") || "";
-      const editLink = origin ? `${origin}/request/edit/${data.edit_token}` : "";
+      const editTokenForUrl = data.edit_slug || data.edit_token;
+      const editLink = origin ? `${origin}/request/edit/${editTokenForUrl}` : "";
 
       const adminEmail = getAdminEmail();
       const safeTitle = escapeHtml(data.title || "Cocktail request");
@@ -394,7 +543,6 @@ export async function PATCH(request: NextRequest) {
       const safeGuests = escapeHtml(String(data.guest_count ?? ""));
       const safeNotes = escapeHtml(data.notes || "");
       const safeLink = escapeHtml(editLink);
-      const linkLabel = friendlyTokenLabel(data.edit_token);
 
       if (adminEmail) {
         await sendEmail({
@@ -432,7 +580,6 @@ export async function PATCH(request: NextRequest) {
       Open your booking link
     </a>
   </p>
-  <p style="margin:0 0 8px 0;color:#666;font-size:12px">Link name: <strong>${escapeHtml(linkLabel)}</strong></p>
   <p style="margin:0;color:#666;font-size:12px;word-break:break-all">${safeLink}</p>
   <p style="margin:12px 0 0 0">Cheers!</p>
 </div>`,

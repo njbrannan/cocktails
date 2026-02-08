@@ -445,12 +445,13 @@ export default function RequestOrderPage() {
       }
 
       const token = data?.editToken as string | undefined;
-      if (!token) {
+      const slug = data?.editSlug as string | undefined | null;
+      if (!token && !slug) {
         setError("Request created, but no edit token was returned.");
         return;
       }
 
-      const link = `${window.location.origin}/request/edit/${token}`;
+      const link = `${window.location.origin}/request/edit/${slug || token}`;
       setEditLink(link);
       setSuccess("Request sent. We’ll be in touch soon.");
     } catch (err: any) {

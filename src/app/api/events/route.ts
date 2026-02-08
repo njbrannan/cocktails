@@ -214,6 +214,8 @@ export async function POST(request: NextRequest) {
         await sendEmail({
           to: adminEmail,
           subject: `New booking request: ${title || "Cocktail request"}`,
+          // Let the team simply hit "Reply" to respond to the client.
+          replyTo: clientEmail || undefined,
           html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
   <h2 style="margin:0 0 12px 0">New booking request submitted</h2>
   <p style="margin:0 0 8px 0"><strong>Title:</strong> ${safeTitle}</p>
@@ -343,6 +345,8 @@ export async function PATCH(request: NextRequest) {
         await sendEmail({
           to: adminEmail,
           subject: `New booking request: ${data.title || "Cocktail request"}`,
+          // Let the team simply hit "Reply" to respond to the client.
+          replyTo: data.client_email || undefined,
           html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
   <h2 style="margin:0 0 12px 0">New booking request submitted</h2>
   <p style="margin:0 0 8px 0"><strong>Title:</strong> ${safeTitle}</p>

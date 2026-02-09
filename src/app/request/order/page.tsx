@@ -1,6 +1,10 @@
 "use client";
 
 import { buildIngredientTotals, type IngredientTotal } from "@/lib/inventoryMath";
+import {
+  COCKTAIL_PLACEHOLDER_IMAGE,
+  resolveCocktailImageSrc,
+} from "@/lib/cocktailImages";
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -593,8 +597,19 @@ export default function RequestOrderPage() {
                 key={c.recipeId}
                 className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
               >
-                <div>
-                  <p className="text-sm font-semibold text-[#151210]">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
+                    <img
+                      src={resolveCocktailImageSrc(null, c.recipeName)}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-full w-full object-contain"
+                      onError={(event) => {
+                        event.currentTarget.src = COCKTAIL_PLACEHOLDER_IMAGE;
+                      }}
+                    />
+                  </div>
+                  <p className="min-w-0 truncate text-sm font-semibold text-[#151210]">
                     {c.recipeName}
                   </p>
                 </div>

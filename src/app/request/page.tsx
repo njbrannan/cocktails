@@ -320,22 +320,22 @@ export default function RequestPage() {
                             </div>
                           ) : null}
 
-                          {/* Text overlay */} 
-                          <div className="absolute inset-x-0 bottom-0">
-                            {isSelected ? (
+                          {/* Only show overlay once selected so the drink stays clean/visible by default */}
+                          {isSelected ? (
+                            <div className="absolute inset-x-0 bottom-0">
                               <div className="h-24 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
-                            ) : (
-                              <div className="h-20 bg-black/55" />
-                            )}
-                            <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
-                              <p className="font-display text-xl text-white drop-shadow">
-                                {displayName}
-                              </p>
-                              <p className="mt-1 text-xs text-white/85">
-                                Tap to {isSelected ? "remove" : "add"}
-                              </p>
+                              <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
+                                <p className="font-display text-xl text-white drop-shadow">
+                                  {displayName}
+                                </p>
+                                <p className="mt-1 text-xs text-white/85">
+                                  Tap to remove
+                                </p>
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <span className="sr-only">{displayName}</span>
+                          )}
                         </div>
                       </button>
                     );

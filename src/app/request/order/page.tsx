@@ -180,7 +180,7 @@ export default function RequestOrderPage() {
   };
 
   const validatePhone = (value: string) => {
-    if (!value.trim()) return null; // optional field
+    if (!value.trim()) return "Telephone number is required.";
     const parsed = parsePhoneNumberFromString(value.trim(), phoneCountryIso2 as any);
     if (!parsed || !parsed.isValid()) {
       return `Enter a valid telephone number for ${selectedCountryName}.`;
@@ -429,7 +429,7 @@ export default function RequestOrderPage() {
         }
       }
 
-      // Light phone validation (optional field)
+      // Phone validation (required)
       const phoneMessage = validatePhone(phoneLocal);
       if (phoneMessage) {
         setPhoneError(phoneMessage);
@@ -830,7 +830,7 @@ export default function RequestOrderPage() {
               </label>
 
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] md:col-span-2">
-                Telephone (optional)
+                Telephone
                 <div className="mt-2 flex w-full max-w-full flex-nowrap items-stretch gap-2">
                   <div className="relative h-[52px] w-[52px] shrink-0">
                     <div className="pointer-events-none flex h-full w-full items-center justify-center rounded-2xl border border-[#c47b4a]/30 bg-white/80 text-[18px]">

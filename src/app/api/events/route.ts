@@ -291,6 +291,16 @@ export async function POST(request: NextRequest) {
       submit?: boolean;
     } = body;
 
+    if (submit) {
+      const phone = String(clientPhone || "").trim();
+      if (!phone) {
+        return NextResponse.json(
+          { error: "Telephone number is required." },
+          { status: 400 },
+        );
+      }
+    }
+
     // Enforce "today or future" for eventDate on the server (prevents bypassing UI constraints).
     if (eventDate) {
       const today = new Date();
@@ -507,7 +517,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await getEventByToken(
       supabaseServer,
       token,
-      "id, title, event_date, guest_count, notes, status",
+      "id, title, event_date, guest_count, notes, status, client_phone",
     );
 
     if (error) {
@@ -527,7 +537,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const supabaseServer = getSupabaseServerClient();
     const body = await request.json();
-    const { token, title, eventDate, guestCount, notes, status } = body;
+    const { token, title, eventDate, guestCount, notes, status, clientPhone } = body;
 
     if (!token) {
       return NextResponse.json({ error: "Missing token" }, { status: 400 });
@@ -564,24 +574,31 @@ export async function PATCH(request: NextRequest) {
     const { data: existing, error: existingError } = await getEventByToken(
       supabaseServer,
       token,
-      "id, title, event_date, guest_count, notes, status, client_email, edit_token, edit_slug",
+      "id, title, event_date, guest_count, notes, status, client_email, client_phone, edit_token, edit_slug",
     );
 
     if (existingError) {
       return NextResponse.json({ error: existingError.message }, { status: 404 });
     }
 
+    const updateData: Record<string, any> = {
+      title,
+      event_date: eventDate || null,
+      guest_count: cleanedGuestCount,
+      notes: notes || null,
+      status,
+    };
+
+    if (typeof clientPhone === "string") {
+      const cleanedPhone = clientPhone.trim();
+      updateData.client_phone = cleanedPhone ? cleanedPhone : null;
+    }
+
     const { data, error } = await supabaseServer
       .from("events")
-      .update({
-        title,
-        event_date: eventDate || null,
-        guest_count: cleanedGuestCount,
-        notes: notes || null,
-        status,
-      })
+      .update(updateData)
       .eq("id", existing.id)
-      .select("id, title, event_date, guest_count, notes, status, client_email, edit_token, edit_slug")
+      .select("id, title, event_date, guest_count, notes, status, client_email, client_phone, edit_token, edit_slug")
       .single();
 
     if (error) {
@@ -602,6 +619,7 @@ export async function PATCH(request: NextRequest) {
       const safeGuests = escapeHtml(String(data.guest_count ?? ""));
       const safeNotes = escapeHtml(data.notes || "");
       const safeLink = escapeHtml(editLink);
+      const safePhone = escapeHtml(String(data.client_phone || ""));
       let safeDrinks = "";
       try {
         safeDrinks = escapeHtml(
@@ -625,6 +643,7 @@ export async function PATCH(request: NextRequest) {
   <p style="margin:0 0 8px 0"><strong>Number of drinks:</strong> ${safeDrinks || ""}</p>
   <p style="margin:0 0 8px 0"><strong>Number of guests:</strong> ${guestsHtml}</p>
   <p style="margin:0 0 8px 0"><strong>Client email:</strong> ${escapeHtml(data.client_email || "")}</p>
+  <p style="margin:0 0 8px 0"><strong>Telephone:</strong> ${safePhone}</p>
   <p style="margin:0 0 8px 0"><strong>Notes:</strong> ${safeNotes || "<em>(none)</em>"}</p>
   ${
     editLink
@@ -632,7 +651,7 @@ export async function PATCH(request: NextRequest) {
       : ""
   }
 </div>`,
-          text: `New booking request submitted\nTitle: ${data.title || ""}\nDate: ${data.event_date || ""}\nNumber of drinks: ${safeDrinks || ""}\nNumber of guests: ${data.guest_count || ""}\nClient: ${data.client_email || ""}\nNotes: ${data.notes || ""}\n${editLink ? `Edit: ${editLink}` : ""}`,
+          text: `New booking request submitted\nTitle: ${data.title || ""}\nDate: ${data.event_date || ""}\nNumber of drinks: ${safeDrinks || ""}\nNumber of guests: ${data.guest_count || ""}\nClient: ${data.client_email || ""}\nTelephone: ${data.client_phone || ""}\nNotes: ${data.notes || ""}\n${editLink ? `Edit: ${editLink}` : ""}`,
         });
       }
 

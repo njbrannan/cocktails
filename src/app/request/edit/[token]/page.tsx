@@ -16,6 +16,7 @@ type EventRecord = {
   event_date: string | null;
   guest_count: number | null;
   notes: string | null;
+  client_phone: string | null;
   status: "draft" | "submitted" | "confirmed";
 };
 
@@ -73,6 +74,7 @@ export default function RequestEditPage() {
   const [title, setTitle] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [guestCount, setGuestCount] = useState(50);
+  const [clientPhone, setClientPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -203,6 +205,7 @@ export default function RequestEditPage() {
     setEventDate(data.event_date || "");
     setGuestCount(data.guest_count || 0);
     setNotes(data.notes || "");
+    setClientPhone(data.client_phone || "");
     setLoading(false);
   };
 
@@ -274,6 +277,7 @@ export default function RequestEditPage() {
         title,
         eventDate,
         guestCount,
+        clientPhone,
         notes,
         status: event?.status,
       }),
@@ -333,6 +337,7 @@ export default function RequestEditPage() {
         title,
         eventDate,
         guestCount,
+        clientPhone,
         notes,
         status: "submitted",
       }),
@@ -441,38 +446,68 @@ export default function RequestEditPage() {
                 Amend and add cocktails
               </h2>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Event name"
-                  disabled={isLocked}
-                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
-                />
-                <input
-                  type="date"
-                  value={eventDate}
-                  onChange={(event) => handleEventDateChange(event.target.value)}
-                  onBlur={(event) => handleEventDateChange(event.target.value)}
-                  min={minDate}
-                  disabled={isLocked}
-                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
-                />
-                <input
-                  type="number"
-                  min={10}
-                  value={guestCount}
-                  onChange={(event) => setGuestCount(Number(event.target.value))}
-                  disabled={isLocked}
-                  className="rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm"
-                />
-                <textarea
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  placeholder="What’s the special occasion? Event schedule? Special/signature cocktail requests? Allergies, dietary requirements, venue details..."
-                  disabled={isLocked}
-                  className="min-h-[120px] rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-sm md:col-span-2"
-                />
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                  Event name
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                    placeholder="Birthday, corporate event, engagement..."
+                    disabled={isLocked}
+                    className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] tracking-normal text-[#151210]"
+                  />
+                </label>
+
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                  Date of Event
+                  <input
+                    type="date"
+                    value={eventDate}
+                    onChange={(event) => handleEventDateChange(event.target.value)}
+                    onBlur={(event) => handleEventDateChange(event.target.value)}
+                    min={minDate}
+                    disabled={isLocked}
+                    className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] tracking-normal text-[#151210]"
+                    style={{ letterSpacing: "normal" }}
+                  />
+                </label>
+
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                  Number of guests
+                  <input
+                    type="number"
+                    min={1}
+                    value={guestCount}
+                    onChange={(event) => setGuestCount(Number(event.target.value))}
+                    disabled={isLocked}
+                    className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] tracking-normal text-[#151210]"
+                  />
+                </label>
+
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                  Telephone number
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={clientPhone}
+                    onChange={(event) => setClientPhone(event.target.value)}
+                    placeholder="0412 345 678"
+                    disabled={isLocked}
+                    className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] tracking-normal text-[#151210]"
+                  />
+                </label>
+
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] md:col-span-2">
+                  Message
+                  <textarea
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    placeholder="What’s the special occasion? Event schedule? Special/signature cocktail requests? Allergies, dietary requirements, venue details..."
+                    disabled={isLocked}
+                    className="mt-2 min-h-[120px] w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] tracking-normal text-[#151210]"
+                  />
+                </label>
               </div>
             </div>
 

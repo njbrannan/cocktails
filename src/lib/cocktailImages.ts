@@ -5,6 +5,28 @@ function hasFileExtension(value: string) {
   return /\.[a-z0-9]{2,5}$/i.test(value);
 }
 
+export function normalizeCocktailDisplayName(name: string) {
+  const raw = String(name || "").trim();
+  if (!raw) return raw;
+
+  const lower = raw.toLowerCase();
+  const map: Record<string, string> = {
+    daquiri: "Daiquiri",
+    daiquiri: "Daiquiri",
+  };
+  return map[lower] ?? raw;
+}
+
+function normalizeImageSlug(slug: string) {
+  const alias: Record<string, string> = {
+    // "&" replacement safety (older slugs)
+    "gin-tonic": "gin-and-tonic",
+    // common misspelling
+    daquiri: "daiquiri",
+  };
+  return alias[slug] ?? slug;
+}
+
 export function slugifyCocktailName(name: string) {
   return String(name || "")
     .trim()
@@ -25,21 +47,16 @@ export function resolveCocktailImageSrc(
     if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
     if (raw.startsWith("/")) return raw;
     if (raw.startsWith("cocktails/")) return `/${raw}`;
-    return hasFileExtension(raw) ? `/cocktails/${raw}` : `/cocktails/${raw}.svg`;
+
+    // If a filename is provided, still apply our alias rules (e.g. "daquiri.svg" -> "daiquiri.svg").
+    const extMatch = raw.match(/\.([a-z0-9]{2,5})$/i);
+    const ext = extMatch ? `.${extMatch[1].toLowerCase()}` : "";
+    const base = ext ? raw.slice(0, -ext.length) : raw;
+    const slug = normalizeImageSlug(slugifyCocktailName(base));
+    return ext ? `/cocktails/${slug}${ext}` : `/cocktails/${slug}.svg`;
   }
 
-  const slug = slugifyCocktailName(recipeName);
+  const slug = normalizeImageSlug(slugifyCocktailName(recipeName));
   if (!slug) return COCKTAIL_PLACEHOLDER_IMAGE;
-
-  // A few friendly aliases to reduce "question mark" images caused by
-  // common variations/misspellings in recipe names.
-  const alias: Record<string, string> = {
-    // "&" replacement safety (older slugs)
-    "gin-tonic": "gin-and-tonic",
-    // common misspelling
-    daquiri: "daiquiri",
-  };
-
-  const finalSlug = alias[slug] ?? slug;
-  return `/cocktails/${finalSlug}.svg`;
+  return `/cocktails/${slug}.svg`;
 }

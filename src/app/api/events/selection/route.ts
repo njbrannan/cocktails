@@ -6,6 +6,7 @@ import {
   escapeHtml,
   formatOrderListHtml,
 } from "@/lib/eventOrderEmail";
+import { normalizeCocktailDisplayName } from "@/lib/cocktailImages";
 import { NextRequest, NextResponse } from "next/server";
 
 type Selection = { recipeId: string; servings: number };
@@ -192,7 +193,7 @@ export async function PATCH(request: NextRequest) {
                 ? r.recipes[0]
                 : r.recipes
               : null;
-            const name = String(recipe?.name || "").trim();
+            const name = normalizeCocktailDisplayName(String(recipe?.name || "").trim());
             if (!name || servings <= 0) return [];
             return [{ name, servings }];
           })

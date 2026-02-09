@@ -6,6 +6,7 @@ import { buildIngredientTotals } from "@/lib/inventoryMath";
 import { supabase } from "@/lib/supabaseClient";
 import {
   COCKTAIL_PLACEHOLDER_IMAGE,
+  normalizeCocktailDisplayName,
   resolveCocktailImageSrc,
 } from "@/lib/cocktailImages";
 
@@ -488,6 +489,7 @@ export default function RequestEditPage() {
                       recipe.image_url,
                       recipe.name,
                     );
+                    const displayName = normalizeCocktailDisplayName(recipe.name);
 
                     return (
                       <button
@@ -529,7 +531,7 @@ export default function RequestEditPage() {
                             <div className="h-24 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
                             <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
                               <p className="font-display text-xl text-white drop-shadow">
-                                {recipe.name}
+                                {displayName}
                               </p>
                               <p className="mt-1 text-xs text-white/85">
                                 Tap to {isSelected ? "remove" : "add"}
@@ -555,6 +557,7 @@ export default function RequestEditPage() {
                         recipe.image_url,
                         recipe.name,
                       );
+                      const displayName = normalizeCocktailDisplayName(recipe.name);
                       return (
                         <div
                           key={recipe.id}
@@ -577,12 +580,12 @@ export default function RequestEditPage() {
                               }));
                               setUndoRemoval({
                                 recipeId: recipe.id,
-                                recipeName: recipe.name,
+                                recipeName: displayName,
                                 expiresAt: Date.now() + 4000,
                               });
                             }}
                             className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/60 text-[#6a2e2a] shadow-sm hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-40"
-                            aria-label={`Remove ${recipe.name}`}
+                            aria-label={`Remove ${displayName}`}
                             title="Remove"
                           >
                             <span className="text-lg leading-none">×</span>
@@ -601,7 +604,7 @@ export default function RequestEditPage() {
                                 />
                               </div>
                               <h3 className="min-w-0 truncate font-display text-lg text-[#151210]">
-                                {recipe.name}
+                                {displayName}
                               </h3>
                             </div>
                             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">

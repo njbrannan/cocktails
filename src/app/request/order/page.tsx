@@ -3,6 +3,7 @@
 import { buildIngredientTotals, type IngredientTotal } from "@/lib/inventoryMath";
 import {
   COCKTAIL_PLACEHOLDER_IMAGE,
+  normalizeCocktailDisplayName,
   resolveCocktailImageSrc,
 } from "@/lib/cocktailImages";
 import { supabase } from "@/lib/supabaseClient";
@@ -592,7 +593,9 @@ export default function RequestOrderPage() {
           </button>
 
           <div className="mt-5 grid gap-3">
-            {(editingQuantities ? cocktailsEditable : cocktailsSummary).map((c) => (
+            {(editingQuantities ? cocktailsEditable : cocktailsSummary).map((c) => {
+              const displayName = normalizeCocktailDisplayName(c.recipeName);
+              return (
               <div
                 key={c.recipeId}
                 className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
@@ -600,7 +603,7 @@ export default function RequestOrderPage() {
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
                     <img
-                      src={resolveCocktailImageSrc(null, c.recipeName)}
+                      src={resolveCocktailImageSrc(null, displayName)}
                       alt=""
                       aria-hidden="true"
                       className="h-full w-full object-contain"
@@ -610,7 +613,7 @@ export default function RequestOrderPage() {
                     />
                   </div>
                   <p className="min-w-0 truncate text-sm font-semibold text-[#151210]">
-                    {c.recipeName}
+                    {displayName}
                   </p>
                 </div>
                 <div className="text-right">
@@ -666,7 +669,8 @@ export default function RequestOrderPage() {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="mt-6 flex flex-wrap gap-4">

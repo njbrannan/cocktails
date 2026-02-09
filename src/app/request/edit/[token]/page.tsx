@@ -320,7 +320,9 @@ export default function RequestEditPage() {
 
     const selectionPayload = recipes.map((recipe) => ({
       recipeId: recipe.id,
-      servings: Number(servingsByRecipeId[recipe.id] ?? "0") || 0,
+      servings: selectedRecipeIds.has(recipe.id)
+        ? Number(servingsByRecipeId[recipe.id] ?? "0") || 0
+        : 0,
     }));
 
     const selectionResponse = await fetch("/api/events/selection", {
@@ -634,6 +636,17 @@ export default function RequestEditPage() {
                             else next.add(recipe.id);
                             return next;
                           });
+                          // If the user is removing a drink, ensure its quantity becomes 0 on save.
+                          if (isSelected) {
+                            setServingsByRecipeId((prev) => ({
+                              ...prev,
+                              [recipe.id]: "0",
+                            }));
+                            setIngredientsOpenByRecipeId((prev) => ({
+                              ...prev,
+                              [recipe.id]: false,
+                            }));
+                          }
                         }}
                         className={`group relative overflow-hidden rounded-[26px] border bg-white/80 text-left shadow-sm transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 ${
                           isSelected
@@ -724,6 +737,10 @@ export default function RequestEditPage() {
                               setIngredientsOpenByRecipeId((prev) => ({
                                 ...prev,
                                 [recipe.id]: false,
+                              }));
+                              setServingsByRecipeId((prev) => ({
+                                ...prev,
+                                [recipe.id]: "0",
                               }));
                               setUndoRemoval({
                                 recipeId: recipe.id,

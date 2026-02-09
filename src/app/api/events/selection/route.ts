@@ -119,6 +119,12 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Capture previous selection so we can compute + / - deltas for amendment emails.
+    const { data: previousRows } = await supabaseServer
+      .from("event_recipes")
+      .select("recipe_id, servings, recipes(name)")
+      .eq("event_id", event.id);
+
     const cleaned = (selections ?? [])
       .filter((s) => s && s.recipeId && Number(s.servings) >= 0)
       .map((s) => ({ recipeId: s.recipeId, servings: Number(s.servings) }));
@@ -182,7 +188,7 @@ export async function PATCH(request: NextRequest) {
 
         const { data: cocktailsRows } = await supabaseServer
           .from("event_recipes")
-          .select("servings, recipes(name)")
+          .select("recipe_id, servings, recipes(name)")
           .eq("event_id", event.id);
 
         const cocktails = (cocktailsRows ?? [])
@@ -195,9 +201,73 @@ export async function PATCH(request: NextRequest) {
               : null;
             const name = normalizeCocktailDisplayName(String(recipe?.name || "").trim());
             if (!name || servings <= 0) return [];
-            return [{ name, servings }];
+            return [{ id: String(r.recipe_id || ""), name, servings }];
           })
           .sort((a: any, b: any) => a.name.localeCompare(b.name));
+
+        const prevMap = new Map<string, { name: string; servings: number }>();
+        for (const row of previousRows ?? []) {
+          const id = String((row as any).recipe_id || "");
+          const servings = Number((row as any).servings) || 0;
+          const recipe = (row as any).recipes
+            ? Array.isArray((row as any).recipes)
+              ? (row as any).recipes[0]
+              : (row as any).recipes
+            : null;
+          const name = normalizeCocktailDisplayName(String(recipe?.name || "").trim()) || id;
+          if (!id) continue;
+          prevMap.set(id, { name, servings });
+        }
+
+        const nextMap = new Map<string, { name: string; servings: number }>();
+        for (const c of cocktails) {
+          if (!c.id) continue;
+          nextMap.set(String(c.id), { name: c.name, servings: Number(c.servings) || 0 });
+        }
+
+        const changeKeys = new Set<string>([
+          ...Array.from(prevMap.keys()),
+          ...Array.from(nextMap.keys()),
+        ]);
+
+        const changes = Array.from(changeKeys)
+          .map((id) => {
+            const prev = prevMap.get(id);
+            const next = nextMap.get(id);
+            const before = prev?.servings ?? 0;
+            const after = next?.servings ?? 0;
+            const delta = after - before;
+            if (delta === 0) return null;
+            const name = next?.name || prev?.name || id;
+            return { id, name, before, after, delta };
+          })
+          .filter(Boolean) as Array<{
+          id: string;
+          name: string;
+          before: number;
+          after: number;
+          delta: number;
+        }>;
+
+        changes.sort((a, b) => {
+          const absA = Math.abs(a.delta);
+          const absB = Math.abs(b.delta);
+          if (absA !== absB) return absB - absA;
+          return a.name.localeCompare(b.name);
+        });
+
+        const changesHtml = changes.length
+          ? `<ul>${changes
+              .map((c) => {
+                const sign = c.delta > 0 ? "+" : "-";
+                const amount = Math.abs(c.delta);
+                const right = c.after === 0
+                  ? `removed (${sign}${amount})`
+                  : `${escapeHtml(String(c.before))} → ${escapeHtml(String(c.after))} (${sign}${escapeHtml(String(amount))})`;
+                return `<li><strong>${escapeHtml(c.name)}</strong>: ${right}</li>`;
+              })
+              .join("")}</ul>`
+          : "<p style=\"margin:0;color:#666\">(No changes detected)</p>";
 
         const safeTitle = escapeHtml(String(fullEvent.title || "Cocktail request"));
         const safeDate = escapeHtml(String(fullEvent.event_date || "Date TBD"));
@@ -238,12 +308,37 @@ export async function PATCH(request: NextRequest) {
   <p style="margin:0 0 8px 0"><strong>Telephone:</strong> ${safePhone}</p>
   <p style="margin:0 0 8px 0"><strong>Notes:</strong> ${safeNotes || "<em>(none)</em>"}</p>
   ${editLink ? `<p style="margin:12px 0 0 0"><strong>Edit link:</strong> <a href="${safeLink}">${safeLink}</a></p>` : ""}
+  <h3 style="margin:16px 0 8px 0">Changes</h3>
+  ${changesHtml}
   <h3 style="margin:16px 0 8px 0">Cocktails</h3>
   ${cocktailsHtml}
   <h3 style="margin:16px 0 8px 0">Order list</h3>
   ${orderListHtml}
 </div>`,
-            text: `Booking request updated\nTitle: ${String(fullEvent.title || "")}\nDate: ${String(fullEvent.event_date || "")}\nNumber of drinks: ${drinksCount || ""}\nNumber of guests: ${String(fullEvent.guest_count || "")}\nClient: ${clientEmail}\nTelephone: ${String(fullEvent.client_phone || "")}\nNotes: ${String(fullEvent.notes || "")}\n${editLink ? `Edit: ${editLink}` : ""}`,
+            text:
+              `Booking request updated\n` +
+              `Title: ${String(fullEvent.title || "")}\n` +
+              `Date: ${String(fullEvent.event_date || "")}\n` +
+              `Number of drinks: ${drinksCount || ""}\n` +
+              `Number of guests: ${String(fullEvent.guest_count || "")}\n` +
+              `Client: ${clientEmail}\n` +
+              `Telephone: ${String(fullEvent.client_phone || "")}\n` +
+              `Notes: ${String(fullEvent.notes || "")}\n` +
+              `${editLink ? `Edit: ${editLink}\n` : ""}` +
+              `\nChanges:\n` +
+              (changes.length
+                ? changes
+                    .map((c) => {
+                      const sign = c.delta > 0 ? "+" : "-";
+                      const amount = Math.abs(c.delta);
+                      const right =
+                        c.after === 0
+                          ? `removed (${sign}${amount})`
+                          : `${c.before} -> ${c.after} (${sign}${amount})`;
+                      return `- ${c.name}: ${right}`;
+                    })
+                    .join("\n")
+                : "- (No changes detected)"),
           });
         }
 
@@ -255,6 +350,8 @@ export async function PATCH(request: NextRequest) {
             html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
   <h2 style="margin:0 0 12px 0">Booking request updated</h2>
   <p style="margin:0 0 12px 0">We’ve received your updated booking request and will be in contact shortly.</p>
+  <h3 style="margin:16px 0 8px 0">What changed</h3>
+  ${changesHtml}
   <p style="margin:0 0 12px 0">Your updated selection:</p>
   ${cocktailsHtml}
   <p style="margin:12px 0 12px 0">
@@ -267,6 +364,21 @@ export async function PATCH(request: NextRequest) {
 </div>`,
             text:
               `Booking request updated\n\nWe’ve received your updated booking request and will be in contact shortly.\n\n` +
+              `What changed:\n` +
+              (changes.length
+                ? changes
+                    .map((c) => {
+                      const sign = c.delta > 0 ? "+" : "-";
+                      const amount = Math.abs(c.delta);
+                      const right =
+                        c.after === 0
+                          ? `removed (${sign}${amount})`
+                          : `${c.before} -> ${c.after} (${sign}${amount})`;
+                      return `- ${c.name}: ${right}`;
+                    })
+                    .join("\n")
+                : "- (No changes detected)") +
+              `\n\n` +
               `Edit link: ${editLink}\n\nCheers!`,
           });
         }

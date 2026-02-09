@@ -322,7 +322,11 @@ export default function RequestPage() {
 
                           {/* Text overlay */} 
                           <div className="absolute inset-x-0 bottom-0">
-                            <div className="h-24 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
+                            {isSelected ? (
+                              <div className="h-24 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
+                            ) : (
+                              <div className="h-20 bg-black/55" />
+                            )}
                             <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
                               <p className="font-display text-xl text-white drop-shadow">
                                 {displayName}

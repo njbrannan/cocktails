@@ -71,6 +71,7 @@ export default function RequestEditPage() {
   const amendRef = useRef<HTMLDivElement | null>(null);
   const selectCocktailsRef = useRef<HTMLDivElement | null>(null);
   const quantitiesRef = useRef<HTMLDivElement | null>(null);
+  const pendingScrollRef = useRef<null | "select" | "quantity">(null);
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [title, setTitle] = useState("");
@@ -111,18 +112,28 @@ export default function RequestEditPage() {
   const [step, setStep] = useState<"select" | "quantity">("select");
 
   useEffect(() => {
-    if (step === "select") {
-      // When returning to selection, start at the top.
-      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-      return;
-    }
+    const target = pendingScrollRef.current;
+    if (!target) return;
+    pendingScrollRef.current = null;
 
-    // When going to quantities, scroll to the quantities section.
     window.setTimeout(() => {
-      quantitiesRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+      if (target === "quantity") {
+        quantitiesRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+        return;
+      }
+
+      // target === "select"
+      if (selectCocktailsRef.current) {
+        selectCocktailsRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      } else {
+        window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+      }
     }, 50);
   }, [step]);
 
@@ -419,6 +430,7 @@ export default function RequestEditPage() {
                   disabled={isLocked}
                   onClick={() => {
                     setStep("select");
+                    pendingScrollRef.current = "select";
                     window.setTimeout(() => {
                       selectCocktailsRef.current?.scrollIntoView({
                         behavior: "smooth",
@@ -800,7 +812,10 @@ export default function RequestEditPage() {
                   <div className="flex flex-wrap gap-4">
                     <button
                       type="button"
-                      onClick={() => setStep("quantity")}
+                      onClick={() => {
+                        pendingScrollRef.current = "quantity";
+                        setStep("quantity");
+                      }}
                       disabled={selectedRecipeIds.size === 0}
                       className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
                     >
@@ -812,7 +827,10 @@ export default function RequestEditPage() {
                     <div className="flex flex-nowrap items-center justify-between gap-4">
                       <button
                         type="button"
-                        onClick={() => setStep("select")}
+                        onClick={() => {
+                          pendingScrollRef.current = "select";
+                          setStep("select");
+                        }}
                         className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5"
                       >
                         Back
@@ -824,7 +842,7 @@ export default function RequestEditPage() {
                         disabled={saving || isLocked}
                         className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {saving ? "Saving..." : "Save Changes"}
+                        {saving ? "Submitting..." : "Submit changes"}
                       </button>
                     </div>
 
@@ -862,27 +880,6 @@ export default function RequestEditPage() {
                 </div>
               </div>
             ) : null}
-
-            <div className="glass-panel rounded-[28px] px-8 py-6">
-              <h2 className="font-display text-2xl text-[#6a2e2a]">
-                Actions
-              </h2>
-              <div className="mt-4 flex flex-wrap gap-4">
-                <button
-                  onClick={handleSubmit}
-                  disabled={saving || event?.status !== "draft"}
-                  className="rounded-full bg-[#c47b4a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {event?.status === "submitted" ? "Submitted" : "Book Bartenders"}
-                </button>
-              </div>
-
-              {isLocked && step !== "quantity" ? (
-                <p className="mt-4 text-sm font-semibold text-red-600 normal-case tracking-normal">
-                  {CONFIRMED_LOCK_MESSAGE}
-                </p>
-              ) : null}
-            </div>
 
             <div className="glass-panel rounded-[28px] px-8 py-6">
               <h2 className="font-display text-2xl text-[#6a2e2a]">Order list</h2>

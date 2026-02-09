@@ -569,16 +569,13 @@ export default function RequestEditPage() {
 
                           {/* Only show overlay once selected so the drink stays clean/visible by default */}
                           {isSelected ? (
-                            <div className="absolute inset-x-0 bottom-0">
-                              <div className="h-24 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
-                              <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
-                                <p className="font-display text-xl text-white drop-shadow">
-                                  {displayName}
-                                </p>
-                                <p className="mt-1 text-xs text-white/85">
-                                  Tap to remove
-                                </p>
-                              </div>
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
+                              <p className="font-display text-lg text-[#6a2e2a] drop-shadow-[0_1px_0_rgba(255,255,255,0.7)]">
+                                {displayName}
+                              </p>
+                              <p className="mt-1 text-[11px] text-[#4b3f3a]/80">
+                                Tap to remove
+                              </p>
                             </div>
                           ) : (
                             <span className="sr-only">{displayName}</span>

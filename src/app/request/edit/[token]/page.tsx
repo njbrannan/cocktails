@@ -819,7 +819,7 @@ export default function RequestEditPage() {
                       disabled={selectedRecipeIds.size === 0}
                       className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
                     >
-                      Next: Add Quantities
+                      Next: Edit quantities
                     </button>
                   </div>
                 ) : (

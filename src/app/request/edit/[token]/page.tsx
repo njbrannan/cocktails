@@ -342,7 +342,7 @@ export default function RequestEditPage() {
     }
 
     setSaving(false);
-    setSuccess("Order amended.");
+    setSuccess("Booking request updated.");
     await loadEvent();
   };
 
@@ -391,7 +391,51 @@ export default function RequestEditPage() {
 
   return (
     <div className="min-h-screen hero-grid px-6 py-16">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+      {/* Print view: compact shopping-list style (hides the UI) */}
+      <div className="print-only">
+        <div className="mx-auto w-full max-w-3xl py-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-black/70">
+            Brought to you by Get Involved - The Kings of Cocktail Catering
+          </p>
+          <h1 className="text-xl font-semibold">Order List</h1>
+          <p className="mt-1 text-sm text-black/70">
+            Totals include a 10% buffer. Liquor is rounded to 700ml bottles.
+          </p>
+
+          <h2 className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-black/80">
+            Cocktails
+          </h2>
+          <ul className="mt-2 space-y-1 text-sm">
+            {cocktailsSummary.map((c) => (
+              <li key={c.recipeId} className="flex items-baseline justify-between gap-6">
+                <span className="font-medium">{c.recipeName}</span>
+                <span className="tabular-nums">{c.servings}</span>
+              </li>
+            ))}
+          </ul>
+
+          <h2 className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-black/80">
+            Shopping list
+          </h2>
+          <ul className="mt-2 space-y-1 text-sm">
+            {orderList.map((item) => (
+              <li key={item.ingredientId} className="flex items-baseline justify-between gap-6">
+                <span>
+                  <span className="font-medium">{item.name}</span>{" "}
+                  <span className="text-black/60">({item.type})</span>
+                </span>
+                <span className="tabular-nums">
+                  {item.bottlesNeeded
+                    ? `${item.bottlesNeeded} × ${item.bottleSizeMl}ml`
+                    : `${item.total} ${item.unit}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="no-print mx-auto flex w-full max-w-5xl flex-col gap-8">
         <header>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a]">
             Edit request
@@ -419,11 +463,20 @@ export default function RequestEditPage() {
                   <h2 className="font-display text-2xl text-[#6a2e2a]">
                     Order summary
                   </h2>
-                  <p className="mt-2 text-sm text-[#4b3f3a]">
-                    {totalDrinks > 0
-                      ? `Total drinks: ${totalDrinks}`
-                      : "No quantities set yet."}
-                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[#4b3f3a]">
+                    <p>
+                      {totalDrinks > 0
+                        ? `Total drinks: ${totalDrinks}`
+                        : "No quantities set yet."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2"
+                    >
+                      Print order list
+                    </button>
+                  </div>
                 </div>
                 <button
                   type="button"

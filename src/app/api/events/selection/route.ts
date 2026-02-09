@@ -253,7 +253,7 @@ export async function PATCH(request: NextRequest) {
             subject: `Updated request received: ${String(fullEvent.title || "Cocktail request")}`,
             replyTo: adminEmail || undefined,
             html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
-  <h2 style="margin:0 0 12px 0">Order amended</h2>
+  <h2 style="margin:0 0 12px 0">Booking request updated</h2>
   <p style="margin:0 0 12px 0">We’ve received your updated booking request and will be in contact shortly.</p>
   <p style="margin:0 0 12px 0">Your updated selection:</p>
   ${cocktailsHtml}
@@ -266,7 +266,7 @@ export async function PATCH(request: NextRequest) {
   <p style="margin:12px 0 0 0">Cheers!</p>
 </div>`,
             text:
-              `Order amended\n\nWe’ve received your updated booking request and will be in contact shortly.\n\n` +
+              `Booking request updated\n\nWe’ve received your updated booking request and will be in contact shortly.\n\n` +
               `Edit link: ${editLink}\n\nCheers!`,
           });
         }

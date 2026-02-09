@@ -69,6 +69,7 @@ export default function RequestEditPage() {
   const CONFIRMED_LOCK_MESSAGE =
     "This order can't be changed because it has been confirmed.";
   const amendRef = useRef<HTMLDivElement | null>(null);
+  const selectCocktailsRef = useRef<HTMLDivElement | null>(null);
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [title, setTitle] = useState("");
@@ -137,7 +138,11 @@ export default function RequestEditPage() {
         if (!recipe) return null;
         const raw = servingsByRecipeId[id] ?? "0";
         const servings = Number(raw || "0") || 0;
-        return { recipeId: id, recipeName: recipe.name, servings };
+        return {
+          recipeId: id,
+          recipeName: normalizeCocktailDisplayName(recipe.name),
+          servings,
+        };
       })
       .filter(Boolean) as Array<{ recipeId: string; recipeName: string; servings: number }>;
 
@@ -403,15 +408,15 @@ export default function RequestEditPage() {
                   onClick={() => {
                     setStep("select");
                     window.setTimeout(() => {
-                      amendRef.current?.scrollIntoView({
+                      selectCocktailsRef.current?.scrollIntoView({
                         behavior: "smooth",
                         block: "start",
                       });
                     }, 50);
                   }}
-                  className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Amend order
+                  Amend request
                 </button>
               </div>
 
@@ -420,12 +425,25 @@ export default function RequestEditPage() {
                   cocktailsSummary.map((c) => (
                     <div
                       key={c.recipeId}
-                      className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
+                      className="flex flex-nowrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
                     >
-                      <p className="text-sm font-semibold text-[#151210]">
-                        {c.recipeName}
-                      </p>
-                      <p className="text-sm font-semibold text-[#151210] tabular-nums">
+                      <div className="flex min-w-0 items-center gap-3 overflow-hidden">
+                        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
+                          <img
+                            src={resolveCocktailImageSrc(null, c.recipeName)}
+                            alt=""
+                            aria-hidden="true"
+                            className="h-full w-full object-contain"
+                            onError={(event) => {
+                              event.currentTarget.src = PLACEHOLDER_IMAGE;
+                            }}
+                          />
+                        </div>
+                        <p className="min-w-0 truncate text-sm font-semibold text-[#151210]">
+                          {c.recipeName}
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-sm font-semibold text-[#151210] tabular-nums">
                         {c.servings}
                       </p>
                     </div>
@@ -517,6 +535,7 @@ export default function RequestEditPage() {
               </h2>
 
               {step === "select" ? (
+                <div ref={selectCocktailsRef}>
                 <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                   {recipes.map((recipe) => {
                     const isSelected = selectedRecipeIds.has(recipe.id);
@@ -592,6 +611,7 @@ export default function RequestEditPage() {
                       </button>
                     );
                   })}
+                </div>
                 </div>
               ) : (
                 <div className="mt-6 grid gap-6">

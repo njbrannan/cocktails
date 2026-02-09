@@ -428,7 +428,7 @@ export default function RequestEditPage() {
                   }}
                   className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Amend request
+                  Add/remove drinks
                 </button>
               </div>
 
@@ -473,7 +473,7 @@ export default function RequestEditPage() {
               className="glass-panel rounded-[28px] px-8 py-6"
             >
               <h2 className="font-display text-2xl text-[#6a2e2a]">
-                Amend and add cocktails
+                Event details
               </h2>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
@@ -795,24 +795,45 @@ export default function RequestEditPage() {
                 </div>
               )}
 
-              <div className="mt-6 flex flex-wrap gap-4">
+              <div className="mt-6">
                 {step === "select" ? (
-                  <button
-                    type="button"
-                    onClick={() => setStep("quantity")}
-                    disabled={selectedRecipeIds.size === 0}
-                    className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
-                  >
-                    Next: Add Quantities
-                  </button>
+                  <div className="flex flex-wrap gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setStep("quantity")}
+                      disabled={selectedRecipeIds.size === 0}
+                      className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
+                    >
+                      Next: Add Quantities
+                    </button>
+                  </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setStep("select")}
-                    className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5"
-                  >
-                    Back
-                  </button>
+                  <>
+                    <div className="flex flex-nowrap items-center justify-between gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setStep("select")}
+                        className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5"
+                      >
+                        Back
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={saving || isLocked}
+                        className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {saving ? "Saving..." : "Save Changes"}
+                      </button>
+                    </div>
+
+                    {isLocked ? (
+                      <p className="mt-4 text-sm font-semibold text-red-600 normal-case tracking-normal">
+                        {CONFIRMED_LOCK_MESSAGE}
+                      </p>
+                    ) : null}
+                  </>
                 )}
               </div>
             </div>
@@ -848,13 +869,6 @@ export default function RequestEditPage() {
               </h2>
               <div className="mt-4 flex flex-wrap gap-4">
                 <button
-                  onClick={handleSave}
-                  disabled={saving || isLocked}
-                  className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-                <button
                   onClick={handleSubmit}
                   disabled={saving || event?.status !== "draft"}
                   className="rounded-full bg-[#c47b4a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
@@ -863,7 +877,7 @@ export default function RequestEditPage() {
                 </button>
               </div>
 
-              {isLocked ? (
+              {isLocked && step !== "quantity" ? (
                 <p className="mt-4 text-sm font-semibold text-red-600 normal-case tracking-normal">
                   {CONFIRMED_LOCK_MESSAGE}
                 </p>

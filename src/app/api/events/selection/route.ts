@@ -11,6 +11,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 type Selection = { recipeId: string; servings: number };
 
+function formatSignedDelta(delta: number) {
+  if (!Number.isFinite(delta) || delta === 0) return "";
+  const sign = delta > 0 ? "+" : "-";
+  return `${sign}${Math.abs(delta)}`;
+}
+
 function isUuidLike(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
@@ -98,6 +104,11 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const token = body?.token as string | undefined;
     const selections = (body?.selections ?? []) as Selection[];
+    const previousGuestCount = body?.previousGuestCount as number | null | undefined;
+    const previousTitle = body?.previousTitle as string | null | undefined;
+    const previousEventDate = body?.previousEventDate as string | null | undefined;
+    const previousNotes = body?.previousNotes as string | null | undefined;
+    const previousClientPhone = body?.previousClientPhone as string | null | undefined;
 
     if (!token) {
       return NextResponse.json({ error: "Missing token" }, { status: 400 });
@@ -124,6 +135,9 @@ export async function PATCH(request: NextRequest) {
       .from("event_recipes")
       .select("recipe_id, servings, recipes(name)")
       .eq("event_id", event.id);
+    const previousDrinksCount = (previousRows ?? []).reduce((sum: number, r: any) => {
+      return sum + (Number(r?.servings) || 0);
+    }, 0);
 
     const cleaned = (selections ?? [])
       .filter((s) => s && s.recipeId && Number(s.servings) >= 0)
@@ -178,6 +192,7 @@ export async function PATCH(request: NextRequest) {
         } catch {
           drinksCount = 0;
         }
+        const drinksDelta = drinksCount - previousDrinksCount;
 
         let orderTotals: any[] = [];
         try {
@@ -256,19 +271,6 @@ export async function PATCH(request: NextRequest) {
           return a.name.localeCompare(b.name);
         });
 
-        const changesHtml = changes.length
-          ? `<ul>${changes
-              .map((c) => {
-                const sign = c.delta > 0 ? "+" : "-";
-                const amount = Math.abs(c.delta);
-                const right = c.after === 0
-                  ? `removed (${sign}${amount})`
-                  : `${escapeHtml(String(c.before))} → ${escapeHtml(String(c.after))} (${sign}${escapeHtml(String(amount))})`;
-                return `<li><strong>${escapeHtml(c.name)}</strong>: ${right}</li>`;
-              })
-              .join("")}</ul>`
-          : "<p style=\"margin:0;color:#666\">(No changes detected)</p>";
-
         const safeTitle = escapeHtml(String(fullEvent.title || "Cocktail request"));
         const safeDate = escapeHtml(String(fullEvent.event_date || "Date TBD"));
         const safeGuests = escapeHtml(String(fullEvent.guest_count || ""));
@@ -276,6 +278,131 @@ export async function PATCH(request: NextRequest) {
         const safePhone = escapeHtml(String(fullEvent.client_phone || ""));
         const safeDrinks = escapeHtml(String(drinksCount || ""));
         const safeLink = escapeHtml(editLink);
+
+        const drinksDeltaLabel = formatSignedDelta(drinksDelta);
+        const drinksWithDeltaHtml = drinksDeltaLabel
+          ? `${safeDrinks} <span style="color:#666">(${escapeHtml(drinksDeltaLabel)})</span>`
+          : safeDrinks;
+
+        const prevGuestsNumeric =
+          typeof previousGuestCount === "number" && Number.isFinite(previousGuestCount)
+            ? previousGuestCount
+            : 0;
+        const nextGuestsNumeric =
+          typeof fullEvent.guest_count === "number" && Number.isFinite(fullEvent.guest_count)
+            ? fullEvent.guest_count
+            : 0;
+        const guestsDelta = nextGuestsNumeric - prevGuestsNumeric;
+        const guestsDeltaLabel = formatSignedDelta(guestsDelta);
+        const guestsWithDeltaHtml =
+          fullEvent.guest_count
+            ? `${safeGuests}${
+                guestsDeltaLabel
+                  ? ` <span style="color:#666">(${escapeHtml(guestsDeltaLabel)})</span>`
+                  : ""
+              }`
+            : "<em>(not provided)</em>";
+
+        const metaChanges: Array<{
+          label: string;
+          valueHtml: string;
+          valueText: string;
+        }> = [];
+
+        // Totals (always helpful for the team/client)
+        if (drinksDeltaLabel) {
+          metaChanges.push({
+            label: "Number of drinks",
+            valueHtml: `${escapeHtml(String(previousDrinksCount))} → ${escapeHtml(
+              String(drinksCount),
+            )} <span style="color:#666">(${escapeHtml(drinksDeltaLabel)})</span>`,
+            valueText: `${previousDrinksCount} -> ${drinksCount} (${drinksDeltaLabel})`,
+          });
+        }
+        if (fullEvent.guest_count && guestsDeltaLabel) {
+          metaChanges.push({
+            label: "Number of guests",
+            valueHtml: `${escapeHtml(String(prevGuestsNumeric))} → ${escapeHtml(
+              String(nextGuestsNumeric),
+            )} <span style="color:#666">(${escapeHtml(guestsDeltaLabel)})</span>`,
+            valueText: `${prevGuestsNumeric} -> ${nextGuestsNumeric} (${guestsDeltaLabel})`,
+          });
+        }
+
+        // Event details changes
+        const beforeTitle = String(previousTitle ?? "").trim();
+        const afterTitle = String(fullEvent.title ?? "").trim();
+        if (beforeTitle && afterTitle && beforeTitle !== afterTitle) {
+          metaChanges.push({
+            label: "Event name",
+            valueHtml: `${escapeHtml(beforeTitle)} → ${escapeHtml(afterTitle)}`,
+            valueText: `${beforeTitle} -> ${afterTitle}`,
+          });
+        }
+
+        const beforeDate = String(previousEventDate ?? "").trim();
+        const afterDate = String(fullEvent.event_date ?? "").trim();
+        if (beforeDate && afterDate && beforeDate !== afterDate) {
+          metaChanges.push({
+            label: "Date",
+            valueHtml: `${escapeHtml(beforeDate)} → ${escapeHtml(afterDate)}`,
+            valueText: `${beforeDate} -> ${afterDate}`,
+          });
+        }
+
+        const beforePhone = String(previousClientPhone ?? "").trim();
+        const afterPhone = String(fullEvent.client_phone ?? "").trim();
+        if (beforePhone && afterPhone && beforePhone !== afterPhone) {
+          metaChanges.push({
+            label: "Telephone",
+            valueHtml: `${escapeHtml(beforePhone)} → ${escapeHtml(afterPhone)}`,
+            valueText: `${beforePhone} -> ${afterPhone}`,
+          });
+        }
+
+        const beforeNotes = String(previousNotes ?? "").trim();
+        const afterNotes = String(fullEvent.notes ?? "").trim();
+        if (previousNotes !== undefined && beforeNotes !== afterNotes) {
+          // Don't include full diff; email already includes the latest Notes field.
+          metaChanges.push({
+            label: "Message",
+            valueHtml: "updated",
+            valueText: "updated",
+          });
+        }
+
+        const changesHtml = metaChanges.length || changes.length
+          ? `<ul>${[
+              ...metaChanges.map(
+                (m) =>
+                  `<li><strong>${escapeHtml(m.label)}</strong>: ${m.valueHtml}</li>`,
+              ),
+              ...changes.map((c) => {
+                const sign = c.delta > 0 ? "+" : "-";
+                const amount = Math.abs(c.delta);
+                const right =
+                  c.after === 0
+                    ? `removed (${sign}${amount})`
+                    : `${escapeHtml(String(c.before))} → ${escapeHtml(String(c.after))} (${sign}${escapeHtml(String(amount))})`;
+                return `<li><strong>${escapeHtml(c.name)}</strong>: ${right}</li>`;
+              }),
+            ].join("")}</ul>`
+          : "<p style=\"margin:0;color:#666\">(No changes detected)</p>";
+
+        const changesText = metaChanges.length || changes.length
+          ? [
+              ...metaChanges.map((m) => `- ${m.label}: ${m.valueText}`),
+              ...changes.map((c) => {
+                const sign = c.delta > 0 ? "+" : "-";
+                const amount = Math.abs(c.delta);
+                const right =
+                  c.after === 0
+                    ? `removed (${sign}${amount})`
+                    : `${c.before} -> ${c.after} (${sign}${amount})`;
+                return `- ${c.name}: ${right}`;
+              }),
+            ].join("\n")
+          : "- (No changes detected)";
 
         const cocktailsHtml = cocktails.length
           ? `<ul>${cocktails
@@ -291,9 +418,6 @@ export async function PATCH(request: NextRequest) {
           : "<p style=\"margin:0;color:#666\">(Order list unavailable)</p>";
 
         if (adminEmail) {
-          const guestsHtml = fullEvent.guest_count
-            ? safeGuests
-            : "<em>(not provided)</em>";
           await sendEmail({
             to: adminEmail,
             subject: `Booking request updated: ${String(fullEvent.title || "Cocktail request")}`,
@@ -302,8 +426,8 @@ export async function PATCH(request: NextRequest) {
   <h2 style="margin:0 0 12px 0">Booking request updated</h2>
   <p style="margin:0 0 8px 0"><strong>Title:</strong> ${safeTitle}</p>
   <p style="margin:0 0 8px 0"><strong>Date:</strong> ${safeDate}</p>
-  <p style="margin:0 0 8px 0"><strong>Number of drinks:</strong> ${safeDrinks}</p>
-  <p style="margin:0 0 8px 0"><strong>Number of guests:</strong> ${guestsHtml}</p>
+  <p style="margin:0 0 8px 0"><strong>Number of drinks:</strong> ${drinksWithDeltaHtml}</p>
+  <p style="margin:0 0 8px 0"><strong>Number of guests:</strong> ${guestsWithDeltaHtml}</p>
   <p style="margin:0 0 8px 0"><strong>Client email:</strong> ${escapeHtml(clientEmail)}</p>
   <p style="margin:0 0 8px 0"><strong>Telephone:</strong> ${safePhone}</p>
   <p style="margin:0 0 8px 0"><strong>Notes:</strong> ${safeNotes || "<em>(none)</em>"}</p>
@@ -319,26 +443,14 @@ export async function PATCH(request: NextRequest) {
               `Booking request updated\n` +
               `Title: ${String(fullEvent.title || "")}\n` +
               `Date: ${String(fullEvent.event_date || "")}\n` +
-              `Number of drinks: ${drinksCount || ""}\n` +
-              `Number of guests: ${String(fullEvent.guest_count || "")}\n` +
+              `Number of drinks: ${drinksCount || ""}${drinksDeltaLabel ? ` (${drinksDeltaLabel})` : ""}\n` +
+              `Number of guests: ${String(fullEvent.guest_count || "")}${guestsDeltaLabel ? ` (${guestsDeltaLabel})` : ""}\n` +
               `Client: ${clientEmail}\n` +
               `Telephone: ${String(fullEvent.client_phone || "")}\n` +
               `Notes: ${String(fullEvent.notes || "")}\n` +
               `${editLink ? `Edit: ${editLink}\n` : ""}` +
               `\nChanges:\n` +
-              (changes.length
-                ? changes
-                    .map((c) => {
-                      const sign = c.delta > 0 ? "+" : "-";
-                      const amount = Math.abs(c.delta);
-                      const right =
-                        c.after === 0
-                          ? `removed (${sign}${amount})`
-                          : `${c.before} -> ${c.after} (${sign}${amount})`;
-                      return `- ${c.name}: ${right}`;
-                    })
-                    .join("\n")
-                : "- (No changes detected)"),
+              changesText,
           });
         }
 
@@ -365,19 +477,7 @@ export async function PATCH(request: NextRequest) {
             text:
               `Booking request updated\n\nWe’ve received your updated booking request and will be in contact shortly.\n\n` +
               `What changed:\n` +
-              (changes.length
-                ? changes
-                    .map((c) => {
-                      const sign = c.delta > 0 ? "+" : "-";
-                      const amount = Math.abs(c.delta);
-                      const right =
-                        c.after === 0
-                          ? `removed (${sign}${amount})`
-                          : `${c.before} -> ${c.after} (${sign}${amount})`;
-                      return `- ${c.name}: ${right}`;
-                    })
-                    .join("\n")
-                : "- (No changes detected)") +
+              changesText +
               `\n\n` +
               `Edit link: ${editLink}\n\nCheers!`,
           });

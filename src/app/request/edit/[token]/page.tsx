@@ -297,6 +297,12 @@ export default function RequestEditPage() {
       return;
     }
 
+    const previousGuestCount = event?.guest_count ?? null;
+    const previousTitle = event?.title ?? null;
+    const previousEventDate = event?.event_date ?? null;
+    const previousNotes = event?.notes ?? null;
+    const previousClientPhone = (event as any)?.client_phone ?? null;
+
     const response = await fetch("/api/events", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -328,7 +334,15 @@ export default function RequestEditPage() {
     const selectionResponse = await fetch("/api/events/selection", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, selections: selectionPayload }),
+      body: JSON.stringify({
+        token,
+        selections: selectionPayload,
+        previousGuestCount,
+        previousTitle,
+        previousEventDate,
+        previousNotes,
+        previousClientPhone,
+      }),
     });
 
     if (!selectionResponse.ok) {

@@ -9,6 +9,8 @@ export function slugifyCocktailName(name: string) {
   return String(name || "")
     .trim()
     .toLowerCase()
+    // Common cocktail naming: "Gin & Tonic" should map to "gin-and-tonic"
+    .replace(/&/g, " and ")
     .replace(/['"]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
@@ -28,6 +30,16 @@ export function resolveCocktailImageSrc(
 
   const slug = slugifyCocktailName(recipeName);
   if (!slug) return COCKTAIL_PLACEHOLDER_IMAGE;
-  return `/cocktails/${slug}.svg`;
-}
 
+  // A few friendly aliases to reduce "question mark" images caused by
+  // common variations/misspellings in recipe names.
+  const alias: Record<string, string> = {
+    // "&" replacement safety (older slugs)
+    "gin-tonic": "gin-and-tonic",
+    // common misspelling
+    daquiri: "daiquiri",
+  };
+
+  const finalSlug = alias[slug] ?? slug;
+  return `/cocktails/${finalSlug}.svg`;
+}

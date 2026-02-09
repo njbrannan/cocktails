@@ -485,32 +485,35 @@ export default function RequestEditPage() {
                         ? `Total drinks: ${totalDrinks}`
                         : "No quantities set yet."}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => window.print()}
-                      className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2"
-                    >
-                      Print order list
-                    </button>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  disabled={isLocked}
-                  onClick={() => {
-                    setStep("select");
-                    pendingScrollRef.current = "select";
-                    window.setTimeout(() => {
-                      selectCocktailsRef.current?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start",
-                      });
-                    }, 50);
-                  }}
-                  className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Add/remove drinks
-                </button>
+                <div className="flex flex-nowrap items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={isLocked}
+                    onClick={() => {
+                      setStep("select");
+                      pendingScrollRef.current = "select";
+                      window.setTimeout(() => {
+                        selectCocktailsRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                      }, 50);
+                    }}
+                    className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Add/remove drinks
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#6a2e2a] hover:-translate-y-0.5"
+                  >
+                    Print order list
+                  </button>
+                </div>
               </div>
 
               <div className="mt-5 grid gap-3">

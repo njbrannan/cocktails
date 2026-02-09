@@ -681,7 +681,7 @@ export default function RequestOrderPage() {
               onClick={handleBack}
               className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
             >
-              Add more drinks
+              Add/remove drinks
             </button>
           </div>
         </div>

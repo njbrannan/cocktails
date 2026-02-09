@@ -309,7 +309,7 @@ export default function RequestPage() {
                             src={imageSrc}
                             alt={recipe.name}
                             loading="lazy"
-                            className="h-full w-full object-contain p-6"
+                            className="h-full w-full object-contain px-6 pb-8 pt-4"
                             onError={(event) => {
                               event.currentTarget.src = COCKTAIL_PLACEHOLDER_IMAGE;
                             }}

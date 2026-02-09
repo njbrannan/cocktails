@@ -1,67 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Moscow Mule in a copper mug">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Moscow Mule">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fbf3ea"/>
-      <stop offset="1" stop-color="#efe0d3"/>
+    <linearGradient id="copper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0c08b" />
+      <stop offset="0.55" stop-color="#c47b4a" />
+      <stop offset="1" stop-color="#8d4b2c" />
     </linearGradient>
-    <linearGradient id="copper" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#ffb56a"/>
-      <stop offset="0.5" stop-color="#c47b4a"/>
-      <stop offset="1" stop-color="#7a3b22"/>
-    </linearGradient>
-    <linearGradient id="copperHighlight" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="foam" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#f2f2f2"/>
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.16"/>
-    </filter>
   </defs>
 
-  <rect width="1200" height="800" fill="url(#bg)"/>
+  <!-- mug body -->
+  <path
+    d="M156 182 C156 154 178 132 206 132 H308 C336 132 358 154 358 182 V342 C358 370 336 392 308 392 H206 C178 392 156 370 156 342 Z"
+    fill="url(#copper)"
+    opacity="0.96"
+  />
 
-  <g opacity="0.22">
-    <circle cx="170" cy="160" r="6" fill="#c47b4a"/>
-    <circle cx="250" cy="260" r="4" fill="#6a2e2a"/>
-    <circle cx="1040" cy="170" r="5" fill="#c47b4a"/>
-    <circle cx="980" cy="280" r="4" fill="#6a2e2a"/>
-  </g>
+  <!-- lime wedge -->
+  <path d="M322 108 C350 110 370 132 372 160 C342 162 322 140 322 108 Z" fill="#77d36a" opacity="0.9" />
 
-  <g filter="url(#shadow)">
-    <!-- mug body -->
-    <path d="M380 260c0-44 36-80 80-80h360c44 0 80 36 80 80v290c0 70-56 126-126 126H506c-70 0-126-56-126-126V260z" fill="url(#copper)"/>
-
-    <!-- inner lip -->
-    <path d="M400 260c0-34 26-60 60-60h360c34 0 60 26 60 60" fill="none" stroke="#6a2e2a" stroke-opacity="0.18" stroke-width="14" stroke-linecap="round"/>
-
-    <!-- highlight -->
-    <path d="M440 210c-28 40-40 104-40 190v110c0 88 54 150 118 164-78-38-100-104-100-176V404c0-74 10-134 22-194z" fill="url(#copperHighlight)" opacity="0.75"/>
-
-    <!-- handle -->
-    <path d="M820 300c80 0 130 46 130 120s-50 120-130 120" fill="none" stroke="#c47b4a" stroke-width="36" stroke-linecap="round"/>
-    <path d="M820 330c58 0 94 32 94 90s-36 90-94 90" fill="none" stroke="#fbf3ea" stroke-opacity="0.35" stroke-width="14" stroke-linecap="round"/>
-
-    <!-- ice + foam -->
-    <path d="M420 250c18 34 46 56 84 56h192c38 0 74-14 106-44 20-18 46-26 78-26h40c18 0 32 14 32 32v30c0 22-18 40-40 40H476c-58 0-98-18-124-58-8-12-12-26-12-40 0-12 10-22 24-22h56z" fill="url(#foam)" opacity="0.92"/>
-
-    <g fill="#ffffff" opacity="0.28">
-      <rect x="470" y="300" width="140" height="110" rx="22"/>
-      <rect x="620" y="320" width="150" height="120" rx="24"/>
-      <rect x="520" y="410" width="160" height="120" rx="24"/>
-    </g>
-
-    <!-- lime wedge -->
-    <g transform="translate(760 180) rotate(18)">
-      <circle cx="0" cy="0" r="70" fill="#7ecf6a"/>
-      <circle cx="0" cy="0" r="54" fill="#e7ffd6" opacity="0.9"/>
-      <path d="M0-54 A54 54 0 0 1 54 0 L0 0 Z" fill="#fff" opacity="0.18"/>
-    </g>
-
+  <g
+    fill="none"
+    stroke="#2b1e1a"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- rim -->
+    <path d="M170 158 H342" />
     <!-- mug outline -->
-    <path d="M380 260c0-44 36-80 80-80h360c44 0 80 36 80 80v290c0 70-56 126-126 126H506c-70 0-126-56-126-126V260z" fill="none" stroke="#6a2e2a" stroke-opacity="0.16" stroke-width="12"/>
+    <path d="M156 182 C156 154 178 132 206 132 H308 C336 132 358 154 358 182 V342 C358 370 336 392 308 392 H206 C178 392 156 370 156 342 Z" />
+    <!-- handle -->
+    <path d="M358 214 H386 C412 214 432 234 432 260 V314 C432 340 412 360 386 360 H358" />
+
+    <!-- straw -->
+    <path d="M294 92 L270 170" />
+
+    <!-- lime wheel detail -->
+    <path d="M322 108 C350 110 370 132 372 160" />
+    <path d="M336 114 L352 148" />
   </g>
 </svg>
+

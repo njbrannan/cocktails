@@ -1,57 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Pornstar Martini in a coupette glass">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Pornstar Martini">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fbf3ea"/>
-      <stop offset="1" stop-color="#efe0d3"/>
+    <linearGradient id="pm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd26b" />
+      <stop offset="1" stop-color="#f6a93a" />
     </linearGradient>
-    <linearGradient id="drink" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffd36a"/>
-      <stop offset="1" stop-color="#ff9a2e"/>
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.16"/>
-    </filter>
   </defs>
 
-  <rect width="1200" height="800" fill="url(#bg)"/>
+  <!-- liquid -->
+  <path
+    d="M182 190 Q256 144 330 190 Q312 236 256 252 Q200 236 182 190 Z"
+    fill="url(#pm)"
+    opacity="0.92"
+  />
 
-  <g opacity="0.22">
-    <circle cx="160" cy="160" r="6" fill="#c47b4a"/>
-    <circle cx="240" cy="260" r="4" fill="#6a2e2a"/>
-    <circle cx="1040" cy="170" r="5" fill="#c47b4a"/>
-    <circle cx="980" cy="280" r="4" fill="#6a2e2a"/>
-    <circle cx="140" cy="650" r="4" fill="#6a2e2a"/>
-    <circle cx="1070" cy="660" r="6" fill="#c47b4a"/>
-  </g>
+  <!-- passionfruit half -->
+  <path d="M352 122 C380 126 402 148 406 176 C378 176 356 154 352 122 Z" fill="#7a3b86" opacity="0.95" />
+  <circle cx="386" cy="168" r="10" fill="#ffd26b" opacity="0.9" />
+  <circle cx="372" cy="156" r="8" fill="#ffd26b" opacity="0.9" />
+  <circle cx="396" cy="154" r="7" fill="#ffd26b" opacity="0.9" />
 
-  <g filter="url(#shadow)">
-    <!-- coupette bowl -->
-    <path d="M360 250c70 165 175 245 240 245s170-80 240-245c10-25 8-55-15-80-40-42-117-70-225-70s-185 28-225 70c-23 25-25 55-15 80z" fill="#fff" opacity="0.70"/>
+  <g
+    fill="none"
+    stroke="#2b1e1a"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- coupe -->
+    <path d="M160 182 Q256 120 352 182 Q330 252 256 270 Q182 252 160 182 Z" />
+    <path d="M256 270 L256 356" />
+    <path d="M190 382 C220 408 292 408 322 382" />
 
-    <!-- drink fill -->
-    <path d="M392 265c60 130 148 196 208 196s148-66 208-196c8-18 6-39-11-57-33-34-97-56-197-56s-164 22-197 56c-17 18-19 39-11 57z" fill="url(#drink)" opacity="0.94"/>
-
-    <!-- rim -->
-    <path d="M390 210c45-48 120-78 210-78s165 30 210 78" fill="none" stroke="#6a2e2a" stroke-opacity="0.22" stroke-width="14" stroke-linecap="round"/>
-
-    <!-- stem -->
-    <rect x="570" y="485" width="60" height="150" rx="28" fill="#6a2e2a" opacity="0.90"/>
-
-    <!-- base -->
-    <rect x="440" y="625" width="320" height="58" rx="29" fill="#6a2e2a" opacity="0.90"/>
-
-    <!-- passionfruit half -->
-    <g transform="translate(780 220) rotate(18)">
-      <ellipse cx="0" cy="0" rx="88" ry="72" fill="#6a2e2a" opacity="0.92"/>
-      <ellipse cx="0" cy="0" rx="72" ry="58" fill="#fff2c9" opacity="0.92"/>
-      <g fill="#2f1b18" opacity="0.7">
-        <circle cx="-26" cy="-10" r="8"/>
-        <circle cx="-6" cy="18" r="7"/>
-        <circle cx="18" cy="-2" r="8"/>
-        <circle cx="34" cy="20" r="6"/>
-        <circle cx="6" cy="-22" r="6"/>
-      </g>
-    </g>
+    <!-- passionfruit outline -->
+    <path d="M352 122 C380 126 402 148 406 176" />
   </g>
 </svg>
 

@@ -1,47 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Old Fashioned in a rocks glass">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Old Fashioned">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fbf3ea"/>
-      <stop offset="1" stop-color="#efe0d3"/>
+    <linearGradient id="of" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e2a35b" />
+      <stop offset="1" stop-color="#c97a2b" />
     </linearGradient>
-    <linearGradient id="whiskey" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f0b45a"/>
-      <stop offset="1" stop-color="#b45a2a"/>
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.16"/>
-    </filter>
   </defs>
 
-  <rect width="1200" height="800" fill="url(#bg)"/>
+  <!-- whiskey -->
+  <path d="M166 262 H346 V356 C346 376 330 392 310 392 H202 C182 392 166 376 166 356 Z" fill="url(#of)" opacity="0.92" />
 
-  <g opacity="0.22">
-    <circle cx="140" cy="150" r="6" fill="#c47b4a"/>
-    <circle cx="230" cy="230" r="4" fill="#6a2e2a"/>
-    <circle cx="1040" cy="170" r="5" fill="#c47b4a"/>
-    <circle cx="980" cy="280" r="4" fill="#6a2e2a"/>
+  <!-- ice -->
+  <g fill="#ffffff" opacity="0.38">
+    <rect x="214" y="284" width="70" height="58" rx="14" />
+    <rect x="268" y="306" width="70" height="58" rx="14" />
   </g>
 
-  <g filter="url(#shadow)">
+  <!-- orange peel -->
+  <path d="M190 240 C210 214 246 212 272 236" fill="none" stroke="#e57a2a" stroke-width="14" stroke-linecap="round" />
+
+  <g
+    fill="none"
+    stroke="#2b1e1a"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
     <!-- glass -->
-    <rect x="360" y="170" width="480" height="520" rx="70" fill="#ffffff" opacity="0.70"/>
-    <rect x="390" y="205" width="420" height="455" rx="60" fill="#ffffff" opacity="0.20"/>
-
-    <!-- drink -->
-    <rect x="390" y="400" width="420" height="260" rx="60" fill="url(#whiskey)" opacity="0.92"/>
-
-    <!-- big ice cube -->
-    <g transform="translate(600 455) rotate(-12)">
-      <rect x="-135" y="-80" width="270" height="220" rx="26" fill="#ffffff" opacity="0.40"/>
-      <rect x="-120" y="-65" width="240" height="190" rx="22" fill="#ffffff" opacity="0.18"/>
-    </g>
-
-    <!-- rim -->
-    <rect x="360" y="170" width="480" height="520" rx="70" fill="none" stroke="#6a2e2a" stroke-opacity="0.20" stroke-width="12"/>
-
-    <!-- orange peel -->
-    <path d="M770 350c-30-18-63-24-92-10-22 10-38 32-40 56-2 25 9 46 26 60 34 28 92 20 138-32-8-38-18-58-32-74z" fill="#c47b4a" opacity="0.95"/>
-    <path d="M735 340c-22-12-46-14-66-5-16 7-27 22-28 39-1 17 6 32 18 41 22 18 60 14 94-20-5-25-10-40-18-55z" fill="#fbf3ea" opacity="0.35"/>
+    <path d="M166 182 H346" />
+    <path d="M166 182 H346 V356 C346 376 330 392 310 392 H202 C182 392 166 376 166 356 Z" />
+    <!-- base thickness -->
+    <path d="M184 392 H328" />
   </g>
 </svg>
 

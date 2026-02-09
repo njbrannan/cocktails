@@ -2,6 +2,10 @@
 
 import { buildIngredientTotals } from "@/lib/inventoryMath";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  COCKTAIL_PLACEHOLDER_IMAGE,
+  resolveCocktailImageSrc,
+} from "@/lib/cocktailImages";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -37,8 +41,6 @@ type Recipe = {
   image_url?: string | null;
   recipe_ingredients: RecipeIngredient[];
 };
-
-const PLACEHOLDER_IMAGE = "/cocktails/placeholder.svg";
 
 const typePriority: Record<string, number> = {
   liquor: 0,
@@ -271,12 +273,10 @@ export default function RequestPage() {
                 <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                   {recipes.map((recipe) => {
                     const isSelected = selectedRecipeIds.has(recipe.id);
-                    const imageSrc = recipe.image_url
-                      ? recipe.image_url.startsWith("http") ||
-                        recipe.image_url.startsWith("/")
-                        ? recipe.image_url
-                        : `/cocktails/${recipe.image_url}`
-                      : PLACEHOLDER_IMAGE;
+                    const imageSrc = resolveCocktailImageSrc(
+                      recipe.image_url,
+                      recipe.name,
+                    );
 
                     return (
                       <button
@@ -296,14 +296,14 @@ export default function RequestPage() {
                             : "border-[#c47b4a]/20"
                         }`}
                       >
-                        <div className="relative h-[180px] w-full">
+                        <div className="relative h-[180px] w-full bg-gradient-to-br from-[#fbf3ea] to-[#efe0d3]">
                           <img
                             src={imageSrc}
                             alt={recipe.name}
                             loading="lazy"
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-contain p-6"
                             onError={(event) => {
-                              event.currentTarget.src = PLACEHOLDER_IMAGE;
+                              event.currentTarget.src = COCKTAIL_PLACEHOLDER_IMAGE;
                             }}
                           />
                           {isSelected ? (

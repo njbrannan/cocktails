@@ -342,6 +342,10 @@ export default function RequestPage() {
                       const ingredientsOpen = Boolean(
                         ingredientsOpenByRecipeId[recipe.id],
                       );
+                      const imageSrc = resolveCocktailImageSrc(
+                        recipe.image_url,
+                        recipe.name,
+                      );
                       return (
                         <div
                           key={recipe.id}
@@ -374,9 +378,22 @@ export default function RequestPage() {
                             <span className="text-lg leading-none">×</span>
                           </button>
                           <div className="space-y-3">
-                            <h3 className="font-display text-2xl text-[#151210]">
-                              {recipe.name}
-                            </h3>
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
+                                <img
+                                  src={imageSrc}
+                                  alt=""
+                                  aria-hidden="true"
+                                  className="h-full w-full object-contain"
+                                  onError={(event) => {
+                                    event.currentTarget.src = COCKTAIL_PLACEHOLDER_IMAGE;
+                                  }}
+                                />
+                              </div>
+                              <h3 className="min-w-0 truncate font-display text-lg text-[#151210]">
+                                {recipe.name}
+                              </h3>
+                            </div>
                             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
                               Quantity
                               <input

@@ -70,6 +70,7 @@ export default function RequestEditPage() {
     "This order can't be changed because it has been confirmed.";
   const amendRef = useRef<HTMLDivElement | null>(null);
   const selectCocktailsRef = useRef<HTMLDivElement | null>(null);
+  const quantitiesRef = useRef<HTMLDivElement | null>(null);
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [title, setTitle] = useState("");
@@ -110,8 +111,19 @@ export default function RequestEditPage() {
   const [step, setStep] = useState<"select" | "quantity">("select");
 
   useEffect(() => {
-    // When switching steps, jump back to the top so the next screen starts at the header.
-    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    if (step === "select") {
+      // When returning to selection, start at the top.
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+      return;
+    }
+
+    // When going to quantities, scroll to the quantities section.
+    window.setTimeout(() => {
+      quantitiesRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 50);
   }, [step]);
 
   useEffect(() => {
@@ -614,7 +626,7 @@ export default function RequestEditPage() {
                 </div>
                 </div>
               ) : (
-                <div className="mt-6 grid gap-6">
+                <div ref={quantitiesRef} className="mt-6 grid gap-6">
                   {recipes
                     .filter((recipe) => selectedRecipeIds.has(recipe.id))
                     .map((recipe) => {

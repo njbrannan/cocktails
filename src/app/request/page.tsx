@@ -298,7 +298,13 @@ export default function RequestPage() {
                             : "border-[#c47b4a]/20"
                         }`}
                       >
-                        <div className="relative h-[180px] w-full bg-gradient-to-br from-[#fbf3ea] to-[#efe0d3]">
+                        <div
+                          className={`relative h-[180px] w-full ${
+                            isSelected
+                              ? "bg-gradient-to-br from-[#fbf3ea] to-[#efe0d3]"
+                              : "bg-white/80"
+                          }`}
+                        >
                           <img
                             src={imageSrc}
                             alt={recipe.name}

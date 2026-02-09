@@ -323,10 +323,22 @@ export default function RequestPage() {
                           {/* Only show overlay once selected so the drink stays clean/visible by default */}
                           {isSelected ? (
                             <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
-                              <p className="font-display text-lg text-[#6a2e2a] drop-shadow-[0_1px_0_rgba(255,255,255,0.7)]">
+                              <p
+                                className="font-display text-lg text-[#151210]"
+                                style={{
+                                  textShadow:
+                                    "0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(255,255,255,0.35)",
+                                }}
+                              >
                                 {displayName}
                               </p>
-                              <p className="mt-1 text-[11px] text-[#4b3f3a]/80">
+                              <p
+                                className="mt-1 text-[11px] text-[#151210]/75"
+                                style={{
+                                  textShadow:
+                                    "0 1px 0 rgba(255,255,255,0.85), 0 2px 10px rgba(255,255,255,0.3)",
+                                }}
+                              >
                                 Tap to remove
                               </p>
                             </div>

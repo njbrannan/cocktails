@@ -596,79 +596,81 @@ export default function RequestOrderPage() {
             {(editingQuantities ? cocktailsEditable : cocktailsSummary).map((c) => {
               const displayName = normalizeCocktailDisplayName(c.recipeName);
               return (
-              <div
-                key={c.recipeId}
-                className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
-                    <img
-                      src={resolveCocktailImageSrc(null, displayName)}
-                      alt=""
-                      aria-hidden="true"
-                      className="h-full w-full object-contain"
-                      onError={(event) => {
-                        event.currentTarget.src = COCKTAIL_PLACEHOLDER_IMAGE;
-                      }}
-                    />
-                  </div>
-                  <p className="min-w-0 truncate text-sm font-semibold text-[#151210]">
-                    {displayName}
-                  </p>
-                </div>
-                <div className="text-right">
-                  {editingQuantities ? (
-                    <>
-                      <input
-                        type="number"
-                        min={0}
-                        value={
-                          servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0)
-                        }
-                        onFocus={() => {
-                          const current =
-                            servingsByRecipeId[c.recipeId] ??
-                            String(c.servings ?? 0);
-                          if (current === "0") {
-                            setServingsByRecipeId((prev) => ({
-                              ...prev,
-                              [c.recipeId]: "",
-                            }));
-                          }
+                <div
+                  key={c.recipeId}
+                  className="flex flex-nowrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
+                >
+                  <div className="flex min-w-0 items-center gap-3 overflow-hidden">
+                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
+                      <img
+                        src={resolveCocktailImageSrc(null, displayName)}
+                        alt=""
+                        aria-hidden="true"
+                        className="h-full w-full object-contain"
+                        onError={(event) => {
+                          event.currentTarget.src = COCKTAIL_PLACEHOLDER_IMAGE;
                         }}
-                        onBlur={() => {
-                          const current =
-                            servingsByRecipeId[c.recipeId] ??
-                            String(c.servings ?? 0);
-                          if (current === "") {
-                            setServingsByRecipeId((prev) => ({
-                              ...prev,
-                              [c.recipeId]: "0",
-                            }));
-                          }
-                        }}
-                        onChange={(event) =>
-                          setServingsByRecipeId((prev) => ({
-                            ...prev,
-                            [c.recipeId]: event.target.value,
-                          }))
-                        }
-                        // iOS Safari zooms when inputs are < 16px font-size.
-                        className="w-24 rounded-xl border border-[#c47b4a]/30 bg-white/90 px-3 py-2 text-right text-[16px] text-[#151210]"
                       />
-                      <p className="mt-1 text-xs text-[#4b3f3a]">Quantity</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm font-semibold text-[#151210]">
-                        {Number(servingsByRecipeId[c.recipeId] ?? c.servings ?? 0) ||
-                          0}
-                      </p>
-                      <p className="mt-1 text-xs text-[#4b3f3a]">Quantity</p>
-                    </>
-                  )}
+                    </div>
+                    <p className="min-w-0 truncate text-sm font-semibold text-[#151210]">
+                      {displayName}
+                    </p>
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    {editingQuantities ? (
+                      <div className="flex flex-col items-end">
+                        <input
+                          type="number"
+                          min={0}
+                          value={
+                            servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0)
+                          }
+                          onFocus={() => {
+                            const current =
+                              servingsByRecipeId[c.recipeId] ??
+                              String(c.servings ?? 0);
+                            if (current === "0") {
+                              setServingsByRecipeId((prev) => ({
+                                ...prev,
+                                [c.recipeId]: "",
+                              }));
+                            }
+                          }}
+                          onBlur={() => {
+                            const current =
+                              servingsByRecipeId[c.recipeId] ??
+                              String(c.servings ?? 0);
+                            if (current === "") {
+                              setServingsByRecipeId((prev) => ({
+                                ...prev,
+                                [c.recipeId]: "0",
+                              }));
+                            }
+                          }}
+                          onChange={(event) =>
+                            setServingsByRecipeId((prev) => ({
+                              ...prev,
+                              [c.recipeId]: event.target.value,
+                            }))
+                          }
+                          // iOS Safari zooms when inputs are < 16px font-size.
+                          className="w-24 rounded-xl border border-[#c47b4a]/30 bg-white/90 px-3 py-2 text-right text-[16px] text-[#151210]"
+                        />
+                        <p className="mt-1 text-xs text-[#4b3f3a]">Quantity</p>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm font-semibold text-[#151210] tabular-nums">
+                          {Number(
+                            servingsByRecipeId[c.recipeId] ?? c.servings ?? 0,
+                          ) || 0}
+                        </p>
+                        <p className="mt-1 text-xs text-[#4b3f3a]">Quantity</p>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
               );
             })}
           </div>

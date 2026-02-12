@@ -903,7 +903,7 @@ export default function RequestOrderPage() {
             <button
               onClick={handleOrderBartenders}
               disabled={loading}
-              className="mt-4 rounded-full bg-[#c47b4a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
+              className="gi-btn-primary mt-4 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
             >
               {loading ? "Sending request..." : "Book Bartenders"}
             </button>

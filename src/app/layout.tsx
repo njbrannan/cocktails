@@ -20,9 +20,33 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Get Involved - Cocktail Party Planner",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://events.getinvolved.com.au",
+  ),
+  title: "Get Involved Catering | Cocktail Menu Builder",
   description:
-    "Client-facing cocktail party planning with inventory math, bottle rounding, and admin recipe management.",
+    "Choose cocktails, set quantities, and instantly get a shopping list with bottle rounding plus a 10% buffer. Send your request to Get Involved Catering.",
+  openGraph: {
+    title: "Get Involved Catering | Cocktail Menu Builder",
+    description:
+      "Choose cocktails, set quantities, and instantly get a shopping list with bottle rounding plus a 10% buffer.",
+    type: "website",
+    images: [
+      {
+        url: "/icon.png",
+        width: 512,
+        height: 512,
+        alt: "Get Involved Catering",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Get Involved Catering | Cocktail Menu Builder",
+    description:
+      "Choose cocktails, set quantities, and instantly get a shopping list with bottle rounding plus a 10% buffer.",
+    images: ["/icon.png"],
+  },
 };
 
 export default function RootLayout({

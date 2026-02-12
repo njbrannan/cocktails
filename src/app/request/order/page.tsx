@@ -122,7 +122,7 @@ export default function RequestOrderPage() {
   const fieldClass =
     // `tracking-normal` is important because these inputs sit inside uppercase/letter-spaced labels.
     // Without this, iOS can render them with huge letter spacing.
-    "h-[52px] w-full max-w-full min-w-0 rounded-2xl border bg-white/80 px-4 py-3 text-[16px] tracking-normal text-[#151210]";
+    "h-[52px] w-full max-w-full min-w-0 rounded-2xl border bg-white/80 px-4 py-3 text-[16px] tracking-normal text-ink";
 
   const flagEmoji = (iso2: string) => {
     const upper = iso2.toUpperCase();
@@ -493,11 +493,11 @@ export default function RequestOrderPage() {
       <div className="min-h-screen hero-grid px-6 py-16">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
           <header>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a]">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
               Get Involved with our
             </p>
-            <h1 className="font-display text-4xl text-[#151210]">Order List</h1>
-            <p className="mt-2 text-sm text-[#4b3f3a]">
+            <h1 className="font-display text-4xl text-ink">Order List</h1>
+            <p className="mt-2 text-sm text-muted">
               No order list found yet. Go back to select cocktails and create one.
             </p>
           </header>
@@ -505,7 +505,7 @@ export default function RequestOrderPage() {
           <button
             type="button"
             onClick={() => router.push("/request")}
-            className="w-fit rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
+            className="gi-btn-primary w-fit px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
           >
             Back to builder
           </button>
@@ -562,24 +562,24 @@ export default function RequestOrderPage() {
 
       <div className="no-print mx-auto flex w-full max-w-5xl flex-col gap-8 overflow-x-hidden">
         <header>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a]">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
             Get Involved with our
           </p>
-          <h1 className="font-display text-4xl text-[#151210]">Order List</h1>
-          <p className="mt-2 text-sm text-[#4b3f3a]">
+          <h1 className="font-display text-4xl text-ink">Order List</h1>
+          <p className="mt-2 text-sm text-muted">
             Totals include a 10% buffer. Liquor is rounded to 700ml bottles.
           </p>
         </header>
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        {success ? <p className="text-sm text-[#4b3f3a]">{success}</p> : null}
+        {success ? <p className="text-sm text-muted">{success}</p> : null}
         {recalcError ? <p className="text-sm text-red-600">{recalcError}</p> : null}
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
-          <h2 className="font-display text-2xl text-[#6a2e2a]">
+          <h2 className="font-display text-2xl text-accent">
             Selected cocktails
           </h2>
-          <p className="mt-2 text-sm text-[#4b3f3a]">
+          <p className="mt-2 text-sm text-muted">
             {totalDrinks > 0
               ? `Total drinks: ${totalDrinks}`
               : "Set quantities to generate totals."}
@@ -587,7 +587,7 @@ export default function RequestOrderPage() {
           <button
             type="button"
             onClick={() => setEditingQuantities((v) => !v)}
-            className="mt-2 w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2"
+            className="mt-2 w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-accent underline underline-offset-2"
           >
             {editingQuantities ? "Done amending" : "Amend quantities"}
           </button>
@@ -598,7 +598,7 @@ export default function RequestOrderPage() {
               return (
                 <div
                   key={c.recipeId}
-                  className="flex flex-nowrap items-center justify-between gap-4 rounded-2xl border border-[#c47b4a]/20 bg-white/80 px-5 py-4"
+                  className="flex flex-nowrap items-center justify-between gap-4 rounded-2xl border border-subtle bg-white/80 px-5 py-4"
                 >
                   <div className="flex min-w-0 items-center gap-3 overflow-hidden">
                     <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
@@ -612,7 +612,7 @@ export default function RequestOrderPage() {
                         }}
                       />
                     </div>
-                    <p className="min-w-0 truncate text-sm font-semibold text-[#151210]">
+                    <p className="min-w-0 truncate text-sm font-semibold text-ink">
                       {displayName}
                     </p>
                   </div>
@@ -655,18 +655,18 @@ export default function RequestOrderPage() {
                             }))
                           }
                           // iOS Safari zooms when inputs are < 16px font-size.
-                          className="w-24 rounded-xl border border-[#c47b4a]/30 bg-white/90 px-3 py-2 text-right text-[16px] text-[#151210]"
+                          className="w-24 rounded-xl border border-soft bg-white/90 px-3 py-2 text-right text-[16px] text-ink"
                         />
-                        <p className="mt-1 text-xs text-[#4b3f3a]">Quantity</p>
+                        <p className="mt-1 text-xs text-muted">Quantity</p>
                       </div>
                     ) : (
                       <>
-                        <p className="text-sm font-semibold text-[#151210] tabular-nums">
+                        <p className="text-sm font-semibold text-ink tabular-nums">
                           {Number(
                             servingsByRecipeId[c.recipeId] ?? c.servings ?? 0,
                           ) || 0}
                         </p>
-                        <p className="mt-1 text-xs text-[#4b3f3a]">Quantity</p>
+                        <p className="mt-1 text-xs text-muted">Quantity</p>
                       </>
                     )}
                   </div>
@@ -679,7 +679,7 @@ export default function RequestOrderPage() {
             <button
               type="button"
               onClick={handleBack}
-              className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
+              className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
             >
               Add/remove drinks
             </button>
@@ -687,13 +687,13 @@ export default function RequestOrderPage() {
         </div>
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
-          <h2 className="font-display text-2xl text-[#6a2e2a]">Order List</h2>
+          <h2 className="font-display text-2xl text-accent">Order List</h2>
 
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={() => window.print()}
-              className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5"
+              className="gi-btn-secondary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] hover:-translate-y-0.5"
             >
               Print order list
             </button>
@@ -705,31 +705,31 @@ export default function RequestOrderPage() {
                   block: "start",
                 })
               }
-              className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
+              className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
             >
               Send order list
             </button>
           </div>
 
-          <h3 className="mt-10 text-xs font-semibold uppercase tracking-[0.25em] text-[#6a2e2a]">
+          <h3 className="mt-10 text-xs font-semibold uppercase tracking-[0.25em] text-accent">
             Shopping list
           </h3>
-          <ul className="mt-4 divide-y divide-[#c47b4a]/15 overflow-hidden rounded-2xl border border-[#c47b4a]/20 bg-white/70">
+          <ul className="mt-4 divide-y divide-[#c47b4a]/15 overflow-hidden rounded-2xl border border-subtle bg-white/70">
             {(orderList ?? []).map((item) => (
               <li
                 key={item.ingredientId}
                 className="flex items-start justify-between gap-6 px-4 py-3"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-[#151210]">
+                  <p className="truncate text-sm font-semibold text-ink">
                     {item.name}
                   </p>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-[#6a2e2a]">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-accent">
                     {item.type}
                   </p>
                 </div>
                 <div className="shrink-0 text-right tabular-nums">
-                  <p className="text-sm font-semibold text-[#151210]">
+                  <p className="text-sm font-semibold text-ink">
                     {item.bottlesNeeded
                       ? `${item.bottlesNeeded} × ${item.bottleSizeMl}ml`
                       : `${item.total} ${item.unit}`}
@@ -741,17 +741,17 @@ export default function RequestOrderPage() {
 
           <div
             ref={orderBartendersRef}
-            className="mt-8 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-6"
+            className="mt-8 rounded-[28px] border border-subtle bg-white/70 p-6"
           >
-            <h3 className="font-display text-xl text-[#151210]">
+            <h3 className="font-display text-xl text-ink">
               Book Bartenders for your Event
             </h3>
-            <p className="mt-2 text-sm text-[#4b3f3a]">
+            <p className="mt-2 text-sm text-muted">
               Send this order list to Get Involved and we’ll follow up.
             </p>
 
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                 Event name
                 <input
                   type="text"
@@ -760,11 +760,11 @@ export default function RequestOrderPage() {
                   placeholder="Birthday, corporate event, engagement..."
                   autoComplete="organization"
                   // iOS Safari zooms when inputs are < 16px font-size.
-                  className={`mt-2 ${fieldClass} border-[#c47b4a]/30`}
+                  className={`mt-2 ${fieldClass} border-soft`}
                 />
               </label>
 
-              <label className="block min-w-0 text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+              <label className="block min-w-0 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                 Date of Event
                 <input
                   type="date"
@@ -773,13 +773,13 @@ export default function RequestOrderPage() {
                   onChange={(event) => handleEventDateChange(event.target.value)}
                   onBlur={(event) => handleEventDateChange(event.target.value)}
                   // iOS Safari zooms when inputs are < 16px font-size.
-                  className={`mt-2 ${fieldClass} appearance-none border-[#c47b4a]/30`}
+                  className={`mt-2 ${fieldClass} appearance-none border-soft`}
                   // iOS sometimes applies inherited letter-spacing to date inputs; force normal.
                   style={{ letterSpacing: "normal" }}
                 />
               </label>
 
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                 Email
                 <input
                   type="email"
@@ -794,7 +794,7 @@ export default function RequestOrderPage() {
                   autoComplete="email"
                   // iOS Safari zooms when inputs are < 16px font-size.
                   className={`mt-2 ${fieldClass} ${
-                    emailError ? "border-red-400" : "border-[#c47b4a]/30"
+                    emailError ? "border-red-400" : "border-soft"
                   }`}
                 />
                 {emailError ? (
@@ -804,7 +804,7 @@ export default function RequestOrderPage() {
                 ) : null}
               </label>
 
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] md:col-start-2">
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent md:col-start-2">
                 Number of guests
                 <input
                   type="number"
@@ -821,7 +821,7 @@ export default function RequestOrderPage() {
                   inputMode="numeric"
                   // iOS Safari zooms when inputs are < 16px font-size.
                   className={`mt-2 ${fieldClass} ${
-                    guestCountError ? "border-red-400" : "border-[#c47b4a]/30"
+                    guestCountError ? "border-red-400" : "border-soft"
                   }`}
                 />
                 {guestCountError ? (
@@ -831,11 +831,11 @@ export default function RequestOrderPage() {
                 ) : null}
               </label>
 
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] md:col-span-2">
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent md:col-span-2">
                 Telephone
                 <div className="mt-2 flex w-full max-w-full flex-nowrap items-stretch gap-2">
                   <div className="relative h-[52px] w-[52px] shrink-0">
-                    <div className="pointer-events-none flex h-full w-full items-center justify-center rounded-2xl border border-[#c47b4a]/30 bg-white/80 text-[18px]">
+                    <div className="pointer-events-none flex h-full w-full items-center justify-center rounded-2xl border border-soft bg-white/80 text-[18px]">
                       {flagEmoji(phoneCountryIso2 as string)}
                     </div>
                     <select
@@ -877,8 +877,8 @@ export default function RequestOrderPage() {
                     }}
                     onBlur={() => setPhoneError(validatePhone(phoneLocal))}
                     placeholder={phonePlaceholder}
-                    className={`${fieldClass} flex-1 placeholder:text-[#4b3f3a]/55 focus:placeholder-transparent ${
-                      phoneError ? "border-red-400" : "border-[#c47b4a]/30"
+                    className={`${fieldClass} flex-1 placeholder:text-muted/55 focus:placeholder-transparent ${
+                      phoneError ? "border-red-400" : "border-soft"
                     }`}
                   />
                 </div>
@@ -888,14 +888,14 @@ export default function RequestOrderPage() {
                   </p>
                 ) : null}
               </label>
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a] md:col-span-2">
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent md:col-span-2">
                 Message
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                   placeholder="What’s the special occasion? Event schedule? Special/signature cocktail requests? Allergies, dietary requirements, venue details..."
                   // iOS Safari zooms when inputs are < 16px font-size.
-                  className="mt-2 min-h-[120px] w-full max-w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px] tracking-normal text-[#151210]"
+                  className="mt-2 min-h-[120px] w-full max-w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px] tracking-normal text-ink"
                 />
               </label>
             </div>
@@ -910,11 +910,11 @@ export default function RequestOrderPage() {
           </div>
 
           {editLink ? (
-            <div className="mt-6 rounded-3xl border border-[#c47b4a]/20 bg-white/70 px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+            <div className="mt-6 rounded-3xl border border-subtle bg-white/70 px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                 Private edit link
               </p>
-              <p className="mt-2 break-all text-sm text-[#151210]">{editLink}</p>
+              <p className="mt-2 break-all text-sm text-ink">{editLink}</p>
             </div>
           ) : null}
         </div>

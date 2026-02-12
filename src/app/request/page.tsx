@@ -241,13 +241,13 @@ export default function RequestPage() {
     <div className="min-h-screen hero-grid px-6 py-16">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
         <header>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a]">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
             Get Involved with our
           </p>
-          <h1 className="font-display text-4xl text-[#151210]">
+          <h1 className="font-display text-4xl text-ink">
             Cocktail Menu Builder
           </h1>
-          <p className="mt-2 text-sm text-[#4b3f3a]">
+          <p className="mt-2 text-sm text-muted">
             Choose cocktails, set quantities, then create your order list.
           </p>
         </header>
@@ -255,17 +255,17 @@ export default function RequestPage() {
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
-          <h2 className="font-display text-2xl text-[#6a2e2a]">
+          <h2 className="font-display text-2xl text-accent">
             {step === "select" ? "Select cocktails" : "Set quantities"}
           </h2>
-          <p className="mt-2 text-sm text-[#4b3f3a]">
+          <p className="mt-2 text-sm text-muted">
             {step === "select"
               ? "Tap the photos to choose your cocktails."
               : "Add quantities and we’ll calculate ingredients per drink."}
           </p>
 
           {recipes.length === 0 ? (
-            <p className="mt-4 text-sm text-[#4b3f3a]">
+            <p className="mt-4 text-sm text-muted">
               No cocktails found yet. Add recipes in Supabase (recipes + recipe_ingredients).
             </p>
           ) : (
@@ -294,8 +294,8 @@ export default function RequestPage() {
                         }}
                         className={`group relative overflow-hidden rounded-[26px] border bg-white/80 text-left shadow-sm transition-transform hover:-translate-y-0.5 ${
                           isSelected
-                            ? "border-[#6a2e2a] ring-2 ring-[#6a2e2a]/20"
-                            : "border-[#c47b4a]/20"
+                            ? "gi-selected"
+                            : "border-subtle"
                         }`}
                       >
                         <div
@@ -315,7 +315,7 @@ export default function RequestPage() {
                             }}
                           />
                           {isSelected ? (
-                            <div className="absolute left-3 top-3 rounded-full bg-[#6a2e2a] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#f8f1e7]">
+                            <div className="absolute left-3 top-3 rounded-full bg-accent px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-on-accent">
                               Selected
                             </div>
                           ) : null}
@@ -323,7 +323,7 @@ export default function RequestPage() {
                           {/* Always show name + action text; no background box so the drink stays visible */}
                           <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
                             <p
-                              className="font-display text-lg text-[#151210]"
+                              className="font-display text-lg text-ink"
                               style={{
                                 textShadow:
                                   "0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(255,255,255,0.35)",
@@ -332,7 +332,7 @@ export default function RequestPage() {
                               {displayName}
                             </p>
                             <p
-                              className="mt-1 text-[11px] text-[#151210]/75"
+                              className="mt-1 text-[11px] text-ink/75"
                               style={{
                                 textShadow:
                                   "0 1px 0 rgba(255,255,255,0.85), 0 2px 10px rgba(255,255,255,0.3)",
@@ -349,7 +349,7 @@ export default function RequestPage() {
               ) : (
                 <div className="mt-6 grid gap-6">
                   {selectedForQuantity.length === 0 ? (
-                    <p className="text-sm text-[#4b3f3a]">
+                    <p className="text-sm text-muted">
                       No cocktails selected yet.
                     </p>
                   ) : (
@@ -367,7 +367,7 @@ export default function RequestPage() {
                       return (
                         <div
                           key={recipe.id}
-                          className={`relative grid gap-4 rounded-[28px] border border-[#c47b4a]/20 bg-white/70 p-5 ${
+                          className={`relative grid gap-4 rounded-[28px] border border-subtle bg-white/70 p-5 ${
                             ingredientsOpen ? "md:grid-cols-[240px_1fr]" : "md:grid-cols-[240px]"
                           }`}
                         >
@@ -389,7 +389,7 @@ export default function RequestPage() {
                                 expiresAt: Date.now() + 4000,
                               });
                             }}
-                            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/60 text-[#6a2e2a] shadow-sm hover:bg-white/80"
+                            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/60 text-accent shadow-sm hover:bg-white/80"
                             aria-label={`Remove ${displayName}`}
                             title="Remove"
                           >
@@ -408,11 +408,11 @@ export default function RequestPage() {
                                   }}
                                 />
                               </div>
-                              <h3 className="min-w-0 truncate font-display text-lg text-[#151210]">
+                              <h3 className="min-w-0 truncate font-display text-lg text-ink">
                                 {displayName}
                               </h3>
                             </div>
-                            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                               Quantity
                               <input
                                 type="number"
@@ -441,7 +441,7 @@ export default function RequestPage() {
                                   }))
                                 }
                                 // iOS Safari zooms when inputs are < 16px font-size.
-                                className="mt-2 w-full rounded-2xl border border-[#c47b4a]/30 bg-white/80 px-4 py-3 text-[16px]"
+                                className="mt-2 w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px]"
                               />
                             </label>
 
@@ -453,7 +453,7 @@ export default function RequestPage() {
                                   [recipe.id]: !prev[recipe.id],
                                 }))
                               }
-                              className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-[#6a2e2a] underline underline-offset-2"
+                              className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-accent underline underline-offset-2"
                             >
                               {ingredientsOpen ? "Hide ingredients" : "Show ingredients"}
                             </button>
@@ -461,14 +461,14 @@ export default function RequestPage() {
 
                           {ingredientsOpen ? (
                             <div className="rounded-3xl border border-[#6a2e2a]/10 bg-white/80 px-5 py-4">
-                              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a2e2a]">
+                              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                                 {servings > 0
                                   ? `Ingredients (for ${servings})`
                                   : "Ingredients (per cocktail)"}
                               </p>
-                              <div className="mt-3 grid gap-2 text-sm text-[#4b3f3a]">
+                              <div className="mt-3 grid gap-2 text-sm text-muted">
                                 {recipe.recipe_ingredients.length === 0 ? (
-                                  <p className="text-sm text-[#4b3f3a]">
+                                  <p className="text-sm text-muted">
                                     No ingredients added yet.
                                   </p>
                                 ) : (
@@ -504,7 +504,7 @@ export default function RequestPage() {
                                         key={row.key}
                                         className="flex items-center justify-between gap-4"
                                       >
-                                        <span className="font-medium text-[#151210]">
+                                        <span className="font-medium text-ink">
                                           {row.name}
                                         </span>
                                         <span>
@@ -531,7 +531,7 @@ export default function RequestPage() {
                 type="button"
                 onClick={() => setStep("quantity")}
                 disabled={!canProceedToQuantities}
-                className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
+                className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
               >
                 Next: Add Quantities
               </button>
@@ -540,14 +540,14 @@ export default function RequestPage() {
                 <button
                   type="button"
                   onClick={() => setStep("select")}
-                  className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6a2e2a] hover:-translate-y-0.5"
+                  className="gi-btn-secondary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] hover:-translate-y-0.5"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleCreateOrderList}
                   disabled={!canCreateOrder}
-                  className="rounded-full bg-[#6a2e2a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#f8f1e7] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
+                  className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
                 >
                   Create Order List
                 </button>
@@ -559,7 +559,7 @@ export default function RequestPage() {
         {undoRemoval && step === "quantity" ? (
           <div className="fixed inset-x-0 bottom-6 z-50 px-6">
             <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-4 rounded-2xl border border-black/10 bg-white/90 px-5 py-4 shadow-lg">
-              <p className="text-sm text-[#151210]">
+              <p className="text-sm text-ink">
                 Removed <span className="font-semibold">{undoRemoval.recipeName}</span>
               </p>
               <button
@@ -572,7 +572,7 @@ export default function RequestPage() {
                   });
                   setUndoRemoval(null);
                 }}
-                className="rounded-full bg-[#6a2e2a] px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#f8f1e7] hover:-translate-y-0.5"
+                className="gi-btn-primary px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
               >
                 Undo
               </button>

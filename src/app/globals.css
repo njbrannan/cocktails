@@ -2,6 +2,11 @@
 
 :root {
   color-scheme: light;
+
+  /* Theme defaults (classic look). These two are re-mapped per-theme below. */
+  --font-body: var(--font-classic-body);
+  --font-display: var(--font-classic-display);
+
   --color-ink: #151210;
   --color-ink-muted: #4b3f3a;
   --color-cream: #f8f1e7;
@@ -10,7 +15,33 @@
   --color-berry: #6a2e2a;
   --color-shadow: rgba(21, 18, 16, 0.12);
   --color-glow: rgba(196, 123, 74, 0.25);
+  --color-border: rgba(196, 123, 74, 0.2);
+  --color-border-soft: rgba(196, 123, 74, 0.12);
+  --color-accent-ring: rgba(106, 46, 42, 0.18);
   --radius-pill: 999px;
+}
+
+/* Optional Get Involved / Squarespace-matching theme.
+   Toggle with ?theme=gi (or set NEXT_PUBLIC_THEME_DEFAULT=gi on Vercel). */
+html[data-theme="gi"] {
+  --font-body: var(--font-gi-body);
+  --font-display: var(--font-gi-body);
+
+  /* Approximated from Squarespace site.css variables:
+     --accent-hsl: 0,0%,86.27%  (light gray)
+     --darkAccent-hsl: 0,0%,10.98% (near-black) */
+  --color-ink: #1c1c1c;
+  --color-ink-muted: #5c5c5c;
+  --color-cream: #ffffff;
+  --color-champagne: #f2f2f2;
+  --color-copper: #1c1c1c;
+  --color-berry: #1c1c1c;
+  --color-shadow: rgba(0, 0, 0, 0.08);
+  --color-glow: rgba(0, 0, 0, 0.08);
+  --color-border: rgba(0, 0, 0, 0.14);
+  --color-border-soft: rgba(0, 0, 0, 0.1);
+  --color-accent-ring: rgba(28, 28, 28, 0.18);
+  --radius-pill: 10px;
 }
 
 body {
@@ -25,9 +56,16 @@ body {
 
 .glass-panel {
   background: rgba(248, 241, 231, 0.85);
-  border: 1px solid rgba(196, 123, 74, 0.2);
+  border: 1px solid var(--color-border);
   box-shadow: 0 20px 50px var(--color-shadow);
   backdrop-filter: blur(12px);
+}
+
+html[data-theme="gi"] .glass-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 18px 40px var(--color-shadow);
+  backdrop-filter: none;
 }
 
 .text-shadow-soft {
@@ -41,8 +79,64 @@ body {
     linear-gradient(120deg, rgba(242, 217, 177, 0.5), rgba(248, 241, 231, 0.8));
 }
 
+html[data-theme="gi"] .hero-grid {
+  background: #fff;
+  background-image: none;
+}
+
 .frosted-border {
   border: 1px solid rgba(21, 18, 16, 0.08);
+}
+
+/* Semantic helpers so we can theme without touching every Tailwind hex. */
+.text-ink {
+  color: var(--color-ink);
+}
+.text-muted {
+  color: var(--color-ink-muted);
+}
+.text-accent {
+  color: var(--color-berry);
+}
+.bg-accent {
+  background-color: var(--color-berry);
+}
+.text-on-accent {
+  color: var(--color-cream);
+}
+.border-subtle {
+  border-color: var(--color-border);
+}
+.border-soft {
+  border-color: var(--color-border-soft);
+}
+
+.gi-selected {
+  border-color: var(--color-berry) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-ring);
+}
+
+.gi-btn-primary {
+  border-radius: var(--radius-pill);
+  background-color: var(--color-berry);
+  color: var(--color-cream);
+}
+.gi-btn-secondary {
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--color-berry);
+  border: 1px solid var(--color-border);
+}
+
+html[data-theme="gi"] .gi-btn-secondary {
+  background: transparent;
+}
+
+/* Keep form controls predictable on iOS Safari (prevents overflow/zoom quirks). */
+input,
+select,
+textarea {
+  box-sizing: border-box;
 }
 
 button, a {
@@ -63,6 +157,8 @@ button:focus-visible, a:focus-visible {
 input[type="date"] {
   width: 100%;
   max-width: 100%;
+  min-width: 0;
+  display: block;
   letter-spacing: normal;
   text-transform: none;
 }

@@ -37,11 +37,11 @@ export default function RootLayout({
       <head>
         <script
           // Allow quick "brand match" comparisons without shipping a visible UI toggle:
-          // - Visit with `?theme=gi` to switch to the Get Involved (Squarespace) look
-          // - Visit with `?theme=classic` to revert
+          // - `classic` is now the brand-matched look (Get Involved)
+          // - Visit with `?theme=legacy` to revert to the previous (original) look
           // Choice is persisted in localStorage (`gi_theme`) so it sticks on refresh.
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var p=new URLSearchParams(window.location.search);var t=p.get('theme');if(t){localStorage.setItem('gi_theme',t);}var s=localStorage.getItem('gi_theme');var next=t||s||document.documentElement.getAttribute('data-theme')||'classic';if(next!=='classic'&&next!=='gi'){next='classic';}document.documentElement.setAttribute('data-theme',next);}catch(e){}})();`,
+            __html: `(function(){try{var p=new URLSearchParams(window.location.search);var t=p.get('theme');if(t){localStorage.setItem('gi_theme',t);}var s=localStorage.getItem('gi_theme');var next=t||s||document.documentElement.getAttribute('data-theme')||'classic';if(next==='gi'){next='classic';}if(next!=='classic'&&next!=='legacy'){next='classic';}document.documentElement.setAttribute('data-theme',next);}catch(e){}})();`,
           }}
         />
       </head>

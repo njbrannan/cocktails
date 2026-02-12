@@ -3,27 +3,7 @@
 :root {
   color-scheme: light;
 
-  /* Theme defaults (classic look). These two are re-mapped per-theme below. */
-  --font-body: var(--font-classic-body);
-  --font-display: var(--font-classic-display);
-
-  --color-ink: #151210;
-  --color-ink-muted: #4b3f3a;
-  --color-cream: #f8f1e7;
-  --color-champagne: #f2d9b1;
-  --color-copper: #c47b4a;
-  --color-berry: #6a2e2a;
-  --color-shadow: rgba(21, 18, 16, 0.12);
-  --color-glow: rgba(196, 123, 74, 0.25);
-  --color-border: rgba(196, 123, 74, 0.2);
-  --color-border-soft: rgba(196, 123, 74, 0.12);
-  --color-accent-ring: rgba(106, 46, 42, 0.18);
-  --radius-pill: 999px;
-}
-
-/* Optional Get Involved / Squarespace-matching theme.
-   Toggle with ?theme=gi (or set NEXT_PUBLIC_THEME_DEFAULT=gi on Vercel). */
-html[data-theme="gi"] {
+  /* Default theme (classic) is now the brand-matched Get Involved look. */
   --font-body: var(--font-gi-body);
   --font-display: var(--font-gi-body);
 
@@ -41,7 +21,26 @@ html[data-theme="gi"] {
   --color-border: rgba(0, 0, 0, 0.14);
   --color-border-soft: rgba(0, 0, 0, 0.1);
   --color-accent-ring: rgba(28, 28, 28, 0.18);
-  --radius-pill: 10px;
+  --radius-pill: 999px;
+}
+
+/* Legacy theme (previous original look). Toggle with ?theme=legacy */
+html[data-theme="legacy"] {
+  --font-body: var(--font-classic-body);
+  --font-display: var(--font-classic-display);
+
+  --color-ink: #151210;
+  --color-ink-muted: #4b3f3a;
+  --color-cream: #f8f1e7;
+  --color-champagne: #f2d9b1;
+  --color-copper: #c47b4a;
+  --color-berry: #6a2e2a;
+  --color-shadow: rgba(21, 18, 16, 0.12);
+  --color-glow: rgba(196, 123, 74, 0.25);
+  --color-border: rgba(196, 123, 74, 0.2);
+  --color-border-soft: rgba(196, 123, 74, 0.12);
+  --color-accent-ring: rgba(106, 46, 42, 0.18);
+  --radius-pill: 999px;
 }
 
 body {
@@ -61,7 +60,8 @@ body {
   backdrop-filter: blur(12px);
 }
 
-html[data-theme="gi"] .glass-panel {
+/* Default (classic/brand-matched) panels */
+html:not([data-theme="legacy"]) .glass-panel {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--color-border);
   box-shadow: 0 18px 40px var(--color-shadow);
@@ -79,7 +79,8 @@ html[data-theme="gi"] .glass-panel {
     linear-gradient(120deg, rgba(242, 217, 177, 0.5), rgba(248, 241, 231, 0.8));
 }
 
-html[data-theme="gi"] .hero-grid {
+/* Default (classic/brand-matched) background */
+html:not([data-theme="legacy"]) .hero-grid {
   background: #fff;
   background-image: none;
 }

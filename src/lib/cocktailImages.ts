@@ -5,12 +5,9 @@ function hasFileExtension(value: string) {
   return /\.[a-z0-9]{2,5}$/i.test(value);
 }
 
-const PHOTO_OVERRIDES_BY_SLUG: Record<string, "png" | "jpg" | "webp"> = {
-  // We have higher-fidelity photo assets for these two.
-  // If the file isn't present, UI code will fall back to the .svg icon.
-  margarita: "webp",
-  "moscow-mule": "webp",
-};
+// For now we intentionally prefer the SVG icon set (fast, consistent, and transparent).
+// If/when you upload transparent photo PNGs for all cocktails, we can re-enable photo overrides.
+const PHOTO_OVERRIDES_BY_SLUG: Record<string, "png" | "jpg" | "webp"> = {};
 
 export function normalizeCocktailDisplayName(name: string) {
   const raw = String(name || "").trim();
@@ -62,10 +59,11 @@ export function resolveCocktailImageSrc(
     const slug = normalizeImageSlug(slugifyCocktailName(base));
     const preferred = PHOTO_OVERRIDES_BY_SLUG[slug];
     // If we have a photo override for this cocktail, prefer it even if the DB still points at an svg.
-    if (preferred && (!ext || ext === ".svg")) {
-      return `/cocktails/${slug}.${preferred}`;
-    }
-    return ext ? `/cocktails/${slug}${ext}` : `/cocktails/${slug}.svg`;
+    if (preferred && (!ext || ext === ".svg")) return `/cocktails/${slug}.${preferred}`;
+
+    // Otherwise always prefer the SVG icon, even if the DB points to a .png/.webp.
+    // (Icons are transparent and consistent across the set.)
+    return `/cocktails/${slug}.svg`;
   }
 
   const slug = normalizeImageSlug(slugifyCocktailName(recipeName));

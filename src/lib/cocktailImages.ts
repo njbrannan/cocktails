@@ -60,6 +60,11 @@ export function resolveCocktailImageSrc(
     const ext = extMatch ? `.${extMatch[1].toLowerCase()}` : "";
     const base = ext ? raw.slice(0, -ext.length) : raw;
     const slug = normalizeImageSlug(slugifyCocktailName(base));
+    const preferred = PHOTO_OVERRIDES_BY_SLUG[slug];
+    // If we have a photo override for this cocktail, prefer it even if the DB still points at an svg.
+    if (preferred && (!ext || ext === ".svg")) {
+      return `/cocktails/${slug}.${preferred}`;
+    }
     return ext ? `/cocktails/${slug}${ext}` : `/cocktails/${slug}.svg`;
   }
 

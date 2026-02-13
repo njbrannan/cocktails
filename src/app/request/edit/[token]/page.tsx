@@ -8,6 +8,7 @@ import {
   COCKTAIL_PLACEHOLDER_IMAGE,
   normalizeCocktailDisplayName,
   resolveCocktailImageSrc,
+  resolveNextCocktailImageSrc,
   resolveSvgFallbackForImageSrc,
 } from "@/lib/cocktailImages";
 
@@ -533,14 +534,15 @@ export default function RequestEditPage() {
                             className="h-full w-full object-contain"
                             onError={(event) => {
                               const img = event.currentTarget;
-                              if (img.dataset.fallbackApplied === "1") {
+                              const stage = Number(img.dataset.fallbackStage || "0") || 0;
+                              if (stage >= 3) {
                                 img.src = PLACEHOLDER_IMAGE;
                                 return;
                               }
-                              img.dataset.fallbackApplied = "1";
-                              img.src = resolveSvgFallbackForImageSrc(
-                                img.getAttribute("src") || "",
-                              );
+                              const current = img.getAttribute("src") || "";
+                              const next = resolveNextCocktailImageSrc(current);
+                              img.dataset.fallbackStage = String(stage + 1);
+                              img.src = next || PLACEHOLDER_IMAGE;
                             }}
                           />
                         </div>
@@ -694,14 +696,15 @@ export default function RequestEditPage() {
                             className="h-full w-full object-contain px-6 pb-8 pt-4"
                             onError={(event) => {
                               const img = event.currentTarget;
-                              if (img.dataset.fallbackApplied === "1") {
+                              const stage = Number(img.dataset.fallbackStage || "0") || 0;
+                              if (stage >= 3) {
                                 img.src = PLACEHOLDER_IMAGE;
                                 return;
                               }
-                              img.dataset.fallbackApplied = "1";
-                              img.src = resolveSvgFallbackForImageSrc(
-                                img.getAttribute("src") || "",
-                              );
+                              const current = img.getAttribute("src") || "";
+                              const next = resolveNextCocktailImageSrc(current);
+                              img.dataset.fallbackStage = String(stage + 1);
+                              img.src = next || PLACEHOLDER_IMAGE;
                             }}
                           />
                           {isSelected ? (
@@ -798,14 +801,15 @@ export default function RequestEditPage() {
                                   className="h-full w-full object-contain"
                                   onError={(event) => {
                                     const img = event.currentTarget;
-                                    if (img.dataset.fallbackApplied === "1") {
+                                    const stage = Number(img.dataset.fallbackStage || "0") || 0;
+                                    if (stage >= 3) {
                                       img.src = PLACEHOLDER_IMAGE;
                                       return;
                                     }
-                                    img.dataset.fallbackApplied = "1";
-                                    img.src = resolveSvgFallbackForImageSrc(
-                                      img.getAttribute("src") || "",
-                                    );
+                                    const current = img.getAttribute("src") || "";
+                                    const next = resolveNextCocktailImageSrc(current);
+                                    img.dataset.fallbackStage = String(stage + 1);
+                                    img.src = next || PLACEHOLDER_IMAGE;
                                   }}
                                 />
                               </div>

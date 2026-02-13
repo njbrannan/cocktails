@@ -8,8 +8,8 @@ function hasFileExtension(value: string) {
 const PHOTO_OVERRIDES_BY_SLUG: Record<string, "png" | "jpg" | "webp"> = {
   // We have higher-fidelity photo assets for these two.
   // If the file isn't present, UI code will fall back to the .svg icon.
-  margarita: "png",
-  "moscow-mule": "png",
+  margarita: "webp",
+  "moscow-mule": "webp",
 };
 
 export function normalizeCocktailDisplayName(name: string) {
@@ -75,12 +75,32 @@ export function resolveCocktailImageSrc(
   return `/cocktails/${slug}.svg`;
 }
 
-export function resolveSvgFallbackForImageSrc(src: string) {
+function stripQueryAndHash(src: string) {
+  return src.split("#")[0]!.split("?")[0]!;
+}
+
+export function resolveNextCocktailImageSrc(src: string) {
   const raw = String(src || "").trim();
   if (!raw.startsWith("/cocktails/")) return COCKTAIL_PLACEHOLDER_IMAGE;
-  // If the primary is a photo, fall back to our svg icon.
-  if (raw.match(/\.png($|[?#])|\.jpg($|[?#])|\.jpeg($|[?#])|\.webp($|[?#])/i)) {
-    return raw.replace(/\.(png|jpg|jpeg|webp)($|[?#].*)/i, ".svg$2");
+
+  const clean = stripQueryAndHash(raw);
+  const suffix = raw.slice(clean.length); // includes ? or # parts
+
+  if (clean.match(/\.webp$/i)) {
+    // Prefer png as a secondary fallback (useful if a browser blocks webp for some reason).
+    return clean.replace(/\.webp$/i, ".png") + suffix;
   }
+  if (clean.match(/\.png$/i) || clean.match(/\.jpe?g$/i)) {
+    return clean.replace(/\.(png|jpe?g)$/i, ".svg") + suffix;
+  }
+  if (clean.match(/\.svg$/i)) return COCKTAIL_PLACEHOLDER_IMAGE;
   return COCKTAIL_PLACEHOLDER_IMAGE;
+}
+
+// Back-compat name (used by earlier UI code paths)
+export function resolveSvgFallbackForImageSrc(src: string) {
+  const next = resolveNextCocktailImageSrc(src);
+  // If next is a png (webp->png), take one more step to svg (we only want an svg fallback here).
+  if (next.endsWith(".png")) return resolveNextCocktailImageSrc(next);
+  return next;
 }

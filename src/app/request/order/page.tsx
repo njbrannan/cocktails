@@ -5,6 +5,7 @@ import {
   COCKTAIL_PLACEHOLDER_IMAGE,
   normalizeCocktailDisplayName,
   resolveCocktailImageSrc,
+  resolveNextCocktailImageSrc,
   resolveSvgFallbackForImageSrc,
 } from "@/lib/cocktailImages";
 import { supabase } from "@/lib/supabaseClient";
@@ -610,14 +611,15 @@ export default function RequestOrderPage() {
                         className="h-full w-full object-contain"
                         onError={(event) => {
                           const img = event.currentTarget;
-                          if (img.dataset.fallbackApplied === "1") {
+                          const stage = Number(img.dataset.fallbackStage || "0") || 0;
+                          if (stage >= 3) {
                             img.src = COCKTAIL_PLACEHOLDER_IMAGE;
                             return;
                           }
-                          img.dataset.fallbackApplied = "1";
-                          img.src = resolveSvgFallbackForImageSrc(
-                            img.getAttribute("src") || "",
-                          );
+                          const current = img.getAttribute("src") || "";
+                          const next = resolveNextCocktailImageSrc(current);
+                          img.dataset.fallbackStage = String(stage + 1);
+                          img.src = next || COCKTAIL_PLACEHOLDER_IMAGE;
                         }}
                       />
                     </div>

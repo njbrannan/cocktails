@@ -8,6 +8,7 @@ import {
   COCKTAIL_PLACEHOLDER_IMAGE,
   normalizeCocktailDisplayName,
   resolveCocktailImageSrc,
+  resolveSvgFallbackForImageSrc,
 } from "@/lib/cocktailImages";
 
 type EventRecord = {
@@ -531,7 +532,15 @@ export default function RequestEditPage() {
                             aria-hidden="true"
                             className="h-full w-full object-contain"
                             onError={(event) => {
-                              event.currentTarget.src = PLACEHOLDER_IMAGE;
+                              const img = event.currentTarget;
+                              if (img.dataset.fallbackApplied === "1") {
+                                img.src = PLACEHOLDER_IMAGE;
+                                return;
+                              }
+                              img.dataset.fallbackApplied = "1";
+                              img.src = resolveSvgFallbackForImageSrc(
+                                img.getAttribute("src") || "",
+                              );
                             }}
                           />
                         </div>
@@ -684,7 +693,15 @@ export default function RequestEditPage() {
                             loading="lazy"
                             className="h-full w-full object-contain px-6 pb-8 pt-4"
                             onError={(event) => {
-                              event.currentTarget.src = PLACEHOLDER_IMAGE;
+                              const img = event.currentTarget;
+                              if (img.dataset.fallbackApplied === "1") {
+                                img.src = PLACEHOLDER_IMAGE;
+                                return;
+                              }
+                              img.dataset.fallbackApplied = "1";
+                              img.src = resolveSvgFallbackForImageSrc(
+                                img.getAttribute("src") || "",
+                              );
                             }}
                           />
                           {isSelected ? (
@@ -780,7 +797,15 @@ export default function RequestEditPage() {
                                   aria-hidden="true"
                                   className="h-full w-full object-contain"
                                   onError={(event) => {
-                                    event.currentTarget.src = PLACEHOLDER_IMAGE;
+                                    const img = event.currentTarget;
+                                    if (img.dataset.fallbackApplied === "1") {
+                                      img.src = PLACEHOLDER_IMAGE;
+                                      return;
+                                    }
+                                    img.dataset.fallbackApplied = "1";
+                                    img.src = resolveSvgFallbackForImageSrc(
+                                      img.getAttribute("src") || "",
+                                    );
                                   }}
                                 />
                               </div>

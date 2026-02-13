@@ -5,6 +5,13 @@ function hasFileExtension(value: string) {
   return /\.[a-z0-9]{2,5}$/i.test(value);
 }
 
+const PHOTO_OVERRIDES_BY_SLUG: Record<string, "png" | "jpg" | "webp"> = {
+  // We have higher-fidelity photo assets for these two.
+  // If the file isn't present, UI code will fall back to the .svg icon.
+  margarita: "png",
+  "moscow-mule": "png",
+};
+
 export function normalizeCocktailDisplayName(name: string) {
   const raw = String(name || "").trim();
   if (!raw) return raw;
@@ -58,5 +65,17 @@ export function resolveCocktailImageSrc(
 
   const slug = normalizeImageSlug(slugifyCocktailName(recipeName));
   if (!slug) return COCKTAIL_PLACEHOLDER_IMAGE;
+  const preferred = PHOTO_OVERRIDES_BY_SLUG[slug];
+  if (preferred) return `/cocktails/${slug}.${preferred}`;
   return `/cocktails/${slug}.svg`;
+}
+
+export function resolveSvgFallbackForImageSrc(src: string) {
+  const raw = String(src || "").trim();
+  if (!raw.startsWith("/cocktails/")) return COCKTAIL_PLACEHOLDER_IMAGE;
+  // If the primary is a photo, fall back to our svg icon.
+  if (raw.match(/\.png($|[?#])|\.jpg($|[?#])|\.jpeg($|[?#])|\.webp($|[?#])/i)) {
+    return raw.replace(/\.(png|jpg|jpeg|webp)($|[?#].*)/i, ".svg$2");
+  }
+  return COCKTAIL_PLACEHOLDER_IMAGE;
 }

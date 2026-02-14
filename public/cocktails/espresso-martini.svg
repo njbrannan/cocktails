@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Espresso Martini">
+  <defs>
+    <linearGradient id="espresso" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b3f2a" />
+      <stop offset="1" stop-color="#3b2116" />
+    </linearGradient>
+  </defs>
+
+  <!-- liquid -->
+  <path
+    d="M200 210 Q256 190 312 210 Q296 246 256 258 Q216 246 200 210 Z"
+    fill="url(#espresso)"
+    opacity="0.92"
+  />
+
+  <!-- crema highlight -->
+  <path
+    d="M216 212 Q256 198 296 212"
+    fill="none"
+    stroke="#c8a076"
+    stroke-width="10"
+    stroke-linecap="round"
+    opacity="0.65"
+  />
+
+  <!-- coffee beans (garnish) -->
+  <g opacity="0.92">
+    <ellipse cx="312" cy="168" rx="18" ry="24" fill="#3b2116" />
+    <ellipse cx="340" cy="160" rx="18" ry="24" fill="#4a2a1d" />
+    <ellipse cx="326" cy="142" rx="18" ry="24" fill="#2f1a12" />
+  </g>
+
+  <g
+    fill="none"
+    stroke="#2b1e1a"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- martini glass -->
+    <path d="M150 186 L256 270 L362 186" />
+    <path d="M150 186 H362" />
+
+    <!-- bowl outline -->
+    <path d="M168 190 Q256 140 344 190 Q320 260 256 278 Q192 260 168 190 Z" />
+
+    <!-- stem + base -->
+    <path d="M256 278 L256 356" />
+    <path d="M190 382 C220 408 292 408 322 382" />
+
+    <!-- bean lines -->
+    <path d="M312 148 C306 158 306 176 312 188" stroke-width="10" />
+    <path d="M340 140 C334 150 334 168 340 180" stroke-width="10" />
+    <path d="M326 122 C320 132 320 150 326 162" stroke-width="10" />
+  </g>
+</svg>
+

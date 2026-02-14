@@ -303,7 +303,7 @@ export default function RequestPage() {
                         <div
                           className={`relative h-[180px] w-full ${
                             isSelected
-                              ? "bg-gradient-to-br from-[#fbf3ea] to-[#efe0d3]"
+                              ? "bg-gradient-to-br from-[#e9fff2] to-[#c9f2dc]"
                               : "bg-white/80"
                           }`}
                         >

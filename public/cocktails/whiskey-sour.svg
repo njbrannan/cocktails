@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Whiskey Sour">
+  <defs>
+    <linearGradient id="sour" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe4a6" />
+      <stop offset="1" stop-color="#f2c56b" />
+    </linearGradient>
+  </defs>
+
+  <!-- liquid -->
+  <path
+    d="M194 214 H318 Q314 260 256 270 Q198 260 194 214 Z"
+    fill="url(#sour)"
+    opacity="0.92"
+  />
+
+  <!-- foam -->
+  <path
+    d="M198 214 Q256 194 314 214"
+    fill="none"
+    stroke="#fff5df"
+    stroke-width="12"
+    stroke-linecap="round"
+    opacity="0.8"
+  />
+
+  <!-- lemon wheel -->
+  <circle cx="352" cy="154" r="20" fill="#ffd76a" opacity="0.95" />
+  <circle cx="352" cy="154" r="12" fill="#ffffff" opacity="0.45" />
+
+  <g fill="none" stroke="#2b1e1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <!-- rocks glass -->
+    <path d="M176 174 H336" />
+    <path d="M186 174 L202 378 H310 L326 174" />
+    <path d="M202 378 H310" />
+
+    <!-- lemon outline -->
+    <circle cx="352" cy="154" r="20" />
+    <path d="M352 134 L352 174" stroke-width="10" />
+    <path d="M332 154 L372 154" stroke-width="10" />
+  </g>
+</svg>
+

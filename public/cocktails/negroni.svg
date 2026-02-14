@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Negroni">
+  <defs>
+    <linearGradient id="neg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f07d5a" />
+      <stop offset="1" stop-color="#c9412d" />
+    </linearGradient>
+  </defs>
+
+  <!-- liquid -->
+  <path
+    d="M194 214 H318 Q314 260 256 270 Q198 260 194 214 Z"
+    fill="url(#neg)"
+    opacity="0.92"
+  />
+
+  <!-- orange peel -->
+  <path d="M328 166 C352 160 372 170 380 190 C356 196 336 186 328 166 Z" fill="#ffb34a" opacity="0.95" />
+
+  <g fill="none" stroke="#2b1e1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <!-- rocks glass -->
+    <path d="M176 174 H336" />
+    <path d="M186 174 L202 378 H310 L326 174" />
+    <path d="M202 378 H310" />
+
+    <!-- ice hint -->
+    <path d="M214 226 L242 198" stroke-width="10" opacity="0.55" />
+    <path d="M268 236 L300 206" stroke-width="10" opacity="0.55" />
+
+    <!-- peel outline -->
+    <path d="M328 166 C352 160 372 170 380 190 C356 196 336 186 328 166 Z" />
+  </g>
+</svg>
+

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Martini">
+  <defs>
+    <linearGradient id="mart" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef6ff" />
+      <stop offset="1" stop-color="#d8e9ff" />
+    </linearGradient>
+  </defs>
+
+  <!-- liquid -->
+  <path
+    d="M206 214 Q256 192 306 214 Q292 252 256 264 Q220 252 206 214 Z"
+    fill="url(#mart)"
+    opacity="0.92"
+  />
+
+  <!-- olive -->
+  <circle cx="352" cy="154" r="18" fill="#7aa84c" opacity="0.92" />
+  <circle cx="352" cy="154" r="6" fill="#2b1e1a" opacity="0.55" />
+
+  <g fill="none" stroke="#2b1e1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <!-- martini bowl -->
+    <path d="M150 186 L256 270 L362 186" />
+    <path d="M150 186 H362" />
+    <path d="M168 190 Q256 140 344 190 Q320 260 256 278 Q192 260 168 190 Z" />
+    <!-- stem + base -->
+    <path d="M256 278 L256 356" />
+    <path d="M190 382 C220 408 292 408 322 382" />
+
+    <!-- olive + pick -->
+    <path d="M320 182 L368 150" stroke-width="10" />
+    <circle cx="352" cy="154" r="18" />
+  </g>
+</svg>
+

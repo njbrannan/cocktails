@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Tommy's Margarita">
+  <defs>
+    <linearGradient id="tommy" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dcf7c8" />
+      <stop offset="1" stop-color="#bfe6a4" />
+    </linearGradient>
+  </defs>
+
+  <!-- liquid -->
+  <path
+    d="M182 190 Q256 142 330 190 Q312 236 256 252 Q200 236 182 190 Z"
+    fill="url(#tommy)"
+    opacity="0.92"
+  />
+
+  <!-- lime wedge -->
+  <path d="M342 120 C368 132 384 156 372 180 C346 168 330 144 342 120 Z" fill="#77d36a" opacity="0.9" />
+  <path d="M350 132 C366 142 374 158 366 172" fill="none" stroke="#ffffff" stroke-width="10" opacity="0.5" stroke-linecap="round" />
+
+  <g fill="none" stroke="#2b1e1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <!-- coupe -->
+    <path d="M160 182 Q256 116 352 182 Q330 252 256 270 Q182 252 160 182 Z" />
+    <!-- rim -->
+    <path d="M172 180 Q256 130 340 180" stroke-dasharray="1 18" />
+    <!-- stem + base -->
+    <path d="M256 270 L256 356" />
+    <path d="M190 382 C220 408 292 408 322 382" />
+
+    <!-- wedge outline -->
+    <path d="M342 120 C368 132 384 156 372 180 C346 168 330 144 342 120 Z" />
+  </g>
+</svg>
+

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Manhattan">
+  <defs>
+    <linearGradient id="man" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b95a45" />
+      <stop offset="1" stop-color="#6f2c22" />
+    </linearGradient>
+  </defs>
+
+  <!-- liquid -->
+  <path
+    d="M188 206 Q256 170 324 206 Q308 252 256 270 Q204 252 188 206 Z"
+    fill="url(#man)"
+    opacity="0.92"
+  />
+
+  <!-- cherry -->
+  <circle cx="352" cy="148" r="18" fill="#8a1020" opacity="0.92" />
+  <path d="M352 130 C352 114 364 106 378 104" fill="none" stroke="#2b1e1a" stroke-width="10" stroke-linecap="round" />
+
+  <g fill="none" stroke="#2b1e1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <!-- coupe -->
+    <path d="M160 182 Q256 116 352 182 Q330 252 256 270 Q182 252 160 182 Z" />
+    <path d="M256 270 L256 356" />
+    <path d="M190 382 C220 408 292 408 322 382" />
+
+    <!-- cherry outline -->
+    <circle cx="352" cy="148" r="18" />
+  </g>
+</svg>
+

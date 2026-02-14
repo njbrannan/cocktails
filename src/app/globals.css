@@ -16,11 +16,14 @@
   --color-champagne: #f2f2f2;
   --color-copper: #1c1c1c;
   --color-berry: #1c1c1c;
+  --color-selected: #2f7d5a;
+  --color-selected-ink: #ffffff;
   --color-shadow: rgba(0, 0, 0, 0.08);
   --color-glow: rgba(0, 0, 0, 0.08);
   --color-border: rgba(0, 0, 0, 0.14);
   --color-border-soft: rgba(0, 0, 0, 0.1);
   --color-accent-ring: rgba(28, 28, 28, 0.18);
+  --color-selected-ring: rgba(47, 125, 90, 0.22);
   --radius-pill: 999px;
 }
 
@@ -35,11 +38,14 @@ html[data-theme="legacy"] {
   --color-champagne: #f2d9b1;
   --color-copper: #c47b4a;
   --color-berry: #6a2e2a;
+  --color-selected: #2f7d5a;
+  --color-selected-ink: #f8f1e7;
   --color-shadow: rgba(21, 18, 16, 0.12);
   --color-glow: rgba(196, 123, 74, 0.25);
   --color-border: rgba(196, 123, 74, 0.2);
   --color-border-soft: rgba(196, 123, 74, 0.12);
   --color-accent-ring: rgba(106, 46, 42, 0.18);
+  --color-selected-ring: rgba(47, 125, 90, 0.22);
   --radius-pill: 999px;
 }
 
@@ -113,14 +119,19 @@ html:not([data-theme="legacy"]) .hero-grid {
 }
 
 .gi-selected {
-  border-color: var(--color-berry) !important;
-  box-shadow: 0 0 0 2px var(--color-accent-ring);
+  border-color: var(--color-selected) !important;
+  box-shadow: 0 0 0 2px var(--color-selected-ring);
 }
 
 .gi-btn-primary {
   border-radius: var(--radius-pill);
   background-color: var(--color-berry);
   color: var(--color-cream);
+}
+
+.gi-selected-chip {
+  background-color: var(--color-selected);
+  color: var(--color-selected-ink);
 }
 .gi-btn-secondary {
   border-radius: var(--radius-pill);

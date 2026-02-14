@@ -136,10 +136,26 @@ html:not([data-theme="legacy"]) .hero-grid {
 
 /* Selected cocktail tile image lift/shadow */
 .gi-selected-spotlight {
-  /* A soft green spotlight behind the drink, without changing tile height. */
+  /* A soft "spotlight" beam from the selected chip, plus a pool of light behind the drink. */
   background-image:
-    radial-gradient(circle at 50% 40%, rgba(47, 125, 90, 0.22), transparent 62%),
-    radial-gradient(circle at 25% 20%, rgba(47, 125, 90, 0.12), transparent 52%);
+    /* beam */
+    linear-gradient(
+      160deg,
+      rgba(47, 125, 90, 0.30) 0%,
+      rgba(47, 125, 90, 0.16) 18%,
+      rgba(47, 125, 90, 0.06) 36%,
+      rgba(47, 125, 90, 0.0) 58%
+    ),
+    /* pool of light */
+    radial-gradient(circle at 50% 38%, rgba(47, 125, 90, 0.24), transparent 62%),
+    radial-gradient(circle at 30% 20%, rgba(47, 125, 90, 0.12), transparent 52%);
+}
+
+.gi-selected-photo {
+  /* A dark shadow cast "behind" the drink, as if lit from above-left. */
+  filter:
+    drop-shadow(14px 18px 18px rgba(0, 0, 0, 0.28))
+    drop-shadow(0 12px 20px rgba(0, 0, 0, 0.12));
 }
 .gi-btn-secondary {
   border-radius: var(--radius-pill);

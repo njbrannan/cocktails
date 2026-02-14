@@ -18,14 +18,17 @@
   <path d="M350 132 C366 142 374 158 366 172" fill="none" stroke="#ffffff" stroke-width="10" opacity="0.5" stroke-linecap="round" />
 
   <g fill="none" stroke="#2b1e1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
-    <!-- rocks glass -->
-    <path d="M176 174 H336" />
-    <path d="M186 174 L202 378 H310 L326 174" />
-    <path d="M202 378 H310" />
+    <!-- old fashioned glass (short + wide) -->
+    <path d="M176 210 H336" />
+    <path d="M190 210 L206 360 H306 L322 210" />
+    <path d="M206 360 H306" />
+    <!-- thick base -->
+    <path d="M206 360 L210 392 H302 L306 360" stroke-width="12" />
+    <path d="M210 392 H302" stroke-width="12" />
 
     <!-- ice hint -->
-    <path d="M216 238 L246 206" stroke-width="10" opacity="0.55" />
-    <path d="M268 246 L302 214" stroke-width="10" opacity="0.55" />
+    <path d="M216 264 L246 234" stroke-width="10" opacity="0.55" />
+    <path d="M268 272 L302 240" stroke-width="10" opacity="0.55" />
 
     <!-- wedge outline -->
     <path d="M342 120 C368 132 384 156 372 180 C346 168 330 144 342 120 Z" />

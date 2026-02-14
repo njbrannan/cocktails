@@ -17,15 +17,18 @@
   <path d="M328 166 C352 160 372 170 380 190 C356 196 336 186 328 166 Z" fill="#ffb34a" opacity="0.95" />
 
   <g fill="none" stroke="#2b1e1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
-    <!-- rocks glass -->
-    <path d="M176 174 H336" />
-    <path d="M186 174 L202 378 H310 L326 174" />
-    <path d="M202 378 H310" />
+    <!-- old fashioned glass (short + wide) -->
+    <path d="M176 210 H336" />
+    <path d="M190 210 L206 360 H306 L322 210" />
+    <path d="M206 360 H306" />
+    <!-- thick base -->
+    <path d="M206 360 L210 392 H302 L306 360" stroke-width="12" />
+    <path d="M210 392 H302" stroke-width="12" />
 
     <!-- ice hint -->
-    <path d="M214 226 L242 198" stroke-width="10" opacity="0.55" />
-    <path d="M268 236 L300 206" stroke-width="10" opacity="0.55" />
-    <path d="M232 258 L262 228" stroke-width="10" opacity="0.55" />
+    <path d="M216 254 L244 226" stroke-width="10" opacity="0.55" />
+    <path d="M268 262 L298 232" stroke-width="10" opacity="0.55" />
+    <path d="M234 286 L264 256" stroke-width="10" opacity="0.55" />
 
     <!-- peel outline -->
     <path d="M328 166 C352 160 372 170 380 190 C356 196 336 186 328 166 Z" />

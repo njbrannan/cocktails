@@ -133,6 +133,11 @@ html:not([data-theme="legacy"]) .hero-grid {
   background-color: var(--color-selected);
   color: var(--color-selected-ink);
 }
+
+/* Selected cocktail tile image lift/shadow */
+.gi-selected-photo {
+  filter: drop-shadow(0 18px 26px rgba(47, 125, 90, 0.28));
+}
 .gi-btn-secondary {
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.7);

@@ -294,22 +294,22 @@ export default function RequestPage() {
                             return next;
                           });
                         }}
-                        className={`group relative flex flex-col overflow-hidden rounded-[26px] border bg-white/80 text-left shadow-sm transition-transform hover:-translate-y-0.5 ${
+                        className={`group relative overflow-hidden rounded-[26px] border bg-white/80 text-left shadow-sm transition-transform hover:-translate-y-0.5 ${
                           isSelected
                             ? "gi-selected"
                             : "border-subtle"
                         }`}
                       >
                         <div
-                          className="relative h-[180px] w-full bg-white/80"
+                          className={`relative h-[180px] w-full bg-white/80 ${
+                            isSelected ? "gi-selected-spotlight" : ""
+                          }`}
                         >
                           <img
                             src={imageSrc}
                             alt={recipe.name}
                             loading="lazy"
-                            className={`h-full w-full object-contain px-6 py-4 ${
-                              isSelected ? "gi-selected-photo" : ""
-                            }`}
+                            className="h-full w-full object-contain px-6 pb-14 pt-4"
                             onError={(event) => {
                               const img = event.currentTarget;
                               const stage = Number(img.dataset.fallbackStage || "0") || 0;
@@ -329,21 +329,23 @@ export default function RequestPage() {
                             </div>
                           ) : null}
 
-                          {/* Keep the action hint out of the way: top-right, small. */}
-                          <div
-                            className="pointer-events-none absolute right-3 top-3 rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold tracking-normal text-ink/80 backdrop-blur"
-                            style={{
-                              textShadow:
-                                "0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(255,255,255,0.25)",
-                            }}
-                          >
+                          {/* Always show name + action text; keep it off the photo area */}
+                          <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
+                            <p
+                              className="font-display text-lg text-ink"
+                              style={{
+                                textShadow:
+                                  "0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(255,255,255,0.35)",
+                              }}
+                            >
+                              {displayName}
+                            </p>
+                          </div>
+
+                          {/* Action hint bottom-right */}
+                          <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold tracking-normal text-ink/80 backdrop-blur">
                             Tap to {isSelected ? "remove" : "add"}
                           </div>
-                        </div>
-
-                        {/* Caption sits below the image so it never overlaps the drink photo */}
-                        <div className="w-full px-4 pb-4 pt-3">
-                          <p className="font-display text-lg text-ink">{displayName}</p>
                         </div>
                       </button>
                     );

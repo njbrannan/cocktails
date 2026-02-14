@@ -1,42 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Moscow Mule">
   <defs>
-    <linearGradient id="copper" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f0c08b" />
-      <stop offset="0.55" stop-color="#c47b4a" />
-      <stop offset="1" stop-color="#8d4b2c" />
+    <linearGradient id="mule" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5fbff" />
+      <stop offset="1" stop-color="#d9f0ff" />
     </linearGradient>
   </defs>
 
-  <!-- mug body -->
+  <!-- ginger beer + lime -->
   <path
-    d="M156 182 C156 154 178 132 206 132 H308 C336 132 358 154 358 182 V342 C358 370 336 392 308 392 H206 C178 392 156 370 156 342 Z"
-    fill="url(#copper)"
-    opacity="0.96"
+    d="M194 214 H318 Q314 260 256 270 Q198 260 194 214 Z"
+    fill="url(#mule)"
+    opacity="0.92"
   />
 
-  <!-- lime wedge -->
-  <path d="M322 108 C350 110 370 132 372 160 C342 162 322 140 322 108 Z" fill="#77d36a" opacity="0.9" />
+  <!-- lime wedges -->
+  <path d="M330 138 C352 142 368 162 368 186 C346 182 330 162 330 138 Z" fill="#77d36a" opacity="0.92" />
+  <path d="M300 146 C322 150 338 170 338 194 C316 190 300 170 300 146 Z" fill="#6bc85f" opacity="0.92" />
 
-  <g
-    fill="none"
-    stroke="#2b1e1a"
-    stroke-width="14"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <!-- rim -->
-    <path d="M170 158 H342" />
-    <!-- mug outline -->
-    <path d="M156 182 C156 154 178 132 206 132 H308 C336 132 358 154 358 182 V342 C358 370 336 392 308 392 H206 C178 392 156 370 156 342 Z" />
-    <!-- handle -->
-    <path d="M358 214 H386 C412 214 432 234 432 260 V314 C432 340 412 360 386 360 H358" />
+  <g fill="none" stroke="#2b1e1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <!-- rocks glass -->
+    <path d="M176 174 H336" />
+    <path d="M186 174 L202 378 H310 L326 174" />
+    <path d="M202 378 H310" />
 
-    <!-- straw -->
-    <path d="M294 92 L270 170" />
+    <!-- ice hint -->
+    <path d="M216 236 L246 206" stroke-width="10" opacity="0.55" />
+    <path d="M266 244 L300 212" stroke-width="10" opacity="0.55" />
+    <path d="M238 262 L270 232" stroke-width="10" opacity="0.55" />
 
-    <!-- lime wheel detail -->
-    <path d="M322 108 C350 110 370 132 372 160" />
-    <path d="M336 114 L352 148" />
+    <!-- wedges outline -->
+    <path d="M330 138 C352 142 368 162 368 186" stroke-width="10" />
+    <path d="M300 146 C322 150 338 170 338 194" stroke-width="10" />
   </g>
 </svg>
-

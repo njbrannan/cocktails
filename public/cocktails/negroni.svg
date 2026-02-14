@@ -25,9 +25,9 @@
     <!-- ice hint -->
     <path d="M214 226 L242 198" stroke-width="10" opacity="0.55" />
     <path d="M268 236 L300 206" stroke-width="10" opacity="0.55" />
+    <path d="M232 258 L262 228" stroke-width="10" opacity="0.55" />
 
     <!-- peel outline -->
     <path d="M328 166 C352 160 372 170 380 190 C356 196 336 186 328 166 Z" />
   </g>
 </svg>
-

@@ -5,9 +5,12 @@ function hasFileExtension(value: string) {
   return /\.[a-z0-9]{2,5}$/i.test(value);
 }
 
-// For now we intentionally prefer the SVG icon set (fast, consistent, and transparent).
-// If/when you upload transparent photo PNGs for all cocktails, we can re-enable photo overrides.
-const PHOTO_OVERRIDES_BY_SLUG: Record<string, "png" | "jpg" | "webp"> = {};
+// Photo overrides (used when no explicit `image_url` is provided, or when Supabase still points to an svg).
+// For now we only enable the cocktails we have fast, optimized `.webp` assets for.
+const PHOTO_OVERRIDES_BY_SLUG: Record<string, "png" | "jpg" | "webp"> = {
+  margarita: "webp",
+  "moscow-mule": "webp",
+};
 
 export function normalizeCocktailDisplayName(name: string) {
   const raw = String(name || "").trim();
@@ -60,10 +63,7 @@ export function resolveCocktailImageSrc(
     const preferred = PHOTO_OVERRIDES_BY_SLUG[slug];
     // If we have a photo override for this cocktail, prefer it even if the DB still points at an svg.
     if (preferred && (!ext || ext === ".svg")) return `/cocktails/${slug}.${preferred}`;
-
-    // Otherwise always prefer the SVG icon, even if the DB points to a .png/.webp.
-    // (Icons are transparent and consistent across the set.)
-    return `/cocktails/${slug}.svg`;
+    return ext ? `/cocktails/${slug}${ext}` : `/cocktails/${slug}.svg`;
   }
 
   const slug = normalizeImageSlug(slugifyCocktailName(recipeName));

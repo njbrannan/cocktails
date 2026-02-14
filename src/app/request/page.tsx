@@ -309,9 +309,7 @@ export default function RequestPage() {
                             src={imageSrc}
                             alt={recipe.name}
                             loading="lazy"
-                            className={`h-full w-full object-contain px-6 pb-14 pt-4 ${
-                              isSelected ? "gi-selected-photo" : ""
-                            }`}
+                            className="h-full w-full object-contain px-6 pb-14 pt-4"
                             onError={(event) => {
                               const img = event.currentTarget;
                               const stage = Number(img.dataset.fallbackStage || "0") || 0;

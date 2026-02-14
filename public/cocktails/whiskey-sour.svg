@@ -28,10 +28,17 @@
   <circle cx="352" cy="154" r="12" fill="#ffffff" opacity="0.45" />
 
   <g fill="none" stroke="#2b1e1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
-    <!-- rocks glass -->
-    <path d="M176 174 H336" />
-    <path d="M186 174 L202 378 H310 L326 174" />
-    <path d="M202 378 H310" />
+    <!-- old fashioned glass (short + wide) -->
+    <path d="M176 210 H336" />
+    <path d="M190 210 L206 360 H306 L322 210" />
+    <path d="M206 360 H306" />
+    <!-- thick base -->
+    <path d="M206 360 L210 392 H302 L306 360" stroke-width="12" />
+    <path d="M210 392 H302" stroke-width="12" />
+
+    <!-- ice hint -->
+    <path d="M216 256 L244 228" stroke-width="10" opacity="0.55" />
+    <path d="M268 264 L298 234" stroke-width="10" opacity="0.55" />
 
     <!-- lemon outline -->
     <circle cx="352" cy="154" r="20" />
@@ -39,4 +46,3 @@
     <path d="M332 154 L372 154" stroke-width="10" />
   </g>
 </svg>
-

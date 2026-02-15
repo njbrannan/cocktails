@@ -8,7 +8,7 @@ export default function Home() {
       <main className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-6 py-16 sm:px-10">
         <div className="glass-panel w-full rounded-[36px] px-10 py-12 text-center">
           <h1 className="font-display text-4xl text-[#151210] sm:text-5xl">
-            Cocktail Menu Builder
+            Cocktail Party Planner
           </h1>
           <p className="mt-4 text-sm text-[#4b3f3a] sm:text-base">
             Redirecting you to the booking page...

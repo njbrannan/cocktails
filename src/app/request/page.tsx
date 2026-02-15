@@ -243,14 +243,14 @@ export default function RequestPage() {
     <div className="min-h-screen hero-grid px-6 py-16">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
         <header>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-            Get Involved with our
+          <p className="text-base font-semibold uppercase tracking-[0.3em] text-accent">
+            GET INVOLVED! WITH OUR
           </p>
           <h1 className="font-display text-4xl text-ink">
-            Cocktail Menu Builder
+            Cocktail Party Planner
           </h1>
           <p className="mt-2 text-sm text-muted">
-            Choose cocktails, set quantities, then create your order list.
+            Select cocktails, set quantities, then create your order list.
           </p>
         </header>
 
@@ -262,7 +262,7 @@ export default function RequestPage() {
           </h2>
           <p className="mt-2 text-sm text-muted">
             {step === "select"
-              ? "Tap the photos to choose your cocktails."
+              ? "Tap the photos to select your cocktails."
               : "Add quantities and we’ll calculate ingredients per drink."}
           </p>
 

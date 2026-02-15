@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Get Involved Catering | Cocktail Menu Builder",
+  title: "Get Involved Catering | Cocktail Party Planner",
   description:
-    "Tap cocktails, add quantities, and we’ll calculate a shopping list with bottle rounding plus a 10% buffer. Book Bartenders for your Event.",
+    "Our Cocktail Party Planning App offers a seamless and innovative way to organise your perfect cocktail party. Select cocktails, set quantities, receive your shopping list, then book Bartenders.",
   openGraph: {
-    title: "Get Involved Catering | Cocktail Menu Builder",
+    title: "Get Involved Catering | Cocktail Party Planner",
     description:
-      "Tap cocktails, add quantities, and we’ll calculate a shopping list with bottle rounding plus a 10% buffer.",
+      "Select cocktails, fill in quantities, get your comprehensive shopping list, then click to book Bartenders.",
     type: "website",
     images: [
       {
@@ -20,9 +20,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Get Involved Catering | Cocktail Menu Builder",
+    title: "Get Involved Catering | Cocktail Party Planner",
     description:
-      "Tap cocktails, add quantities, and we’ll calculate a shopping list with bottle rounding plus a 10% buffer.",
+      "Select cocktails, set quantities, get a shopping list, then book Bartenders.",
     images: ["/icon.png"],
   },
 };
@@ -34,4 +34,3 @@ export default function RequestLayout({
 }>) {
   return children;
 }
-

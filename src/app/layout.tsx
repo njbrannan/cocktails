@@ -23,13 +23,13 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || "https://events.getinvolved.com.au",
   ),
-  title: "Get Involved Catering | Cocktail Menu Builder",
+  title: "Get Involved Catering | Cocktail Party Planner",
   description:
-    "Choose cocktails, set quantities, and instantly get a shopping list with bottle rounding plus a 10% buffer. Send your request to Get Involved Catering.",
+    "Our Cocktail Party Planning App offers a seamless and innovative way to organise your perfect cocktail party. Select cocktails, set quantities, get a shopping list, then book Bartenders and we’ll bring it to life.",
   openGraph: {
-    title: "Get Involved Catering | Cocktail Menu Builder",
+    title: "Get Involved Catering | Cocktail Party Planner",
     description:
-      "Choose cocktails, set quantities, and instantly get a shopping list with bottle rounding plus a 10% buffer.",
+      "Select cocktails, set quantities, receive a comprehensive shopping list, then book Bartenders and we’ll turn your vision into an unforgettable experience.",
     type: "website",
     images: [
       {
@@ -42,9 +42,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Get Involved Catering | Cocktail Menu Builder",
+    title: "Get Involved Catering | Cocktail Party Planner",
     description:
-      "Choose cocktails, set quantities, and instantly get a shopping list with bottle rounding plus a 10% buffer.",
+      "Select cocktails, set quantities, get a shopping list, then book Bartenders.",
     images: ["/icon.png"],
   },
 };

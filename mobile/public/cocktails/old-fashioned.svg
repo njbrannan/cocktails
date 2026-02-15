@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Old Fashioned">
+  <defs>
+    <linearGradient id="of" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e2a35b" />
+      <stop offset="1" stop-color="#c97a2b" />
+    </linearGradient>
+  </defs>
+
+  <!-- whiskey -->
+  <path d="M166 262 H346 V356 C346 376 330 392 310 392 H202 C182 392 166 376 166 356 Z" fill="url(#of)" opacity="0.92" />
+
+  <!-- ice -->
+  <g fill="#ffffff" opacity="0.38">
+    <rect x="214" y="284" width="70" height="58" rx="14" />
+    <rect x="268" y="306" width="70" height="58" rx="14" />
+  </g>
+
+  <!-- orange peel -->
+  <path d="M190 240 C210 214 246 212 272 236" fill="none" stroke="#e57a2a" stroke-width="14" stroke-linecap="round" />
+
+  <g
+    fill="none"
+    stroke="#2b1e1a"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- glass -->
+    <path d="M166 182 H346" />
+    <path d="M166 182 H346 V356 C346 376 330 392 310 392 H202 C182 392 166 376 166 356 Z" />
+    <!-- base thickness -->
+    <path d="M184 392 H328" />
+  </g>
+</svg>
+

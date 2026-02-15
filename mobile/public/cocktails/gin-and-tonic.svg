@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Gin and Tonic">
+  <defs>
+    <linearGradient id="gt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e8f5ff" />
+      <stop offset="1" stop-color="#bfd9f2" />
+    </linearGradient>
+  </defs>
+
+  <!-- liquid -->
+  <path
+    d="M140 176 C140 265 194 312 256 312 C318 312 372 265 372 176"
+    fill="url(#gt)"
+    opacity="0.78"
+  />
+
+  <!-- ice -->
+  <g fill="#ffffff" opacity="0.35">
+    <rect x="214" y="214" width="56" height="48" rx="12" />
+    <rect x="270" y="246" width="56" height="48" rx="12" />
+    <rect x="236" y="272" width="60" height="50" rx="12" />
+  </g>
+
+  <!-- lime -->
+  <circle cx="344" cy="148" r="24" fill="#77d36a" opacity="0.9" />
+  <circle cx="344" cy="148" r="16" fill="#ffffff" opacity="0.45" />
+
+  <g
+    fill="none"
+    stroke="#2b1e1a"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- bowl -->
+    <path d="M140 176 C140 282 206 338 256 338 C306 338 372 282 372 176" />
+    <ellipse cx="256" cy="176" rx="132" ry="62" />
+    <!-- stem -->
+    <path d="M256 338 L256 392" />
+    <!-- base -->
+    <path d="M190 412 C220 436 292 436 322 412" />
+
+    <!-- lime -->
+    <circle cx="344" cy="148" r="24" />
+    <path d="M344 124 L344 172" />
+    <path d="M320 148 L368 148" />
+  </g>
+</svg>
+

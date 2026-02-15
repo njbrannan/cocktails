@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Moscow Mule">
+  <defs>
+    <linearGradient id="mule" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5fbff" />
+      <stop offset="1" stop-color="#d9f0ff" />
+    </linearGradient>
+  </defs>
+
+  <!-- ginger beer + lime -->
+  <path
+    d="M194 214 H318 Q314 260 256 270 Q198 260 194 214 Z"
+    fill="url(#mule)"
+    opacity="0.92"
+  />
+
+  <!-- lime wedges -->
+  <path d="M330 138 C352 142 368 162 368 186 C346 182 330 162 330 138 Z" fill="#77d36a" opacity="0.92" />
+  <path d="M300 146 C322 150 338 170 338 194 C316 190 300 170 300 146 Z" fill="#6bc85f" opacity="0.92" />
+
+  <g fill="none" stroke="#2b1e1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <!-- old fashioned glass (short + wide) -->
+    <path d="M176 210 H336" />
+    <path d="M190 210 L206 360 H306 L322 210" />
+    <path d="M206 360 H306" />
+    <!-- thick base -->
+    <path d="M206 360 L210 392 H302 L306 360" stroke-width="12" />
+    <path d="M210 392 H302" stroke-width="12" />
+
+    <!-- ice hint -->
+    <path d="M216 258 L246 228" stroke-width="10" opacity="0.55" />
+    <path d="M266 266 L300 234" stroke-width="10" opacity="0.55" />
+    <path d="M238 286 L270 256" stroke-width="10" opacity="0.55" />
+
+    <!-- wedges outline -->
+    <path d="M330 138 C352 142 368 162 368 186" stroke-width="10" />
+    <path d="M300 146 C322 150 338 170 338 194" stroke-width="10" />
+  </g>
+</svg>

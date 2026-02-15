@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Margarita">
+  <defs>
+    <linearGradient id="marg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9f5d9" />
+      <stop offset="1" stop-color="#bfe6c7" />
+    </linearGradient>
+  </defs>
+
+  <!-- liquid -->
+  <path
+    d="M182 190 Q256 142 330 190 Q312 236 256 252 Q200 236 182 190 Z"
+    fill="url(#marg)"
+    opacity="0.92"
+  />
+
+  <!-- lime wheel -->
+  <circle cx="356" cy="148" r="26" fill="#77d36a" opacity="0.9" />
+  <circle cx="356" cy="148" r="18" fill="#ffffff" opacity="0.5" />
+
+  <g
+    fill="none"
+    stroke="#2b1e1a"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- coupe bowl -->
+    <path d="M160 182 Q256 116 352 182 Q330 252 256 270 Q182 252 160 182 Z" />
+    <!-- salt rim -->
+    <path d="M172 180 Q256 130 340 180" stroke-dasharray="1 18" />
+
+    <!-- stem -->
+    <path d="M256 270 L256 356" />
+    <!-- base -->
+    <path d="M190 382 C220 408 292 408 322 382" />
+
+    <!-- lime -->
+    <circle cx="356" cy="148" r="26" />
+    <path d="M356 122 L356 174" />
+    <path d="M330 148 L382 148" />
+  </g>
+</svg>
+

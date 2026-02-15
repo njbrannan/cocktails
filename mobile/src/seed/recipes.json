@@ -1,0 +1,890 @@
+{
+  "recipes": [
+    {
+      "id": "802af9d2-15c2-41dd-84dd-4e7b7e5db622",
+      "name": "Aperol Spritz",
+      "description": "Summer drinkks",
+      "image_url": "aperol-spritz.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "37ec0289-779c-4120-938e-89e80869b048",
+            "name": "Prosecco",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 90
+        },
+        {
+          "ingredients": {
+            "id": "9b5c021b-0a2f-4ef8-8973-767d1343adf9",
+            "name": "Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 80
+        },
+        {
+          "ingredients": {
+            "id": "93478269-eaad-4de2-a978-2f8c44a71746",
+            "name": "Aperol",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 60
+        },
+        {
+          "ingredients": {
+            "id": "13676c17-8d8b-497a-96cd-29f0395f92ec",
+            "name": "Soda Water",
+            "type": "mixer",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 30
+        },
+        {
+          "ingredients": {
+            "id": "e85f66f2-98e0-4ac6-bbe6-1172a1677891",
+            "name": "Balloon Wine Glass",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        },
+        {
+          "ingredients": {
+            "id": "284362e7-c3e6-4b78-a37e-91b1c3a0a5ac",
+            "name": "Oranges",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 0.2
+        }
+      ]
+    },
+    {
+      "id": "8533ba85-e86b-4452-ba7d-ee328361be5b",
+      "name": "Daiquiri",
+      "description": "Refreshing classic",
+      "image_url": "daiquiri.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "9b5c021b-0a2f-4ef8-8973-767d1343adf9",
+            "name": "Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 80
+        },
+        {
+          "ingredients": {
+            "id": "f5ae9477-c919-462d-893b-f8deda03a3a7",
+            "name": "Rum",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 60
+        },
+        {
+          "ingredients": {
+            "id": "ac52f80d-660b-4337-8283-601e332f481c",
+            "name": "Lime Juice",
+            "type": "juice",
+            "unit": "ml",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 25
+        },
+        {
+          "ingredients": {
+            "id": "d3daf6a2-a712-4a2e-b01f-5b3811fac487",
+            "name": "Simple Syrup",
+            "type": "syrup",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 25
+        },
+        {
+          "ingredients": {
+            "id": "83349508-7d17-4eb7-80cc-f09942f3f9f6",
+            "name": "Coupette",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        }
+      ]
+    },
+    {
+      "id": "0b209e32-d41d-47bf-90b4-7e31b1ebb989",
+      "name": "Espresso Martini",
+      "description": "Wake me up and F*** Me up - the classic Espresso Martini",
+      "image_url": "espresso-martini.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "570ade34-183a-4d4a-b9c6-5cc5f7b1dc13",
+            "name": "Vodka",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 45
+        },
+        {
+          "ingredients": {
+            "id": "5504b91f-2388-4702-95f0-0ad43739fa43",
+            "name": "Kahlúa Coffee Liqueur",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 15
+        },
+        {
+          "ingredients": {
+            "id": "8ccc9c85-685d-47fd-8879-ca73a3cb564f",
+            "name": "Cold Brew Coffee Batch",
+            "type": "mixer",
+            "unit": "ml",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 40
+        },
+        {
+          "ingredients": {
+            "id": "d3daf6a2-a712-4a2e-b01f-5b3811fac487",
+            "name": "Simple Syrup",
+            "type": "syrup",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 5
+        },
+        {
+          "ingredients": {
+            "id": "9b5c021b-0a2f-4ef8-8973-767d1343adf9",
+            "name": "Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 80
+        },
+        {
+          "ingredients": {
+            "id": "83349508-7d17-4eb7-80cc-f09942f3f9f6",
+            "name": "Coupette",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        },
+        {
+          "ingredients": {
+            "id": "cb1cd05f-6691-455d-bb69-35fff6fe9f2b",
+            "name": "Coffee Beans",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 3
+        }
+      ]
+    },
+    {
+      "id": "a79777b3-6393-4280-9dc2-56d06310df7c",
+      "name": "Gin & Tonic",
+      "description": "G&T!",
+      "image_url": "gin-and-tonic.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "5f5e71a1-85cb-4a3b-b150-fc4a701f81da",
+            "name": "Tonic Water",
+            "type": "mixer",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 120
+        },
+        {
+          "ingredients": {
+            "id": "9b5c021b-0a2f-4ef8-8973-767d1343adf9",
+            "name": "Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 80
+        },
+        {
+          "ingredients": {
+            "id": "3f1759bf-cffb-4274-9450-b96d2474086f",
+            "name": "Gin",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 60
+        },
+        {
+          "ingredients": {
+            "id": "e85f66f2-98e0-4ac6-bbe6-1172a1677891",
+            "name": "Balloon Wine Glass",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        },
+        {
+          "ingredients": {
+            "id": "2dd467f6-b6aa-4d55-81f0-f94f386a767e",
+            "name": "Limes",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 0.25
+        },
+        {
+          "ingredients": {
+            "id": "c0807784-386a-46d8-a20d-f48c5e8c1196",
+            "name": "Juniper Berries",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 4
+        }
+      ]
+    },
+    {
+      "id": "4c583841-488b-4879-bdd2-1a9c70d71b23",
+      "name": "Margarita",
+      "description": "Bright, citrus-forward margarita.",
+      "image_url": "margarita.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "9b5c021b-0a2f-4ef8-8973-767d1343adf9",
+            "name": "Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 80
+        },
+        {
+          "ingredients": {
+            "id": "1ac2ff20-8d52-493a-a088-ab27a7ba04ae",
+            "name": "Tequila Blanco",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 50
+        },
+        {
+          "ingredients": {
+            "id": "ac52f80d-660b-4337-8283-601e332f481c",
+            "name": "Lime Juice",
+            "type": "juice",
+            "unit": "ml",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 25
+        },
+        {
+          "ingredients": {
+            "id": "04e75754-d8ee-4e8c-b764-00c135d8950c",
+            "name": "Triple Sec",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 15
+        },
+        {
+          "ingredients": {
+            "id": "83349508-7d17-4eb7-80cc-f09942f3f9f6",
+            "name": "Coupette",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        },
+        {
+          "ingredients": {
+            "id": "313852b4-d6b5-42e9-ad15-ced7eb509795",
+            "name": "Salt",
+            "type": "garnish",
+            "unit": "g",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 0.5
+        },
+        {
+          "ingredients": {
+            "id": "2dd467f6-b6aa-4d55-81f0-f94f386a767e",
+            "name": "Limes",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 0.125
+        }
+      ]
+    },
+    {
+      "id": "6d9636b1-2329-45f2-9336-6681b0cffae6",
+      "name": "Martini",
+      "description": "Shaken or stirred, the classic Gin Martini",
+      "image_url": "Martini.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "3f1759bf-cffb-4274-9450-b96d2474086f",
+            "name": "Gin",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 60
+        },
+        {
+          "ingredients": {
+            "id": "bd4bcd63-a06c-4fed-ae4f-47f8b30aac63",
+            "name": "Dry Vermouth",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 10
+        },
+        {
+          "ingredients": {
+            "id": "ecf47dbe-79f5-4b2c-903c-6d00584351c3",
+            "name": "Lemons",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 0.25
+        },
+        {
+          "ingredients": {
+            "id": "9b5c021b-0a2f-4ef8-8973-767d1343adf9",
+            "name": "Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 80
+        },
+        {
+          "ingredients": {
+            "id": "b6ca425a-f119-4912-9d71-b42dba977d4d",
+            "name": "Martini Glass",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        }
+      ]
+    },
+    {
+      "id": "e18e4f36-cb7e-4c85-bffc-4c05b4b6f2f2",
+      "name": "Mojito",
+      "description": "Cuban mint drink",
+      "image_url": "mojito.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "50a0717d-b653-423b-9d08-5d9411ad8122",
+            "name": "Crushed Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 120
+        },
+        {
+          "ingredients": {
+            "id": "f5ae9477-c919-462d-893b-f8deda03a3a7",
+            "name": "Rum",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 60
+        },
+        {
+          "ingredients": {
+            "id": "d3daf6a2-a712-4a2e-b01f-5b3811fac487",
+            "name": "Simple Syrup",
+            "type": "syrup",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 20
+        },
+        {
+          "ingredients": {
+            "id": "13676c17-8d8b-497a-96cd-29f0395f92ec",
+            "name": "Soda Water",
+            "type": "mixer",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 20
+        },
+        {
+          "ingredients": {
+            "id": "ac52f80d-660b-4337-8283-601e332f481c",
+            "name": "Lime Juice",
+            "type": "juice",
+            "unit": "ml",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 20
+        },
+        {
+          "ingredients": {
+            "id": "a58e8c59-95e1-45f2-a0d3-46a55f33a173",
+            "name": "Mint Leaves",
+            "type": "garnish",
+            "unit": "g",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 5
+        },
+        {
+          "ingredients": {
+            "id": "3dc190a9-84bd-408b-8ce4-da05fcf3536f",
+            "name": "Long Glass",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        },
+        {
+          "ingredients": {
+            "id": "2dd467f6-b6aa-4d55-81f0-f94f386a767e",
+            "name": "Limes",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 0.5
+        },
+        {
+          "ingredients": {
+            "id": "259bd657-cfad-4202-87aa-3ed70397606c",
+            "name": "Straw",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        }
+      ]
+    },
+    {
+      "id": "b49cb2e2-2cab-43aa-aa8a-ff08cb655091",
+      "name": "Moscow Mule",
+      "description": "Ginger beer and vodka\\",
+      "image_url": "moscow-mule.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "e029ae07-bd8e-4d84-9502-0ae287fad8b3",
+            "name": "Ginger Beer",
+            "type": "mixer",
+            "unit": "ml",
+            "bottle_size_ml": 330
+          },
+          "ml_per_serving": 120
+        },
+        {
+          "ingredients": {
+            "id": "9b5c021b-0a2f-4ef8-8973-767d1343adf9",
+            "name": "Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 80
+        },
+        {
+          "ingredients": {
+            "id": "570ade34-183a-4d4a-b9c6-5cc5f7b1dc13",
+            "name": "Vodka",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 60
+        },
+        {
+          "ingredients": {
+            "id": "ac52f80d-660b-4337-8283-601e332f481c",
+            "name": "Lime Juice",
+            "type": "juice",
+            "unit": "ml",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 25
+        },
+        {
+          "ingredients": {
+            "id": "a7ee8af1-895a-49a6-8824-bece632be421",
+            "name": "Angostura Bitters",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 200
+          },
+          "ml_per_serving": 2
+        },
+        {
+          "ingredients": {
+            "id": "fc94dde7-6e2b-4f7e-994e-c3afa036d818",
+            "name": "Rocks Glass",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        },
+        {
+          "ingredients": {
+            "id": "2dd467f6-b6aa-4d55-81f0-f94f386a767e",
+            "name": "Limes",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 0.25
+        }
+      ]
+    },
+    {
+      "id": "39074bad-d3ee-4a31-a206-01553f28f7b3",
+      "name": "Negroni",
+      "description": "Classic Gin Cocktail, equal parts Gin, Campari & Vermouth with a twist of Orange",
+      "image_url": "negroni.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "3f1759bf-cffb-4274-9450-b96d2474086f",
+            "name": "Gin",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 30
+        },
+        {
+          "ingredients": {
+            "id": "67880694-bf13-4fc6-880a-c5d5250ac1ed",
+            "name": "Campari",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 30
+        },
+        {
+          "ingredients": {
+            "id": "5f6d04c7-2202-4c56-b7a9-980bc8f201d2",
+            "name": "Sweet Vermouth",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 30
+        },
+        {
+          "ingredients": {
+            "id": "9b5c021b-0a2f-4ef8-8973-767d1343adf9",
+            "name": "Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 80
+        },
+        {
+          "ingredients": {
+            "id": "284362e7-c3e6-4b78-a37e-91b1c3a0a5ac",
+            "name": "Oranges",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 0.25
+        },
+        {
+          "ingredients": {
+            "id": "fc94dde7-6e2b-4f7e-994e-c3afa036d818",
+            "name": "Rocks Glass",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        }
+      ]
+    },
+    {
+      "id": "8ca360b5-a7e1-4df2-9a9c-9dfbb4f67d0b",
+      "name": "Old Fashioned",
+      "description": "Bourbon, sugar, Angostura bitters and the zest of an orange",
+      "image_url": "old-fashioned.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "9b5c021b-0a2f-4ef8-8973-767d1343adf9",
+            "name": "Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 80
+        },
+        {
+          "ingredients": {
+            "id": "10dcdfce-6b9b-4bab-ac2c-fff9b17f472e",
+            "name": "Bourbon",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 60
+        },
+        {
+          "ingredients": {
+            "id": "d3daf6a2-a712-4a2e-b01f-5b3811fac487",
+            "name": "Simple Syrup",
+            "type": "syrup",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 10
+        },
+        {
+          "ingredients": {
+            "id": "a7ee8af1-895a-49a6-8824-bece632be421",
+            "name": "Angostura Bitters",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 200
+          },
+          "ml_per_serving": 5
+        },
+        {
+          "ingredients": {
+            "id": "fc94dde7-6e2b-4f7e-994e-c3afa036d818",
+            "name": "Rocks Glass",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        },
+        {
+          "ingredients": {
+            "id": "284362e7-c3e6-4b78-a37e-91b1c3a0a5ac",
+            "name": "Oranges",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 0.25
+        }
+      ]
+    },
+    {
+      "id": "f2d85798-ee8b-4442-9da0-09f277a33ed0",
+      "name": "Pornstar Martini",
+      "description": "Passionfruit ",
+      "image_url": "pornstar-martini.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "9b5c021b-0a2f-4ef8-8973-767d1343adf9",
+            "name": "Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 80
+        },
+        {
+          "ingredients": {
+            "id": "570ade34-183a-4d4a-b9c6-5cc5f7b1dc13",
+            "name": "Vodka",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 50
+        },
+        {
+          "ingredients": {
+            "id": "c9d2b439-8300-4326-a300-65ee45459a7b",
+            "name": "Pineapple Juice",
+            "type": "juice",
+            "unit": "ml",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 50
+        },
+        {
+          "ingredients": {
+            "id": "da6ec5a1-eae9-4518-8649-ee89aa6aac48",
+            "name": "Passion Fruit Pureé",
+            "type": "juice",
+            "unit": "ml",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 25
+        },
+        {
+          "ingredients": {
+            "id": "1f33a37d-27f6-4440-9769-29a59faa8615",
+            "name": "Vanilla Syrup",
+            "type": "syrup",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 25
+        },
+        {
+          "ingredients": {
+            "id": "83349508-7d17-4eb7-80cc-f09942f3f9f6",
+            "name": "Coupette",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        },
+        {
+          "ingredients": {
+            "id": "0f489252-1b22-407c-be0e-cf358f3371d8",
+            "name": "Passion Fruit",
+            "type": "garnish",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 0.5
+        }
+      ]
+    },
+    {
+      "id": "67288303-dd4c-4e04-bd25-b6db027d09b2",
+      "name": "Whiskey Sour",
+      "description": "Velvetty Whisky Cocktail, the perfect balance of sweet and sour.",
+      "image_url": "Whiskey-sour.svg",
+      "recipe_ingredients": [
+        {
+          "ingredients": {
+            "id": "fc94dde7-6e2b-4f7e-994e-c3afa036d818",
+            "name": "Rocks Glass",
+            "type": "glassware",
+            "unit": "pcs",
+            "bottle_size_ml": 1
+          },
+          "ml_per_serving": 1
+        },
+        {
+          "ingredients": {
+            "id": "44210c18-c69d-431c-a2b4-ae269e02637e",
+            "name": "Whiskey",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 60
+        },
+        {
+          "ingredients": {
+            "id": "d3daf6a2-a712-4a2e-b01f-5b3811fac487",
+            "name": "Simple Syrup",
+            "type": "syrup",
+            "unit": "ml",
+            "bottle_size_ml": 700
+          },
+          "ml_per_serving": 25
+        },
+        {
+          "ingredients": {
+            "id": "ac52f80d-660b-4337-8283-601e332f481c",
+            "name": "Lime Juice",
+            "type": "juice",
+            "unit": "ml",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 15
+        },
+        {
+          "ingredients": {
+            "id": "8f1b52b9-6c6a-4b87-8977-d73fdc3f3bbc",
+            "name": "Lemon Juice",
+            "type": "juice",
+            "unit": "ml",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 15
+        },
+        {
+          "ingredients": {
+            "id": "a12b6fd7-a340-4d88-85b5-ab3ea1e182b7",
+            "name": "Egg White",
+            "type": "mixer",
+            "unit": "ml",
+            "bottle_size_ml": null
+          },
+          "ml_per_serving": 20
+        },
+        {
+          "ingredients": {
+            "id": "a7ee8af1-895a-49a6-8824-bece632be421",
+            "name": "Angostura Bitters",
+            "type": "liquor",
+            "unit": "ml",
+            "bottle_size_ml": 200
+          },
+          "ml_per_serving": 2
+        },
+        {
+          "ingredients": {
+            "id": "9b5c021b-0a2f-4ef8-8973-767d1343adf9",
+            "name": "Ice",
+            "type": "ice",
+            "unit": "g",
+            "bottle_size_ml": 1000
+          },
+          "ml_per_serving": 160
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Aperol Spritz">
+  <defs>
+    <linearGradient id="spritz" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb266"/>
+      <stop offset="1" stop-color="#e4572e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- liquid -->
+  <path
+    d="M140 170 C140 255 192 305 256 305 C320 305 372 255 372 170"
+    fill="url(#spritz)"
+    opacity="0.92"
+  />
+
+  <!-- bubbles -->
+  <g fill="#fff" opacity="0.5">
+    <circle cx="214" cy="210" r="8" />
+    <circle cx="270" cy="240" r="6" />
+    <circle cx="304" cy="214" r="7" />
+    <circle cx="238" cy="268" r="5" />
+  </g>
+
+  <!-- glass + garnish -->
+  <g
+    fill="none"
+    stroke="#2b1e1a"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- bowl -->
+    <path d="M140 170 C140 270 203 325 256 325 C309 325 372 270 372 170" />
+    <!-- rim -->
+    <ellipse cx="256" cy="170" rx="132" ry="62" />
+    <!-- stem -->
+    <path d="M256 325 L256 392" />
+    <!-- base -->
+    <path d="M188 412 C218 436 294 436 324 412" />
+    <!-- orange wheel -->
+    <circle cx="350" cy="126" r="34" />
+    <path d="M350 92 L350 160" />
+    <path d="M316 126 L384 126" />
+  </g>
+</svg>

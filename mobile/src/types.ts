@@ -1,0 +1,32 @@
+export type IngredientType =
+  | "liquor"
+  | "mixer"
+  | "juice"
+  | "syrup"
+  | "garnish"
+  | "ice"
+  | "glassware";
+
+export type Ingredient = {
+  id: string;
+  name: string;
+  type: IngredientType;
+  bottle_size_ml: number | null;
+  unit: string | null;
+};
+
+export type RecipeIngredient = {
+  ml_per_serving: number;
+  ingredients: Ingredient | Ingredient[] | null;
+};
+
+export type Recipe = {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url?: string | null;
+  recipe_ingredients: RecipeIngredient[];
+};
+
+export type RecipesPayload = { recipes: Recipe[] };
+

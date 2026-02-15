@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Daiquiri">
+  <defs>
+    <linearGradient id="daiq" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd1d1" />
+      <stop offset="1" stop-color="#f1b0b0" />
+    </linearGradient>
+  </defs>
+
+  <!-- liquid -->
+  <path
+    d="M182 190 Q256 144 330 190 Q312 232 256 246 Q200 232 182 190 Z"
+    fill="url(#daiq)"
+    opacity="0.9"
+  />
+
+  <!-- lime -->
+  <circle cx="352" cy="150" r="22" fill="#77d36a" opacity="0.9" />
+  <circle cx="352" cy="150" r="14" fill="#ffffff" opacity="0.45" />
+
+  <g
+    fill="none"
+    stroke="#2b1e1a"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- coupe -->
+    <path d="M160 182 Q256 120 352 182 Q330 244 256 262 Q182 244 160 182 Z" />
+    <path d="M256 262 L256 356" />
+    <path d="M190 382 C220 408 292 408 322 382" />
+
+    <!-- lime wheel -->
+    <circle cx="352" cy="150" r="22" />
+    <path d="M352 128 L352 172" />
+    <path d="M330 150 L374 150" />
+  </g>
+</svg>
+

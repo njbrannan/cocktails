@@ -94,6 +94,7 @@ function drinksPerGuestForOccasion(value: Occasion): 2 | 3 | 4 | null {
 export default function App() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [step, setStep] = useState<"select" | "quantity" | "order">("select");
+  const stepIndex = step === "select" ? 0 : step === "quantity" ? 1 : 2;
 
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(() => new Set());
   const [servingsByRecipeId, setServingsByRecipeId] = useState<Record<string, string>>({});
@@ -526,6 +527,11 @@ export default function App() {
     ...allCountries.filter((c) => !priorityCountries.includes(c)),
   ];
 
+  const pageProps = (index: number) => ({
+    "aria-hidden": stepIndex !== index,
+    style: { pointerEvents: stepIndex === index ? ("auto" as const) : ("none" as const) },
+  });
+
   return (
     <div className="shell">
       <div className="container">
@@ -543,307 +549,311 @@ export default function App() {
         {error ? <div className="toast">{error}</div> : null}
         {success ? <div className="toast">{success}</div> : null}
 
-        {step === "select" ? (
-          <div className="card">
-            <div className="muted">Select cocktails (tap to add).</div>
-            <div style={{ height: 10 }} />
-            <div className="grid">
-              {recipes.map((r) => {
-                const selected = selectedRecipeIds.has(r.id);
-                const img = resolveCocktailImageSrc((r as any).image_url ?? null, r.name);
-                return (
-                  <div
-                    key={r.id}
-                    className={`tile ${selected ? "tileSelected" : ""}`}
-                    onClick={() => toggleRecipe(r.id)}
-                    role="button"
-                    aria-label={`Toggle ${r.name}`}
-                  >
-                    <div className="tileTop">
-                      <div className="tileName">{normalizeCocktailDisplayName(r.name)}</div>
-                      <div className={`pill ${selected ? "pillSelected" : ""}`}>
-                        {selected ? "Selected" : "Tap"}
+        <div className="pagerOuter">
+          <div className="pager" style={{ transform: `translateX(-${stepIndex * 100}%)` }}>
+            <div className="page" {...pageProps(0)}>
+              <div className="card">
+                <div className="muted">Select cocktails (tap to add).</div>
+                <div style={{ height: 10 }} />
+                <div className="grid">
+                  {recipes.map((r) => {
+                    const selected = selectedRecipeIds.has(r.id);
+                    const img = resolveCocktailImageSrc((r as any).image_url ?? null, r.name);
+                    return (
+                      <div
+                        key={r.id}
+                        className={`tile ${selected ? "tileSelected" : ""}`}
+                        onClick={() => toggleRecipe(r.id)}
+                        role="button"
+                        aria-label={`Toggle ${r.name}`}
+                      >
+                        <div className="tileTop">
+                          <div className="tileName">{normalizeCocktailDisplayName(r.name)}</div>
+                          <div className={`pill ${selected ? "pillSelected" : ""}`}>
+                            {selected ? "Selected" : "Tap"}
+                          </div>
+                        </div>
+                        <div className="tileImgWrap">
+                          <img className="tileImg" src={img} alt={r.name} loading="lazy" />
+                        </div>
+                        <div className="tapHint">{selected ? "Tap to remove" : "Tap to add"}</div>
                       </div>
-                    </div>
-                    <div className="tileImgWrap">
-                      <img className="tileImg" src={img} alt={r.name} loading="lazy" />
-                    </div>
-                    <div className="tapHint">{selected ? "Tap to remove" : "Tap to add"}</div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="actions">
-              <button className="btn btnPrimary" onClick={handleProceedToQuantity}>
-                Set Quantities
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {step === "quantity" ? (
-          <div className="card">
-            <div className="muted">Set the quantity for each selected cocktail.</div>
-
-            <label className="label">Occasion</label>
-            <select
-              className="select"
-              value={occasion}
-              onChange={(e) => {
-                setOccasion(e.target.value as Occasion);
-              }}
-            >
-              <option value="relaxed">{occasionLabel("relaxed")}</option>
-              <option value="cocktail">{occasionLabel("cocktail")}</option>
-              <option value="wedding">{occasionLabel("wedding")}</option>
-              <option value="big-night">{occasionLabel("big-night")}</option>
-              <option value="custom">{occasionLabel("custom")}</option>
-            </select>
-
-            {occasion === "custom" ? (
-              <>
-                <label className="label">Custom occasion</label>
-                <input
-                  className="input"
-                  value={customOccasionName}
-                  onChange={(e) => setCustomOccasionName(e.target.value)}
-                  placeholder="e.g. Office party"
-                  inputMode="text"
-                />
-                <label className="label">Cocktails total per guest</label>
-                <input
-                  className="input"
-                  value={drinksPerGuestInput}
-                  onChange={(e) => setDrinksPerGuestInput(e.target.value)}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="2"
-                />
-              </>
-            ) : null}
-
-            <label className="label">Number of guests</label>
-            <input
-              className="input"
-              value={guestCountInput}
-              onChange={(e) => setGuestCountInput(e.target.value)}
-              inputMode="numeric"
-              pattern="[0-9]*"
-              placeholder="25"
-            />
-
-            <div style={{ height: 10 }} />
-            <div className="muted">{suggestedLine.replace("total", "total")}</div>
-
-            <ul className="list">
-              {selectedRecipes.map((r) => {
-                const img = resolveCocktailImageSrc((r as any).image_url ?? null, r.name);
-                const value = servingsByRecipeId[r.id] ?? "";
-                const perGuest =
-                  guestCount && parseNonNegativeInt(value) !== null
-                    ? (Number(value) / guestCount).toFixed(2)
-                    : null;
-                return (
-                  <li key={r.id} className="listItem" style={{ borderTopStyle: "solid" }}>
-                    <div className="listLeft">
-                      <div className="row">
-                        <img src={img} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
-                        <div className="listName">{normalizeCocktailDisplayName(r.name)}</div>
-                      </div>
-                      <div className="listMeta">{perGuest ? `${perGuest} per guest` : " "}</div>
-                    </div>
-                    <div style={{ width: 120 }}>
-                      <input
-                        className="input"
-                        value={value}
-                        onChange={(e) => {
-                          setHasManualQuantities(true);
-                          setServingsByRecipeId((prev) => ({ ...prev, [r.id]: e.target.value }));
-                        }}
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        placeholder="0"
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-
-            <div className="actions">
-              <button className="btn" onClick={() => setStep("select")}>
-                Back
-              </button>
-              <div style={{ flex: 1 }} />
-              <div style={{ textAlign: "right" }}>
-                <div className="muted">Number of guests: {guestCount ?? "-"}</div>
-                <div className="muted">Number of drinks: {totalDrinks}</div>
-              </div>
-              <button className="btn btnPrimary" onClick={handleProceedToOrder} style={{ marginTop: 10 }}>
-                Create Order List
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {step === "order" ? (
-          <div className="card">
-            <div className="muted">Order list (includes 10% buffer).</div>
-
-            <div className="summaryLine">
-              <div>
-                <div className="summaryK">Total drinks</div>
-                <div className="summaryV">{totalDrinks}</div>
-              </div>
-              <div>
-                <div className="summaryK">Total guests</div>
-                <div className="summaryV">{guestCount ?? "-"}</div>
-                <div className="muted">
-                  {guestCount && drinksPerGuest ? `${drinksPerGuest} cocktails total per guest` : ""}
+                    );
+                  })}
+                </div>
+                <div className="actions">
+                  <button className="btn btnPrimary" onClick={handleProceedToQuantity}>
+                    Set Quantities
+                  </button>
                 </div>
               </div>
             </div>
 
-            <ul className="list">
-              {orderList.map((t) => {
-                const right =
-                  t.type === "liquor"
-                    ? `${t.bottlesNeeded ?? 0} × ${t.bottleSizeMl ?? 700}ml`
-                    : `${t.total} ${t.unit}`;
-                const meta =
-                  t.type === "liquor" ? `${Math.ceil(t.total)} ml total` : `${t.type}`;
-                return (
-                  <li key={t.ingredientId} className="listItem">
-                    <div className="listLeft">
-                      <div className="listName">{t.name}</div>
-                      <div className="listMeta">{meta}</div>
-                    </div>
-                    <div className="listRight">{right}</div>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="page" {...pageProps(1)}>
+              <div className="card">
+                <div className="muted">Set the quantity for each selected cocktail.</div>
 
-            <div style={{ height: 14 }} />
-            <div className="muted">Book Bartenders for your Event</div>
+                <label className="label">Occasion</label>
+                <select
+                  className="select"
+                  value={occasion}
+                  onChange={(e) => {
+                    setOccasion(e.target.value as Occasion);
+                  }}
+                >
+                  <option value="relaxed">{occasionLabel("relaxed")}</option>
+                  <option value="cocktail">{occasionLabel("cocktail")}</option>
+                  <option value="wedding">{occasionLabel("wedding")}</option>
+                  <option value="big-night">{occasionLabel("big-night")}</option>
+                  <option value="custom">{occasionLabel("custom")}</option>
+                </select>
 
-            <label className="label">Date of Event</label>
-            <input
-              className="input"
-              type="date"
-              value={eventDate}
-              min={minDate}
-              onChange={(e) => setEventDate(e.target.value)}
-            />
+                {occasion === "custom" ? (
+                  <>
+                    <label className="label">Custom occasion</label>
+                    <input
+                      className="input"
+                      value={customOccasionName}
+                      onChange={(e) => setCustomOccasionName(e.target.value)}
+                      placeholder="e.g. Office party"
+                      inputMode="text"
+                    />
+                    <label className="label">Cocktails total per guest</label>
+                    <input
+                      className="input"
+                      value={drinksPerGuestInput}
+                      onChange={(e) => setDrinksPerGuestInput(e.target.value)}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="2"
+                    />
+                  </>
+                ) : null}
 
-            <label className="label">Event name</label>
-            <input
-              className="input"
-              value={eventName}
-              onChange={(e) => setEventName(e.target.value)}
-              placeholder="Cocktail party"
-              inputMode="text"
-            />
+                <label className="label">Number of guests</label>
+                <input
+                  className="input"
+                  value={guestCountInput}
+                  onChange={(e) => setGuestCountInput(e.target.value)}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="25"
+                />
 
-            <label className="label">Email</label>
-            <input
-              className={`input ${emailError ? "inputError" : ""}`}
-              value={clientEmail}
-              onChange={(e) => setClientEmail(e.target.value)}
-              placeholder="you@example.com"
-              inputMode="email"
-              autoCapitalize="none"
-              autoCorrect="off"
-            />
-            {emailError ? <div className="errorText">{emailError}</div> : null}
+                <div style={{ height: 10 }} />
+                <div className="muted">{suggestedLine.replace("total", "total")}</div>
 
-            <label className="label">Telephone</label>
-            <div className="row">
-              <select
-                className="select"
-                value={phoneCountryIso2}
-                onChange={(e) => setPhoneCountryIso2(e.target.value as any)}
-                style={{ width: 120, flex: "0 0 auto" }}
-              >
-                {phoneCountryOptions.map((iso2) => (
-                  <option key={iso2} value={iso2}>
-                    {flagEmoji(iso2)} {iso2}
-                  </option>
-                ))}
-              </select>
-              <input
-                className={`input ${phoneError ? "inputError" : ""}`}
-                value={phoneLocal}
-                onChange={(e) => setPhoneLocal(e.target.value)}
-                placeholder="0412 345 678"
-                inputMode="tel"
-                autoCorrect="off"
-              />
-            </div>
-            {phoneError ? <div className="errorText">{phoneError}</div> : null}
-
-            <label className="label">Number of guests</label>
-            <input
-              className={`input ${guestError ? "inputError" : ""}`}
-              value={guestCountInput}
-              onChange={(e) => setGuestCountInput(e.target.value)}
-              inputMode="numeric"
-              pattern="[0-9]*"
-            />
-            {guestError ? <div className="errorText">{guestError}</div> : null}
-
-            <label className="label">Message</label>
-            <textarea
-              className="textarea"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={
-                "What’s the special occasion?\nEvent schedule?\nSpecial/signature cocktail requests?\nAllergies?"
-              }
-            />
-
-            <div className="actions">
-              <button className="btn" onClick={() => setStep("quantity")}>
-                Edit quantities
-              </button>
-              <button className="btn btnPrimary" onClick={handleSend} disabled={sending}>
-                {sending ? "Sending..." : "Book Bartenders"}
-              </button>
-            </div>
-
-            {drafts.length ? (
-              <>
-                <div style={{ height: 16 }} />
-                <div className="muted">Saved drafts</div>
                 <ul className="list">
-                  {drafts.map((d) => (
-                    <li key={d.id} className="listItem">
-                      <div className="listLeft">
-                        <div className="listName">{d.payload.title}</div>
-                        <div className="listMeta">{new Date(d.createdAt).toLocaleString()}</div>
-                      </div>
-                      <div className="row" style={{ justifyContent: "flex-end" }}>
-                        <button className="btn btnInlineLink" onClick={() => sendDraft(d)} disabled={sending}>
-                          Send
-                        </button>
-                        <button
-                          className="btn btnInlineLink"
-                          onClick={() => {
-                            removeDraft(d.id);
-                            setDrafts(loadDrafts());
-                          }}
-                          disabled={sending}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </li>
-                  ))}
+                  {selectedRecipes.map((r) => {
+                    const img = resolveCocktailImageSrc((r as any).image_url ?? null, r.name);
+                    const value = servingsByRecipeId[r.id] ?? "";
+                    const perGuest =
+                      guestCount && parseNonNegativeInt(value) !== null
+                        ? (Number(value) / guestCount).toFixed(2)
+                        : null;
+                    return (
+                      <li key={r.id} className="listItem" style={{ borderTopStyle: "solid" }}>
+                        <div className="listLeft">
+                          <div className="row">
+                            <img src={img} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
+                            <div className="listName">{normalizeCocktailDisplayName(r.name)}</div>
+                          </div>
+                          <div className="listMeta">{perGuest ? `${perGuest} per guest` : " "}</div>
+                        </div>
+                        <div style={{ width: 120 }}>
+                          <input
+                            className="input"
+                            value={value}
+                            onChange={(e) => {
+                              setHasManualQuantities(true);
+                              setServingsByRecipeId((prev) => ({ ...prev, [r.id]: e.target.value }));
+                            }}
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="0"
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
-              </>
-            ) : null}
+
+                <div className="actions">
+                  <button className="btn" onClick={() => setStep("select")}>
+                    Back
+                  </button>
+                  <div style={{ flex: 1 }} />
+                  <div style={{ textAlign: "right" }}>
+                    <div className="muted">Number of guests: {guestCount ?? "-"}</div>
+                    <div className="muted">Number of drinks: {totalDrinks}</div>
+                  </div>
+                  <button className="btn btnPrimary" onClick={handleProceedToOrder} style={{ marginTop: 10 }}>
+                    Create Order List
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="page" {...pageProps(2)}>
+              <div className="card">
+                <div className="muted">Order list (includes 10% buffer).</div>
+
+                <div className="summaryLine">
+                  <div>
+                    <div className="summaryK">Total drinks</div>
+                    <div className="summaryV">{totalDrinks}</div>
+                  </div>
+                  <div>
+                    <div className="summaryK">Total guests</div>
+                    <div className="summaryV">{guestCount ?? "-"}</div>
+                    <div className="muted">
+                      {guestCount && drinksPerGuest ? `${drinksPerGuest} cocktails total per guest` : ""}
+                    </div>
+                  </div>
+                </div>
+
+                <ul className="list">
+                  {orderList.map((t) => {
+                    const right =
+                      t.type === "liquor"
+                        ? `${t.bottlesNeeded ?? 0} × ${t.bottleSizeMl ?? 700}ml`
+                        : `${t.total} ${t.unit}`;
+                    const meta =
+                      t.type === "liquor" ? `${Math.ceil(t.total)} ml total` : `${t.type}`;
+                    return (
+                      <li key={t.ingredientId} className="listItem">
+                        <div className="listLeft">
+                          <div className="listName">{t.name}</div>
+                          <div className="listMeta">{meta}</div>
+                        </div>
+                        <div className="listRight">{right}</div>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <div style={{ height: 14 }} />
+                <div className="muted">Book Bartenders for your Event</div>
+
+                <label className="label">Date of Event</label>
+                <input
+                  className="input"
+                  type="date"
+                  value={eventDate}
+                  min={minDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                />
+
+                <label className="label">Event name</label>
+                <input
+                  className="input"
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
+                  placeholder="Cocktail party"
+                  inputMode="text"
+                />
+
+                <label className="label">Email</label>
+                <input
+                  className={`input ${emailError ? "inputError" : ""}`}
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                />
+                {emailError ? <div className="errorText">{emailError}</div> : null}
+
+                <label className="label">Telephone</label>
+                <div className="row">
+                  <select
+                    className="select"
+                    value={phoneCountryIso2}
+                    onChange={(e) => setPhoneCountryIso2(e.target.value as any)}
+                    style={{ width: 120, flex: "0 0 auto" }}
+                  >
+                    {phoneCountryOptions.map((iso2) => (
+                      <option key={iso2} value={iso2}>
+                        {flagEmoji(iso2)} {iso2}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    className={`input ${phoneError ? "inputError" : ""}`}
+                    value={phoneLocal}
+                    onChange={(e) => setPhoneLocal(e.target.value)}
+                    placeholder="0412 345 678"
+                    inputMode="tel"
+                    autoCorrect="off"
+                  />
+                </div>
+                {phoneError ? <div className="errorText">{phoneError}</div> : null}
+
+                <label className="label">Number of guests</label>
+                <input
+                  className={`input ${guestError ? "inputError" : ""}`}
+                  value={guestCountInput}
+                  onChange={(e) => setGuestCountInput(e.target.value)}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                />
+                {guestError ? <div className="errorText">{guestError}</div> : null}
+
+                <label className="label">Message</label>
+                <textarea
+                  className="textarea"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={
+                    "What’s the special occasion?\nEvent schedule?\nSpecial/signature cocktail requests?\nAllergies?"
+                  }
+                />
+
+                <div className="actions">
+                  <button className="btn" onClick={() => setStep("quantity")}>
+                    Edit quantities
+                  </button>
+                  <button className="btn btnPrimary" onClick={handleSend} disabled={sending}>
+                    {sending ? "Sending..." : "Book Bartenders"}
+                  </button>
+                </div>
+
+                {drafts.length ? (
+                  <>
+                    <div style={{ height: 16 }} />
+                    <div className="muted">Saved drafts</div>
+                    <ul className="list">
+                      {drafts.map((d) => (
+                        <li key={d.id} className="listItem">
+                          <div className="listLeft">
+                            <div className="listName">{d.payload.title}</div>
+                            <div className="listMeta">{new Date(d.createdAt).toLocaleString()}</div>
+                          </div>
+                          <div className="row" style={{ justifyContent: "flex-end" }}>
+                            <button className="btn btnInlineLink" onClick={() => sendDraft(d)} disabled={sending}>
+                              Send
+                            </button>
+                            <button
+                              className="btn btnInlineLink"
+                              onClick={() => {
+                                removeDraft(d.id);
+                                setDrafts(loadDrafts());
+                              }}
+                              disabled={sending}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
+              </div>
+            </div>
           </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );

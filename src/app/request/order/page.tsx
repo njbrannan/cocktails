@@ -616,47 +616,47 @@ export default function RequestOrderPage() {
           <h2 className="font-display text-2xl text-accent">
             Selected cocktails
           </h2>
-          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-sm text-muted">
-            <span>
+          <div className="mt-2 flex flex-wrap items-start justify-between gap-x-6 gap-y-2 text-sm text-muted">
+            <span className="pt-0.5">
               {totalDrinks > 0
                 ? `Total drinks: ${totalDrinks}`
                 : "Set quantities to generate totals."}
             </span>
-            <span>
-              {(() => {
-                const guests = parseNonNegativeInt(guestCountInput);
-                const perGuest =
-                  guests && guests > 0 ? totalDrinks / guests : null;
-                const perGuestLabel =
-                  perGuest === null || !Number.isFinite(perGuest)
-                    ? null
-                    : perGuest
-                        .toFixed(2)
-                        .replace(/\.00$/, "")
-                        .replace(/(\.\d)0$/, "$1");
+            {(() => {
+              const guests = parseNonNegativeInt(guestCountInput);
+              const perGuest =
+                guests && guests > 0 ? totalDrinks / guests : null;
+              const perGuestLabel =
+                perGuest === null || !Number.isFinite(perGuest)
+                  ? null
+                  : perGuest
+                      .toFixed(2)
+                      .replace(/\.00$/, "")
+                      .replace(/(\.\d)0$/, "$1");
 
-                return (
-                  <span className="flex flex-col items-end leading-tight">
-                    <span>{`Total guests: ${guests ?? "—"}`}</span>
+              return (
+                <div className="flex flex-col items-end leading-tight">
+                  <span>{`Total guests: ${guests ?? "—"}`}</span>
+                  <div className="mt-1 flex items-center gap-3 text-[12px] text-ink-muted">
                     {perGuestLabel !== null ? (
-                      <span className="text-[12px] text-ink-muted">
-                        {perGuestLabel} cocktails per guest
-                      </span>
-                    ) : null}
-                  </span>
-                );
-              })()}
-            </span>
+                      <span>{perGuestLabel} cocktails per guest</span>
+                    ) : (
+                      <span />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setEditingQuantities((v) => !v)}
+                      className="appearance-none bg-transparent p-0 text-[11px] font-semibold text-accent underline underline-offset-2"
+                    >
+                      {editingQuantities ? "Done amending" : "Amend quantities"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
-          <button
-            type="button"
-            onClick={() => setEditingQuantities((v) => !v)}
-            className="mt-2 w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-accent underline underline-offset-2"
-          >
-            {editingQuantities ? "Done amending" : "Amend quantities"}
-          </button>
 
-          <div className="mt-5 grid gap-3">
+          <div className="mt-4 grid gap-3">
             {(editingQuantities ? cocktailsEditable : cocktailsSummary).map((c) => {
               const displayName = normalizeCocktailDisplayName(c.recipeName);
               return (

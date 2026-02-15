@@ -8,9 +8,11 @@ function hasFileExtension(value: string) {
 // Photo overrides (used when no explicit `image_url` is provided, or when Supabase still points to an svg).
 // For now we only enable the cocktails we have fast, optimized `.webp` assets for.
 const PHOTO_OVERRIDES_BY_SLUG: Record<string, "png" | "jpg" | "webp"> = {
+  "aperol-spritz": "webp",
   daiquiri: "webp",
   "dirty-martini": "webp",
   "espresso-martini": "webp",
+  "gin-and-tonic": "webp",
   "last-word": "webp",
   margarita: "webp",
   martini: "webp",

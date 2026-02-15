@@ -471,7 +471,7 @@ export default function RequestPage() {
                   ) : (
                     <>
                       <div className="rounded-[28px] border border-subtle bg-white/70 p-5">
-                        <div className="mt-3 grid gap-4 md:grid-cols-[1fr_1fr]">
+                        <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
                           <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                             Number of guests
                             <input
@@ -493,10 +493,10 @@ export default function RequestPage() {
                               }
                               className="mt-2 h-[52px] w-full rounded-2xl border border-soft bg-white/80 px-4 text-[16px] tracking-normal text-ink"
                             >
-                              <option value="relaxed">Dinner / relaxed (2 drinks per guest)</option>
-                              <option value="cocktail">Cocktail party (3 drinks per guest)</option>
-                              <option value="wedding">Wedding / celebration (3 drinks per guest)</option>
-                              <option value="big-night">Big night (4 drinks per guest)</option>
+                              <option value="relaxed">Dinner / relaxed</option>
+                              <option value="cocktail">Cocktail party</option>
+                              <option value="wedding">Wedding / celebration</option>
+                              <option value="big-night">Big night</option>
                               <option value="custom">Custom</option>
                             </select>
                           </label>
@@ -532,6 +532,9 @@ export default function RequestPage() {
                                 {perCocktail}
                               </span>{" "}
                               of each cocktail.
+                              <span className="block text-[12px] text-ink-muted">
+                                ({drinksPerGuest} per guest)
+                              </span>
                             </p>
                           );
                         })()}

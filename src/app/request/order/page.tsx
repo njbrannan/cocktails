@@ -55,7 +55,8 @@ type StoredOrder = {
   selectedRecipeIds: string[];
   servingsByRecipeId: Record<string, string>;
   guestCount?: number | null;
-  drinksPerGuest?: 2 | 3 | 4;
+  drinksPerGuest?: number;
+  occasion?: string | null;
 };
 
 const STORAGE_KEY = "get-involved:order:v1";
@@ -149,6 +150,26 @@ export default function RequestOrderPage() {
       if (!guestCountInput) {
         const guests = typeof parsed.guestCount === "number" ? parsed.guestCount : null;
         if (guests && guests > 0) setGuestCountInput(String(guests));
+      }
+      // Pre-fill a helpful note line based on their selected occasion.
+      // Only do this if the notes box is still empty.
+      if (!notes.trim()) {
+        const occ = String(parsed.occasion || "").trim();
+        if (occ) {
+          const label =
+            occ === "relaxed"
+              ? "Dinner / relaxed"
+              : occ === "cocktail"
+                ? "Cocktail party"
+                : occ === "wedding"
+                  ? "Wedding / celebration"
+                  : occ === "big-night"
+                    ? "Big night"
+                    : occ === "custom"
+                      ? "Custom"
+                      : occ;
+          setNotes(`Occasion: ${label}\n`);
+        }
       }
     } catch {
       // Ignore parse errors; user can go back and recreate.

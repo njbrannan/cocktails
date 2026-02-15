@@ -788,7 +788,7 @@ export default function RequestPage() {
               </button>
             ) : (
               <>
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <button
                     type="button"
                     onClick={() => setStep("select")}
@@ -796,24 +796,27 @@ export default function RequestPage() {
                   >
                     Back
                   </button>
-                  <button
-                    onClick={handleCreateOrderList}
-                    disabled={!canCreateOrder}
-                    className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
-                  >
-                    Create Order List
-                  </button>
-                </div>
 
-                <div className="min-w-[220px] text-right text-sm text-muted">
-                  <p>
-                    <span className="font-semibold text-ink">Number of guests:</span>{" "}
-                    {guestCount ?? "—"}
-                  </p>
-                  <p className="mt-1">
-                    <span className="font-semibold text-ink">Number of drinks:</span>{" "}
-                    {totalDrinksInput}
-                  </p>
+                  <div className="flex flex-col items-end gap-3">
+                    <div className="text-right text-sm text-muted">
+                      <p>
+                        <span className="font-semibold text-ink">Number of guests:</span>{" "}
+                        {guestCount ?? "—"}
+                      </p>
+                      <p className="mt-1">
+                        <span className="font-semibold text-ink">Number of drinks:</span>{" "}
+                        {totalDrinksInput}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleCreateOrderList}
+                      disabled={!canCreateOrder}
+                      className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
+                    >
+                      Create Order List
+                    </button>
+                  </div>
                 </div>
               </>
             )}

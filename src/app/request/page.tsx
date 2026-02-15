@@ -813,7 +813,7 @@ export default function RequestPage() {
                   <button
                     onClick={handleCreateOrderList}
                     disabled={!canCreateOrder}
-                    className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60 self-start"
+                    className="gi-btn-primary w-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
                   >
                     Create Order List
                   </button>

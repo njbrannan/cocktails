@@ -301,9 +301,7 @@ export default function RequestPage() {
                         }`}
                       >
                         <div
-                          className={`relative h-[180px] w-full bg-white/80 ${
-                            isSelected ? "gi-selected-spotlight" : ""
-                          }`}
+                          className="relative h-[180px] w-full bg-white/80"
                         >
                           <img
                             src={imageSrc}

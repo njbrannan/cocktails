@@ -14,6 +14,7 @@ const PHOTO_OVERRIDES_BY_SLUG: Record<string, "png" | "jpg" | "webp"> = {
   "last-word": "webp",
   margarita: "webp",
   martini: "webp",
+  mojito: "webp",
   "moscow-mule": "webp",
   negroni: "webp",
   "old-fashioned": "webp",

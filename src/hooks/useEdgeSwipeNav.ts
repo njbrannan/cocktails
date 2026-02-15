@@ -48,10 +48,11 @@ function isCapacitor() {
 }
 
 function edgeThresholdPx() {
-  // On iOS Safari, the true edge is reserved for browser history gestures.
   // In standalone/PWA/Capacitor we can safely use the edge.
   if (isCapacitor() || isStandaloneDisplayMode()) return 28;
-  return 56;
+  // In iOS Safari/regular browsers, the real edge is "owned" by the browser's back/forward gesture.
+  // We'll still support swipe nav, but from a slightly inset zone.
+  return 0;
 }
 
 export function useEdgeSwipeNav(options: Options) {
@@ -77,8 +78,16 @@ export function useEdgeSwipeNav(options: Options) {
       const w = window.innerWidth || 0;
       const edge = edgeThresholdPx();
 
-      const zone =
-        x <= edge ? "left" : w > 0 && x >= w - edge ? "right" : null;
+      // "Edge" mode for standalone/capacitor; "inset edge" for normal browsers.
+      let zone: "left" | "right" | null = null;
+      if (edge > 0) {
+        zone = x <= edge ? "left" : w > 0 && x >= w - edge ? "right" : null;
+      } else {
+        const insetMin = 44; // avoid iOS browser history swipe
+        const insetMax = 132;
+        if (x >= insetMin && x <= insetMax) zone = "left";
+        else if (w > 0 && x >= w - insetMax && x <= w - insetMin) zone = "right";
+      }
 
       startRef.current = {
         x,
@@ -128,4 +137,3 @@ export function useEdgeSwipeNav(options: Options) {
     };
   }, []);
 }
-

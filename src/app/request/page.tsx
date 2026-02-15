@@ -243,12 +243,15 @@ export default function RequestPage() {
     <div className="min-h-screen hero-grid px-6 py-16">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
         <header>
-          <p className="text-base font-semibold uppercase tracking-[0.3em] text-accent">
-            GET INVOLVED! WITH OUR
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
+            WITH OUR
           </p>
-          <h1 className="font-display text-4xl text-ink">
-            Cocktail Party Planner
+          <h1 className="font-display text-5xl text-ink sm:text-6xl">
+            GET INVOLVED!
           </h1>
+          <p className="mt-2 font-display text-2xl text-ink sm:text-3xl">
+            Cocktail Party Planner
+          </p>
           <p className="mt-2 text-sm text-muted">
             Select cocktails, set quantities, then create your order list.
           </p>

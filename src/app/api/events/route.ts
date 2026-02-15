@@ -1,8 +1,17 @@
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { getAdminEmail, isEmailConfigured, sendEmail } from "@/lib/resend";
 import { buildIngredientTotals } from "@/lib/inventoryMath";
+import { corsPreflight, withCors } from "@/lib/cors";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+
+export function OPTIONS() {
+  return corsPreflight();
+}
+
+function json(body: any, init?: Parameters<typeof NextResponse.json>[1]) {
+  return withCors(NextResponse.json(body, init));
+}
 
 function escapeHtml(input: string) {
   return input
@@ -294,10 +303,7 @@ export async function POST(request: NextRequest) {
     if (submit) {
       const phone = String(clientPhone || "").trim();
       if (!phone) {
-        return NextResponse.json(
-          { error: "Telephone number is required." },
-          { status: 400 },
-        );
+        return json({ error: "Telephone number is required." }, { status: 400 });
       }
     }
 
@@ -307,7 +313,7 @@ export async function POST(request: NextRequest) {
       today.setHours(0, 0, 0, 0);
       const submitted = new Date(`${eventDate}T00:00:00`);
       if (Number.isNaN(submitted.valueOf()) || submitted < today) {
-        return NextResponse.json(
+        return json(
           { error: "Date of Event must be today or in the future." },
           { status: 400 },
         );
@@ -332,7 +338,7 @@ export async function POST(request: NextRequest) {
         !Number.isInteger(guestCount) ||
         guestCount <= 0
       ) {
-        return NextResponse.json(
+        return json(
           { error: "Number of guests must be a whole number." },
           { status: 400 },
         );
@@ -355,7 +361,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return json({ error: error.message }, { status: 400 });
     }
 
     const origin = request.headers.get("origin") || "";
@@ -402,7 +408,7 @@ export async function POST(request: NextRequest) {
         );
 
       if (insertEventRecipesError) {
-        return NextResponse.json(
+        return json(
           { error: insertEventRecipesError.message },
           { status: 400 },
         );
@@ -491,15 +497,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    return withCors(
+      NextResponse.json({
       id: data.id,
       editToken: data.edit_token,
       editSlug,
-    });
+      }),
+    );
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message || "Server error" },
-      { status: 500 },
+    return withCors(
+      NextResponse.json(
+        { error: err?.message || "Server error" },
+        { status: 500 },
+      ),
     );
   }
 }
@@ -510,9 +520,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get("token");
 
-    if (!token) {
-      return NextResponse.json({ error: "Missing token" }, { status: 400 });
-    }
+    if (!token) return json({ error: "Missing token" }, { status: 400 });
 
     const { data, error } = await getEventByToken(
       supabaseServer,
@@ -521,15 +529,12 @@ export async function GET(request: NextRequest) {
     );
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
+      return json({ error: error.message }, { status: 404 });
     }
 
-    return NextResponse.json(data);
+    return json(data);
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message || "Server error" },
-      { status: 500 },
-    );
+    return json({ error: err?.message || "Server error" }, { status: 500 });
   }
 }
 
@@ -540,7 +545,7 @@ export async function PATCH(request: NextRequest) {
     const { token, title, eventDate, guestCount, notes, status, clientPhone } = body;
 
     if (!token) {
-      return NextResponse.json({ error: "Missing token" }, { status: 400 });
+      return json({ error: "Missing token" }, { status: 400 });
     }
 
     // Enforce "today or future" for eventDate on the server (prevents bypassing UI constraints).
@@ -549,7 +554,7 @@ export async function PATCH(request: NextRequest) {
       today.setHours(0, 0, 0, 0);
       const submitted = new Date(`${eventDate}T00:00:00`);
       if (Number.isNaN(submitted.valueOf()) || submitted < today) {
-        return NextResponse.json(
+        return json(
           { error: "Date of Event must be today or in the future." },
           { status: 400 },
         );
@@ -561,7 +566,7 @@ export async function PATCH(request: NextRequest) {
       if (guestCount <= 0) {
         cleanedGuestCount = null;
       } else if (!Number.isInteger(guestCount)) {
-        return NextResponse.json(
+        return json(
           { error: "Number of guests must be a whole number." },
           { status: 400 },
         );
@@ -578,7 +583,7 @@ export async function PATCH(request: NextRequest) {
     );
 
     if (existingError) {
-      return NextResponse.json({ error: existingError.message }, { status: 404 });
+      return json({ error: existingError.message }, { status: 404 });
     }
 
     const updateData: Record<string, any> = {
@@ -602,7 +607,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return json({ error: error.message }, { status: 400 });
     }
 
     const becameSubmitted =
@@ -681,11 +686,8 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ id: data.id });
+    return json({ id: data.id });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message || "Server error" },
-      { status: 500 },
-    );
+    return json({ error: err?.message || "Server error" }, { status: 500 });
   }
 }

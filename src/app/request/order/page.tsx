@@ -639,7 +639,7 @@ export default function RequestOrderPage() {
                   <span>{`Total guests: ${guests ?? "—"}`}</span>
                 </div>
 
-                <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+                <div className="mt-0.5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
                   <button
                     type="button"
                     onClick={() => setEditingQuantities((v) => !v)}
@@ -648,7 +648,7 @@ export default function RequestOrderPage() {
                     {editingQuantities ? "Done amending" : "Amend quantities"}
                   </button>
                   {perGuestLabel !== null ? (
-                    <span className="text-[12px] text-ink-muted">
+                    <span className="text-[12px] leading-none text-ink-muted">
                       {perGuestLabel} cocktails per guest
                     </span>
                   ) : (

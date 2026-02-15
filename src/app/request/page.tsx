@@ -83,6 +83,7 @@ export default function RequestPage() {
     return n && n > 0 ? n : 2;
   }, [drinksPerGuestInput]);
   const [occasion, setOccasion] = useState<Occasion>("relaxed");
+  const [customOccasionName, setCustomOccasionName] = useState("");
   const [hasManualQuantities, setHasManualQuantities] = useState(false);
   const [ingredientsOpenByRecipeId, setIngredientsOpenByRecipeId] = useState<
     Record<string, boolean>
@@ -227,12 +228,17 @@ export default function RequestPage() {
         parsed.occasion === "custom"
           ? (parsed.occasion as Occasion)
           : "relaxed";
+      const customOccasionRaw =
+        typeof parsed.customOccasionName === "string"
+          ? parsed.customOccasionName
+          : "";
 
       setSelectedRecipeIds(new Set(ids));
       setServingsByRecipeId((prev) => ({ ...prev, ...servings }));
       if (guestsRaw) setGuestCountInput(guestsRaw);
       setDrinksPerGuestInput(drinksPerGuestRaw);
       setOccasion(occasionRaw);
+      if (customOccasionRaw) setCustomOccasionName(customOccasionRaw);
       setStep(resumeStep === "select" ? "select" : "quantity");
     } catch {
       // Ignore restore issues.
@@ -335,6 +341,7 @@ export default function RequestPage() {
           guestCount: parseNonNegativeInt(guestCountInput) || null,
           drinksPerGuest,
           occasion,
+          customOccasionName: customOccasionName.trim() ? customOccasionName.trim() : null,
         }),
       );
     } catch {
@@ -505,6 +512,18 @@ export default function RequestPage() {
                         {occasion === "custom" ? (
                           <div className="mt-4">
                             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                              Event type
+                              <input
+                                type="text"
+                                value={customOccasionName}
+                                onChange={(event) =>
+                                  setCustomOccasionName(event.target.value)
+                                }
+                                placeholder="e.g. Birthday, corporate, wedding..."
+                                className="mt-2 w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px] tracking-normal text-ink"
+                              />
+                            </label>
+                            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                               Drinks per guest
                               <input
                                 type="number"
@@ -521,6 +540,16 @@ export default function RequestPage() {
                         {(() => {
                           const guests = parseNonNegativeInt(guestCountInput);
                           if (!guests || guests <= 0) return null;
+                          if (occasion === "custom") {
+                            return (
+                              <p className="mt-3 text-sm text-muted">
+                                <span className="font-semibold text-ink">
+                                  You choose
+                                </span>{" "}
+                                how many cocktails per guest!
+                              </p>
+                            );
+                          }
                           return (
                             <p className="mt-3 text-sm text-muted">
                               Suggested starting point:
@@ -528,7 +557,7 @@ export default function RequestPage() {
                               <span className="font-semibold text-ink">
                                 {drinksPerGuest}
                               </span>{" "}
-                              cocktails per guest.
+                              cocktails <span className="font-semibold text-ink">total</span> per guest.
                             </p>
                           );
                         })()}

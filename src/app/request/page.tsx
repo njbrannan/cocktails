@@ -244,7 +244,14 @@ export default function RequestPage() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
         <header>
           <p className="flex items-baseline gap-2 font-semibold uppercase tracking-[0.22em] text-accent">
-            <span className="text-[13px] sm:text-sm">Get Involved! Catering</span>
+            <a
+              href="https://www.getinvolved.com.au"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[13px] font-bold sm:text-sm"
+            >
+              Get Involved! Catering
+            </a>
             <span className="text-[11px] sm:text-xs">with our</span>
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">

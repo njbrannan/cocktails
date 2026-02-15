@@ -505,7 +505,18 @@ export default function RequestEditPage() {
                         ? `Total drinks: ${totalDrinks}`
                         : "No quantities set yet."}
                     </span>
-                    <span>{`Total guests: ${guestCount || "—"}`}</span>
+                    <span className="flex flex-col items-end leading-tight">
+                      <span>{`Total guests: ${guestCount || "—"}`}</span>
+                      {guestCount && guestCount > 0 && totalDrinks > 0 ? (
+                        <span className="text-[12px] text-ink-muted">
+                          {(totalDrinks / guestCount)
+                            .toFixed(2)
+                            .replace(/\.00$/, "")
+                            .replace(/(\.\d)0$/, "$1")}{" "}
+                          cocktails per guest
+                        </span>
+                      ) : null}
+                    </span>
                   </div>
                 </div>
                 <div className="flex flex-nowrap items-center gap-3">
@@ -995,7 +1006,7 @@ export default function RequestEditPage() {
                         }}
                         className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent hover:-translate-y-0.5"
                       >
-                        Back
+                        Add/remove drinks
                       </button>
 
                       <button

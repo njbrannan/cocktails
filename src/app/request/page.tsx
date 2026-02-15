@@ -65,6 +65,9 @@ export default function RequestPage() {
   const [servingsByRecipeId, setServingsByRecipeId] = useState<
     Record<string, string>
   >({});
+  const [guestCountInput, setGuestCountInput] = useState("");
+  const [drinksPerGuest, setDrinksPerGuest] = useState<2 | 3 | 4>(2);
+  const [hasManualQuantities, setHasManualQuantities] = useState(false);
   const [ingredientsOpenByRecipeId, setIngredientsOpenByRecipeId] = useState<
     Record<string, boolean>
   >({});
@@ -79,6 +82,15 @@ export default function RequestPage() {
   const normalizeIngredient = (value: Ingredient | Ingredient[] | null) => {
     if (!value) return null;
     return Array.isArray(value) ? value[0] ?? null : value;
+  };
+
+  const parseNonNegativeInt = (raw: string) => {
+    const trimmed = raw.trim();
+    if (trimmed === "") return null;
+    if (!/^\d+$/.test(trimmed)) return null;
+    const n = Number(trimmed);
+    if (!Number.isSafeInteger(n)) return null;
+    return n;
   };
 
   const selectedRecipes = useMemo(() => {
@@ -97,6 +109,10 @@ export default function RequestPage() {
   const selectedForQuantity = useMemo(() => {
     return recipes.filter((recipe) => selectedRecipeIds.has(recipe.id));
   }, [recipes, selectedRecipeIds]);
+
+  const selectedForQuantityIdsKey = useMemo(() => {
+    return selectedForQuantity.map((recipe) => recipe.id).join("|");
+  }, [selectedForQuantity]);
 
   const canProceedToQuantities = selectedRecipeIds.size > 0;
   const [step, setStep] = useState<"select" | "quantity">("select");
@@ -169,14 +185,54 @@ export default function RequestPage() {
         parsed.servingsByRecipeId && typeof parsed.servingsByRecipeId === "object"
           ? (parsed.servingsByRecipeId as Record<string, string>)
           : {};
+      const guestsRaw = typeof parsed.guestCount === "number" ? String(parsed.guestCount) : "";
+      const drinksPerGuestRaw =
+        parsed.drinksPerGuest === 2 || parsed.drinksPerGuest === 3 || parsed.drinksPerGuest === 4
+          ? (parsed.drinksPerGuest as 2 | 3 | 4)
+          : 2;
 
       setSelectedRecipeIds(new Set(ids));
       setServingsByRecipeId((prev) => ({ ...prev, ...servings }));
+      if (guestsRaw) setGuestCountInput(guestsRaw);
+      setDrinksPerGuest(drinksPerGuestRaw);
       setStep(resumeStep === "select" ? "select" : "quantity");
     } catch {
       // Ignore restore issues.
     }
   }, []);
+
+  const applyGuestRecommendation = () => {
+    const guestCount = parseNonNegativeInt(guestCountInput);
+    if (!guestCount || guestCount <= 0) return;
+    if (selectedForQuantity.length === 0) return;
+
+    const totalDrinks = guestCount * drinksPerGuest;
+    const n = selectedForQuantity.length;
+    const base = Math.floor(totalDrinks / n);
+    const remainder = totalDrinks % n;
+
+    setServingsByRecipeId((prev) => {
+      const next = { ...prev };
+      for (let i = 0; i < selectedForQuantity.length; i++) {
+        const recipe = selectedForQuantity[i]!;
+        next[recipe.id] = String(base + (i < remainder ? 1 : 0));
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    // When guests are provided, prefill a sensible starting point (2–4 drinks/guest),
+    // evenly split across selected cocktails. Only auto-apply if the user hasn't started
+    // manually editing quantities yet.
+    if (step !== "quantity") return;
+    if (hasManualQuantities) return;
+    const guestCount = parseNonNegativeInt(guestCountInput);
+    if (!guestCount || guestCount <= 0) return;
+    if (selectedForQuantity.length === 0) return;
+    applyGuestRecommendation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guestCountInput, drinksPerGuest, selectedForQuantityIdsKey, step, hasManualQuantities]);
 
   const handleCreateOrderList = () => {
     setError(null);
@@ -230,6 +286,8 @@ export default function RequestPage() {
           orderList: totals,
           selectedRecipeIds: Array.from(selectedRecipeIds.values()),
           servingsByRecipeId,
+          guestCount: parseNonNegativeInt(guestCountInput) || null,
+          drinksPerGuest,
         }),
       );
     } catch {
@@ -364,7 +422,73 @@ export default function RequestPage() {
                       No cocktails selected yet.
                     </p>
                   ) : (
-                    selectedForQuantity.map((recipe) => {
+                    <>
+                      <div className="rounded-[28px] border border-subtle bg-white/70 p-5">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                          Guests (Optional)
+                        </p>
+                        <div className="mt-3 grid gap-4 md:grid-cols-[1fr_1fr]">
+                          <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                            Number of guests
+                            <input
+                              type="number"
+                              min={1}
+                              inputMode="numeric"
+                              value={guestCountInput}
+                              onChange={(event) => setGuestCountInput(event.target.value)}
+                              className="mt-2 w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px]"
+                            />
+                          </label>
+
+                          <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                            Drinks per guest
+                            <select
+                              value={drinksPerGuest}
+                              onChange={(event) =>
+                                setDrinksPerGuest(
+                                  (Number(event.target.value) || 2) as 2 | 3 | 4,
+                                )
+                              }
+                              className="mt-2 h-[52px] w-full rounded-2xl border border-soft bg-white/80 px-4 text-[16px] tracking-normal text-ink"
+                            >
+                              <option value={2}>2 (recommended)</option>
+                              <option value={3}>3</option>
+                              <option value={4}>4</option>
+                            </select>
+                          </label>
+                        </div>
+
+                        {(() => {
+                          const guests = parseNonNegativeInt(guestCountInput);
+                          if (!guests || guests <= 0) return null;
+                          const totalDrinks = guests * drinksPerGuest;
+                          const n = Math.max(1, selectedForQuantity.length);
+                          const approxEach = Math.round(totalDrinks / n);
+                          return (
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                              <p className="text-sm text-muted">
+                                Suggested starting point:{" "}
+                                <span className="font-semibold text-ink">
+                                  {totalDrinks}
+                                </span>{" "}
+                                drinks total (≈ {approxEach} each across {selectedForQuantity.length} cocktails).
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setHasManualQuantities(false);
+                                  applyGuestRecommendation();
+                                }}
+                                className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-accent underline underline-offset-2"
+                              >
+                                Apply recommendation
+                              </button>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {selectedForQuantity.map((recipe) => {
                       const servingsRaw = servingsByRecipeId[recipe.id] ?? "";
                       const servings = Number(servingsRaw || "0") || 0;
                       const ingredientsOpen = Boolean(
@@ -454,12 +578,13 @@ export default function RequestPage() {
                                     }));
                                   }
                                 }}
-                                onChange={(event) =>
+                                onChange={(event) => {
+                                  setHasManualQuantities(true);
                                   setServingsByRecipeId((prev) => ({
                                     ...prev,
                                     [recipe.id]: event.target.value,
-                                  }))
-                                }
+                                  }));
+                                }}
                                 // iOS Safari zooms when inputs are < 16px font-size.
                                 className="mt-2 w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px]"
                               />
@@ -538,7 +663,8 @@ export default function RequestPage() {
                           ) : null}
                         </div>
                       );
-                    })
+                    })}
+                    </>
                   )}
                 </div>
               )}

@@ -54,6 +54,8 @@ type StoredOrder = {
   // Enough to restore the previous screen if the user goes back.
   selectedRecipeIds: string[];
   servingsByRecipeId: Record<string, string>;
+  guestCount?: number | null;
+  drinksPerGuest?: 2 | 3 | 4;
 };
 
 const STORAGE_KEY = "get-involved:order:v1";
@@ -144,6 +146,10 @@ export default function RequestOrderPage() {
       setStored(parsed);
       setServingsByRecipeId(parsed.servingsByRecipeId || {});
       setOrderList(parsed.orderList || []);
+      if (!guestCountInput) {
+        const guests = typeof parsed.guestCount === "number" ? parsed.guestCount : null;
+        if (guests && guests > 0) setGuestCountInput(String(guests));
+      }
     } catch {
       // Ignore parse errors; user can go back and recreate.
     }

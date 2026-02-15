@@ -180,6 +180,16 @@ export default function RequestEditPage() {
     return cocktailsSummary.reduce((sum, c) => sum + (Number(c.servings) || 0), 0);
   }, [cocktailsSummary]);
 
+  const perGuestLabelForServings = (servings: number) => {
+    if (!guestCount || guestCount <= 0) return null;
+    const perGuest = servings / guestCount;
+    if (!Number.isFinite(perGuest)) return null;
+    return perGuest
+      .toFixed(2)
+      .replace(/\.00$/, "")
+      .replace(/(\.\d)0$/, "$1");
+  };
+
   const orderList = useMemo(() => {
     if (recipes.length === 0) return [];
     const recipeById = new Map(recipes.map((r) => [r.id, r]));
@@ -455,14 +465,22 @@ export default function RequestEditPage() {
 
       <div className="no-print mx-auto flex w-full max-w-5xl flex-col gap-8">
         <header>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-            Edit request
+          <p className="flex items-baseline gap-2 font-semibold uppercase tracking-[0.22em] text-accent">
+            <a
+              href="https://www.getinvolved.com.au"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[13px] font-bold sm:text-sm"
+            >
+              Get Involved! Catering
+            </a>
+            <span className="text-[11px] sm:text-xs">with our</span>
           </p>
-          <h1 className="font-display text-4xl text-ink">
-            {event?.title || "Cocktail request"}
+          <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">
+            Edit Cocktail Booking Request
           </h1>
           <p className="mt-2 text-sm text-muted">
-            Save your updates or finalize when you're ready to book bartenders.
+            Save your updates or finalise when you're ready to book bartenders.
           </p>
         </header>
 
@@ -481,12 +499,13 @@ export default function RequestEditPage() {
                   <h2 className="font-display text-2xl text-accent">
                     Order summary
                   </h2>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-                    <p>
+                  <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-sm text-muted">
+                    <span>
                       {totalDrinks > 0
                         ? `Total drinks: ${totalDrinks}`
                         : "No quantities set yet."}
-                    </p>
+                    </span>
+                    <span>{`Total guests: ${guestCount || "—"}`}</span>
                   </div>
                 </div>
                 <div className="flex flex-nowrap items-center gap-3">
@@ -818,7 +837,14 @@ export default function RequestEditPage() {
                               </h3>
                             </div>
                             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                              Quantity
+                              <span className="flex items-baseline justify-between gap-3">
+                                <span>Quantity</span>
+                                {perGuestLabelForServings(servings) !== null ? (
+                                  <span className="text-[11px] font-semibold tracking-normal text-ink-muted">
+                                    ({perGuestLabelForServings(servings)} per guest)
+                                  </span>
+                                ) : null}
+                              </span>
                               <input
                                 type="number"
                                 min={0}

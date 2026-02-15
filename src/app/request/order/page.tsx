@@ -591,8 +591,16 @@ export default function RequestOrderPage() {
 
       <div className="no-print mx-auto flex w-full max-w-5xl flex-col gap-8 overflow-x-hidden">
         <header>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-            Get Involved with our
+          <p className="flex items-baseline gap-2 font-semibold uppercase tracking-[0.22em] text-accent">
+            <a
+              href="https://www.getinvolved.com.au"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[13px] font-bold sm:text-sm"
+            >
+              Get Involved! Catering
+            </a>
+            <span className="text-[11px] sm:text-xs">with our</span>
           </p>
           <h1 className="font-display text-4xl text-ink">Order List</h1>
           <p className="mt-2 text-sm text-muted">

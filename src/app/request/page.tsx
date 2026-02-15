@@ -58,6 +58,8 @@ const typePriority: Record<string, number> = {
 export default function RequestPage() {
   const router = useRouter();
 
+  type Occasion = "relaxed" | "cocktail" | "wedding" | "big-night" | "custom";
+
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(
     () => new Set(),
@@ -67,6 +69,7 @@ export default function RequestPage() {
   >({});
   const [guestCountInput, setGuestCountInput] = useState("");
   const [drinksPerGuest, setDrinksPerGuest] = useState<2 | 3 | 4>(2);
+  const [occasion, setOccasion] = useState<Occasion>("relaxed");
   const [hasManualQuantities, setHasManualQuantities] = useState(false);
   const [ingredientsOpenByRecipeId, setIngredientsOpenByRecipeId] = useState<
     Record<string, boolean>
@@ -105,6 +108,23 @@ export default function RequestPage() {
           item.servings > 0,
       );
   }, [recipes, servingsByRecipeId, selectedRecipeIds]);
+
+  const drinksPerGuestForOccasion = (value: Occasion): 2 | 3 | 4 | null => {
+    switch (value) {
+      case "relaxed":
+        return 2;
+      case "cocktail":
+        return 3;
+      case "wedding":
+        return 3;
+      case "big-night":
+        return 4;
+      case "custom":
+        return null;
+      default:
+        return 2;
+    }
+  };
 
   const selectedForQuantity = useMemo(() => {
     return recipes.filter((recipe) => selectedRecipeIds.has(recipe.id));
@@ -190,16 +210,33 @@ export default function RequestPage() {
         parsed.drinksPerGuest === 2 || parsed.drinksPerGuest === 3 || parsed.drinksPerGuest === 4
           ? (parsed.drinksPerGuest as 2 | 3 | 4)
           : 2;
+      const occasionRaw =
+        parsed.occasion === "relaxed" ||
+        parsed.occasion === "cocktail" ||
+        parsed.occasion === "wedding" ||
+        parsed.occasion === "big-night" ||
+        parsed.occasion === "custom"
+          ? (parsed.occasion as Occasion)
+          : "relaxed";
 
       setSelectedRecipeIds(new Set(ids));
       setServingsByRecipeId((prev) => ({ ...prev, ...servings }));
       if (guestsRaw) setGuestCountInput(guestsRaw);
       setDrinksPerGuest(drinksPerGuestRaw);
+      setOccasion(occasionRaw);
       setStep(resumeStep === "select" ? "select" : "quantity");
     } catch {
       // Ignore restore issues.
     }
   }, []);
+
+  useEffect(() => {
+    // Occasion drives a default drinks-per-guest recommendation.
+    // If they choose Custom, we leave the current value alone.
+    const recommended = drinksPerGuestForOccasion(occasion);
+    if (!recommended) return;
+    setDrinksPerGuest(recommended);
+  }, [occasion]);
 
   const applyGuestRecommendation = () => {
     const guestCount = parseNonNegativeInt(guestCountInput);
@@ -208,14 +245,14 @@ export default function RequestPage() {
 
     const totalDrinks = guestCount * drinksPerGuest;
     const n = selectedForQuantity.length;
-    const base = Math.floor(totalDrinks / n);
-    const remainder = totalDrinks % n;
+    // Round up so every selected cocktail starts with the same integer quantity.
+    // This makes it easier to scan and ensures we're never short on total drinks.
+    const perCocktail = Math.max(0, Math.ceil(totalDrinks / n));
 
     setServingsByRecipeId((prev) => {
       const next = { ...prev };
-      for (let i = 0; i < selectedForQuantity.length; i++) {
-        const recipe = selectedForQuantity[i]!;
-        next[recipe.id] = String(base + (i < remainder ? 1 : 0));
+      for (const recipe of selectedForQuantity) {
+        next[recipe.id] = String(perCocktail);
       }
       return next;
     });
@@ -288,6 +325,7 @@ export default function RequestPage() {
           servingsByRecipeId,
           guestCount: parseNonNegativeInt(guestCountInput) || null,
           drinksPerGuest,
+          occasion,
         }),
       );
     } catch {
@@ -425,7 +463,7 @@ export default function RequestPage() {
                     <>
                       <div className="rounded-[28px] border border-subtle bg-white/70 p-5">
                         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                          Guests (Optional)
+                          Guests
                         </p>
                         <div className="mt-3 grid gap-4 md:grid-cols-[1fr_1fr]">
                           <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
@@ -441,49 +479,58 @@ export default function RequestPage() {
                           </label>
 
                           <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                            Drinks per guest
+                            Occasion
                             <select
-                              value={drinksPerGuest}
+                              value={occasion}
                               onChange={(event) =>
-                                setDrinksPerGuest(
-                                  (Number(event.target.value) || 2) as 2 | 3 | 4,
-                                )
+                                setOccasion((event.target.value as Occasion) || "relaxed")
                               }
                               className="mt-2 h-[52px] w-full rounded-2xl border border-soft bg-white/80 px-4 text-[16px] tracking-normal text-ink"
                             >
-                              <option value={2}>2 (recommended)</option>
-                              <option value={3}>3</option>
-                              <option value={4}>4</option>
+                              <option value="relaxed">Dinner / relaxed (2 drinks per guest)</option>
+                              <option value="cocktail">Cocktail party (3 drinks per guest)</option>
+                              <option value="wedding">Wedding / celebration (3 drinks per guest)</option>
+                              <option value="big-night">Big night (4 drinks per guest)</option>
+                              <option value="custom">Custom</option>
                             </select>
                           </label>
                         </div>
+
+                        {occasion === "custom" ? (
+                          <div className="mt-4">
+                            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                              Drinks per guest
+                              <select
+                                value={drinksPerGuest}
+                                onChange={(event) =>
+                                  setDrinksPerGuest(
+                                    (Number(event.target.value) || 2) as 2 | 3 | 4,
+                                  )
+                                }
+                                className="mt-2 h-[52px] w-full rounded-2xl border border-soft bg-white/80 px-4 text-[16px] tracking-normal text-ink"
+                              >
+                                <option value={2}>2</option>
+                                <option value={3}>3</option>
+                                <option value={4}>4</option>
+                              </select>
+                            </label>
+                          </div>
+                        ) : null}
 
                         {(() => {
                           const guests = parseNonNegativeInt(guestCountInput);
                           if (!guests || guests <= 0) return null;
                           const totalDrinks = guests * drinksPerGuest;
                           const n = Math.max(1, selectedForQuantity.length);
-                          const approxEach = Math.round(totalDrinks / n);
+                          const perCocktail = Math.max(0, Math.ceil(totalDrinks / n));
                           return (
-                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                              <p className="text-sm text-muted">
-                                Suggested starting point:{" "}
-                                <span className="font-semibold text-ink">
-                                  {totalDrinks}
-                                </span>{" "}
-                                drinks total (≈ {approxEach} each across {selectedForQuantity.length} cocktails).
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setHasManualQuantities(false);
-                                  applyGuestRecommendation();
-                                }}
-                                className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-accent underline underline-offset-2"
-                              >
-                                Apply recommendation
-                              </button>
-                            </div>
+                            <p className="mt-3 text-sm text-muted">
+                              Suggested starting point:{" "}
+                              <span className="font-semibold text-ink">
+                                {perCocktail}
+                              </span>{" "}
+                              per cocktail.
+                            </p>
                           );
                         })()}
                       </div>

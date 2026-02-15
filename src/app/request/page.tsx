@@ -14,6 +14,15 @@ import { useEffect, useMemo, useState } from "react";
 
 const ORDER_STORAGE_KEY = "get-involved:order:v1";
 
+function parseNonNegativeInt(raw: string) {
+  const trimmed = raw.trim();
+  if (trimmed === "") return null;
+  if (!/^\d+$/.test(trimmed)) return null;
+  const n = Number(trimmed);
+  if (!Number.isSafeInteger(n)) return null;
+  return n;
+}
+
 type Ingredient = {
   id: string;
   name: string;
@@ -68,7 +77,11 @@ export default function RequestPage() {
     Record<string, string>
   >({});
   const [guestCountInput, setGuestCountInput] = useState("");
-  const [drinksPerGuest, setDrinksPerGuest] = useState<2 | 3 | 4>(2);
+  const [drinksPerGuestInput, setDrinksPerGuestInput] = useState("2");
+  const drinksPerGuest = useMemo(() => {
+    const n = parseNonNegativeInt(drinksPerGuestInput);
+    return n && n > 0 ? n : 2;
+  }, [drinksPerGuestInput]);
   const [occasion, setOccasion] = useState<Occasion>("relaxed");
   const [hasManualQuantities, setHasManualQuantities] = useState(false);
   const [ingredientsOpenByRecipeId, setIngredientsOpenByRecipeId] = useState<
@@ -85,15 +98,6 @@ export default function RequestPage() {
   const normalizeIngredient = (value: Ingredient | Ingredient[] | null) => {
     if (!value) return null;
     return Array.isArray(value) ? value[0] ?? null : value;
-  };
-
-  const parseNonNegativeInt = (raw: string) => {
-    const trimmed = raw.trim();
-    if (trimmed === "") return null;
-    if (!/^\d+$/.test(trimmed)) return null;
-    const n = Number(trimmed);
-    if (!Number.isSafeInteger(n)) return null;
-    return n;
   };
 
   const selectedRecipes = useMemo(() => {
@@ -207,9 +211,9 @@ export default function RequestPage() {
           : {};
       const guestsRaw = typeof parsed.guestCount === "number" ? String(parsed.guestCount) : "";
       const drinksPerGuestRaw =
-        parsed.drinksPerGuest === 2 || parsed.drinksPerGuest === 3 || parsed.drinksPerGuest === 4
-          ? (parsed.drinksPerGuest as 2 | 3 | 4)
-          : 2;
+        typeof parsed.drinksPerGuest === "number" && Number.isFinite(parsed.drinksPerGuest) && parsed.drinksPerGuest > 0
+          ? String(Math.floor(parsed.drinksPerGuest))
+          : "2";
       const occasionRaw =
         parsed.occasion === "relaxed" ||
         parsed.occasion === "cocktail" ||
@@ -222,7 +226,7 @@ export default function RequestPage() {
       setSelectedRecipeIds(new Set(ids));
       setServingsByRecipeId((prev) => ({ ...prev, ...servings }));
       if (guestsRaw) setGuestCountInput(guestsRaw);
-      setDrinksPerGuest(drinksPerGuestRaw);
+      setDrinksPerGuestInput(drinksPerGuestRaw);
       setOccasion(occasionRaw);
       setStep(resumeStep === "select" ? "select" : "quantity");
     } catch {
@@ -235,7 +239,7 @@ export default function RequestPage() {
     // If they choose Custom, we leave the current value alone.
     const recommended = drinksPerGuestForOccasion(occasion);
     if (!recommended) return;
-    setDrinksPerGuest(recommended);
+    setDrinksPerGuestInput(String(recommended));
   }, [occasion]);
 
   const applyGuestRecommendation = () => {
@@ -500,19 +504,14 @@ export default function RequestPage() {
                           <div className="mt-4">
                             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                               Drinks per guest
-                              <select
-                                value={drinksPerGuest}
-                                onChange={(event) =>
-                                  setDrinksPerGuest(
-                                    (Number(event.target.value) || 2) as 2 | 3 | 4,
-                                  )
-                                }
-                                className="mt-2 h-[52px] w-full rounded-2xl border border-soft bg-white/80 px-4 text-[16px] tracking-normal text-ink"
-                              >
-                                <option value={2}>2</option>
-                                <option value={3}>3</option>
-                                <option value={4}>4</option>
-                              </select>
+                              <input
+                                type="number"
+                                min={1}
+                                inputMode="numeric"
+                                value={drinksPerGuestInput}
+                                onChange={(event) => setDrinksPerGuestInput(event.target.value)}
+                                className="mt-2 w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px]"
+                              />
                             </label>
                           </div>
                         ) : null}
@@ -525,11 +524,12 @@ export default function RequestPage() {
                           const perCocktail = Math.max(0, Math.ceil(totalDrinks / n));
                           return (
                             <p className="mt-3 text-sm text-muted">
-                              Suggested starting point:{" "}
+                              Suggested starting point:
+                              <br />
                               <span className="font-semibold text-ink">
                                 {perCocktail}
                               </span>{" "}
-                              per cocktail.
+                              of each cocktail.
                             </p>
                           );
                         })()}

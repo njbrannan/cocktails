@@ -546,7 +546,9 @@ export default function RequestPage() {
                                 <span className="font-semibold text-ink">
                                   You choose
                                 </span>{" "}
-                                how many cocktails per guest!
+                                how many cocktails{" "}
+                                <span className="font-semibold text-ink">total</span>{" "}
+                                per guest!
                               </p>
                             );
                           }

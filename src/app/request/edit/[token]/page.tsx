@@ -477,7 +477,7 @@ export default function RequestEditPage() {
             <span className="text-[11px] sm:text-xs">with our</span>
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">
-            Edit Cocktail Booking Request
+            Edit Cocktail Booking Request Page
           </h1>
           <p className="mt-2 text-sm text-muted">
             Save your updates or finalise when you're ready to book bartenders.
@@ -513,10 +513,10 @@ export default function RequestEditPage() {
                     type="button"
                     disabled={isLocked}
                     onClick={() => {
-                      setStep("select");
-                      pendingScrollRef.current = "select";
+                      setStep("quantity");
+                      pendingScrollRef.current = "quantity";
                       window.setTimeout(() => {
-                        selectCocktailsRef.current?.scrollIntoView({
+                        quantitiesRef.current?.scrollIntoView({
                           behavior: "smooth",
                           block: "start",
                         });
@@ -524,7 +524,7 @@ export default function RequestEditPage() {
                     }}
                     className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-accent underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Add/remove drinks
+                    Amend quantities
                   </button>
 
                   <button
@@ -939,9 +939,29 @@ export default function RequestEditPage() {
                                         {row.amount} {row.unit}
                                       </span>
                                     </div>
-                                  ))}
-                              </div>
-                            </div>
+                ))}
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-4">
+                <button
+                  type="button"
+                  disabled={isLocked}
+                  onClick={() => {
+                    setStep("select");
+                    pendingScrollRef.current = "select";
+                    window.setTimeout(() => {
+                      selectCocktailsRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    }, 50);
+                  }}
+                  className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
+                >
+                  Add/remove drinks
+                </button>
+              </div>
+            </div>
                           ) : null}
                         </div>
                       );

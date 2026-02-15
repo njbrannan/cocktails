@@ -480,18 +480,6 @@ export default function RequestPage() {
                       <div className="rounded-[28px] border border-subtle bg-white/70 p-5">
                         <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
                           <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                            Number of guests
-                            <input
-                              type="number"
-                              min={1}
-                              inputMode="numeric"
-                              value={guestCountInput}
-                              onChange={(event) => setGuestCountInput(event.target.value)}
-                              className="mt-2 w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px]"
-                            />
-                          </label>
-
-                          <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                             Occasion
                             <select
                               value={occasion}
@@ -506,6 +494,18 @@ export default function RequestPage() {
                               <option value="big-night">Big night</option>
                               <option value="custom">Custom</option>
                             </select>
+                          </label>
+
+                          <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                            Number of guests
+                            <input
+                              type="number"
+                              min={1}
+                              inputMode="numeric"
+                              value={guestCountInput}
+                              onChange={(event) => setGuestCountInput(event.target.value)}
+                              className="mt-2 w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px]"
+                            />
                           </label>
                         </div>
 

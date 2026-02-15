@@ -9,9 +9,11 @@ function hasFileExtension(value: string) {
 // For now we only enable the cocktails we have fast, optimized `.webp` assets for.
 const PHOTO_OVERRIDES_BY_SLUG: Record<string, "png" | "jpg" | "webp"> = {
   daiquiri: "webp",
+  "dirty-martini": "webp",
   "espresso-martini": "webp",
   "last-word": "webp",
   margarita: "webp",
+  martini: "webp",
   "moscow-mule": "webp",
   negroni: "webp",
   "old-fashioned": "webp",

@@ -10,6 +10,7 @@ import {
   resolveSvgFallbackForImageSrc,
 } from "@/lib/cocktailImages";
 import { loadCachedRecipes, saveCachedRecipes } from "@/lib/offlineRecipes";
+import { useEdgeSwipeNav } from "@/hooks/useEdgeSwipeNav";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -368,6 +369,28 @@ export default function RequestPage() {
 
     router.push("/request/order");
   };
+
+  useEdgeSwipeNav({
+    canGoBack: step === "quantity",
+    canGoForward:
+      (step === "select" && canProceedToQuantities) ||
+      (step === "quantity" && canCreateOrder),
+    onBack: () => {
+      if (step !== "quantity") return;
+      setStep("select");
+    },
+    onForward: () => {
+      if (step === "select") {
+        if (!canProceedToQuantities) return;
+        setStep("quantity");
+        return;
+      }
+      if (step === "quantity") {
+        if (!canCreateOrder) return;
+        handleCreateOrderList();
+      }
+    },
+  });
 
   return (
     <div className="min-h-screen hero-grid px-6 py-16">

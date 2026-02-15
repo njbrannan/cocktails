@@ -15,6 +15,7 @@ import {
   saveDraft,
   type OfflineDraft,
 } from "@/lib/offlineDrafts";
+import { useEdgeSwipeNav } from "@/hooks/useEdgeSwipeNav";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { countries } from "countries-list";
@@ -116,6 +117,26 @@ export default function RequestOrderPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [editLink, setEditLink] = useState<string | null>(null);
   const minDate = useMemo(() => todayIsoDate(), []);
+
+  useEdgeSwipeNav({
+    canGoBack: true,
+    canGoForward: true,
+    onBack: () => {
+      // Prefer "previous page" semantics: go back to the quantities step.
+      if (editingQuantities) {
+        setEditingQuantities(false);
+        return;
+      }
+      router.push("/request?resume=1&step=quantity");
+    },
+    onForward: () => {
+      // "Next page" in this screen is the booking section.
+      orderBartendersRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    },
+  });
 
   const handleEventDateChange = (value: string) => {
     // Even with `min=...`, some browsers allow typing an older date.

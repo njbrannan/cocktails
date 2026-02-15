@@ -14,6 +14,26 @@ import {
 import { countries } from "countries-list";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
+function isEditableTarget(target: EventTarget | null) {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  const tag = (el.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea" || tag === "select") return true;
+  if ((el as any).isContentEditable) return true;
+  let cur: HTMLElement | null = el;
+  for (let i = 0; i < 4 && cur; i++) {
+    const t = (cur.tagName || "").toLowerCase();
+    if (t === "input" || t === "textarea" || t === "select") return true;
+    if ((cur as any).isContentEditable) return true;
+    cur = cur.parentElement;
+  }
+  return false;
+}
+
+function edgeSwipeThresholdPx() {
+  return 28;
+}
+
 function parseNonNegativeInt(raw: string) {
   const trimmed = raw.trim();
   if (trimmed === "") return null;
@@ -140,6 +160,81 @@ export default function App() {
   const selectedRecipes = useMemo(() => {
     return recipes.filter((r) => selectedRecipeIds.has(r.id));
   }, [recipes, selectedRecipeIds]);
+
+  // Edge-swipe navigation:
+  // - swipe right from the left edge: previous step
+  // - swipe left from the right edge: next step (when available)
+  useEffect(() => {
+    const start: {
+      x: number;
+      y: number;
+      t: number;
+      zone: "left" | "right" | null;
+      active: boolean;
+    } = { x: 0, y: 0, t: 0, zone: null, active: false };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (!e.touches || e.touches.length !== 1) return;
+      if (isEditableTarget(e.target)) return;
+
+      const touch = e.touches[0]!;
+      const x = touch.clientX;
+      const y = touch.clientY;
+      const w = window.innerWidth || 0;
+      const edge = edgeSwipeThresholdPx();
+      const zone = x <= edge ? "left" : w > 0 && x >= w - edge ? "right" : null;
+      start.x = x;
+      start.y = y;
+      start.t = Date.now();
+      start.zone = zone;
+      start.active = Boolean(zone);
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!start.active || !start.zone) return;
+      start.active = false;
+      if (!e.changedTouches || e.changedTouches.length !== 1) return;
+
+      const touch = e.changedTouches[0]!;
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      const dt = Math.max(1, Date.now() - start.t);
+
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      const velocity = absX / dt;
+      const passes =
+        absX >= 90 && absX >= absY * 1.6 && (velocity >= 0.35 || absX >= 140);
+      if (!passes) return;
+
+      if (start.zone === "left" && dx > 0) {
+        if (step === "quantity") setStep("select");
+        else if (step === "order") setStep("quantity");
+        return;
+      }
+
+      if (start.zone === "right" && dx < 0) {
+        if (step === "select" && selectedRecipeIds.size > 0) {
+          setStep("quantity");
+          return;
+        }
+        if (step === "quantity") {
+          const hasAny = selectedRecipes.some((r) => {
+            const n = parseNonNegativeInt(servingsByRecipeId[r.id] ?? "0");
+            return (n ?? 0) > 0;
+          });
+          if (hasAny) setStep("order");
+        }
+      }
+    };
+
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [step, selectedRecipeIds, selectedRecipes, servingsByRecipeId]);
 
   const totalDrinks = useMemo(() => {
     let sum = 0;
@@ -753,4 +848,3 @@ export default function App() {
     </div>
   );
 }
-

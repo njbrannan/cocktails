@@ -11,6 +11,7 @@ import {
   resolveNextCocktailImageSrc,
   resolveSvgFallbackForImageSrc,
 } from "@/lib/cocktailImages";
+import { useEdgeSwipeNav } from "@/hooks/useEdgeSwipeNav";
 
 type EventRecord = {
   id: string;
@@ -112,6 +113,22 @@ export default function RequestEditPage() {
     expiresAt: number;
   } | null>(null);
   const [step, setStep] = useState<"select" | "quantity">("select");
+
+  useEdgeSwipeNav({
+    canGoBack: step === "quantity",
+    canGoForward: step === "select" && selectedRecipeIds.size > 0,
+    onBack: () => {
+      if (step !== "quantity") return;
+      pendingScrollRef.current = "select";
+      setStep("select");
+    },
+    onForward: () => {
+      if (step !== "select") return;
+      if (selectedRecipeIds.size <= 0) return;
+      pendingScrollRef.current = "quantity";
+      setStep("quantity");
+    },
+  });
 
   useEffect(() => {
     const target = pendingScrollRef.current;

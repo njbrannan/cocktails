@@ -138,6 +138,11 @@ export default function RequestPage() {
     return selectedForQuantity.map((recipe) => recipe.id).join("|");
   }, [selectedForQuantity]);
 
+  const guestCount = useMemo(() => {
+    const n = parseNonNegativeInt(guestCountInput);
+    return n && n > 0 ? n : null;
+  }, [guestCountInput]);
+
   const canProceedToQuantities = selectedRecipeIds.size > 0;
   const [step, setStep] = useState<"select" | "quantity">("select");
 
@@ -466,9 +471,6 @@ export default function RequestPage() {
                   ) : (
                     <>
                       <div className="rounded-[28px] border border-subtle bg-white/70 p-5">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                          Guests
-                        </p>
                         <div className="mt-3 grid gap-4 md:grid-cols-[1fr_1fr]">
                           <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                             Number of guests
@@ -538,6 +540,17 @@ export default function RequestPage() {
                       {selectedForQuantity.map((recipe) => {
                       const servingsRaw = servingsByRecipeId[recipe.id] ?? "";
                       const servings = Number(servingsRaw || "0") || 0;
+                      const perGuest =
+                        guestCount && guestCount > 0 ? servings / guestCount : null;
+                      const perGuestLabel =
+                        perGuest === null
+                          ? null
+                          : Number.isFinite(perGuest)
+                            ? perGuest
+                                .toFixed(2)
+                                .replace(/\.00$/, "")
+                                .replace(/(\.\d)0$/, "$1")
+                            : null;
                       const ingredientsOpen = Boolean(
                         ingredientsOpenByRecipeId[recipe.id],
                       );
@@ -604,7 +617,14 @@ export default function RequestPage() {
                               </h3>
                             </div>
                             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                              Quantity
+                              <span className="flex items-baseline justify-between gap-3">
+                                <span>Quantity</span>
+                                {perGuestLabel !== null ? (
+                                  <span className="text-[11px] font-semibold tracking-normal text-ink-muted">
+                                    ({perGuestLabel} per guest)
+                                  </span>
+                                ) : null}
+                              </span>
                               <input
                                 type="number"
                                 min={0}

@@ -788,8 +788,8 @@ export default function RequestPage() {
               </button>
             ) : (
               <>
-                <div className="flex w-full flex-col items-end gap-3">
-                  <div className="flex w-full items-start justify-end gap-3">
+                <div className="flex w-full flex-col gap-3">
+                  <div className="flex w-full items-start justify-between gap-3">
                     <button
                       type="button"
                       onClick={() => setStep("select")}
@@ -798,12 +798,12 @@ export default function RequestPage() {
                       Back
                     </button>
 
-                    <div className="text-right text-sm text-muted">
+                    <div className="text-right text-[13px] text-muted">
                       <p>
                         <span className="font-semibold text-ink">Number of guests:</span>{" "}
                         {guestCount ?? "—"}
                       </p>
-                      <p className="mt-1">
+                      <p className="mt-0.5">
                         <span className="font-semibold text-ink">Number of drinks:</span>{" "}
                         {totalDrinksInput}
                       </p>
@@ -813,7 +813,7 @@ export default function RequestPage() {
                   <button
                     onClick={handleCreateOrderList}
                     disabled={!canCreateOrder}
-                    className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
+                    className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60 self-start"
                   >
                     Create Order List
                   </button>

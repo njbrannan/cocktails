@@ -587,11 +587,19 @@ export default function RequestOrderPage() {
           <h2 className="font-display text-2xl text-accent">
             Selected cocktails
           </h2>
-          <p className="mt-2 text-sm text-muted">
-            {totalDrinks > 0
-              ? `Total drinks: ${totalDrinks}`
-              : "Set quantities to generate totals."}
-          </p>
+          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-sm text-muted">
+            <span>
+              {totalDrinks > 0
+                ? `Total drinks: ${totalDrinks}`
+                : "Set quantities to generate totals."}
+            </span>
+            <span>
+              {(() => {
+                const guests = parseNonNegativeInt(guestCountInput);
+                return `Total guests: ${guests ?? "—"}`;
+              })()}
+            </span>
+          </div>
           <button
             type="button"
             onClick={() => setEditingQuantities((v) => !v)}

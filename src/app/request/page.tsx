@@ -521,20 +521,14 @@ export default function RequestPage() {
                         {(() => {
                           const guests = parseNonNegativeInt(guestCountInput);
                           if (!guests || guests <= 0) return null;
-                          const totalDrinks = guests * drinksPerGuest;
-                          const n = Math.max(1, selectedForQuantity.length);
-                          const perCocktail = Math.max(0, Math.ceil(totalDrinks / n));
                           return (
                             <p className="mt-3 text-sm text-muted">
                               Suggested starting point:
                               <br />
                               <span className="font-semibold text-ink">
-                                {perCocktail}
+                                {drinksPerGuest}
                               </span>{" "}
-                              of each cocktail.
-                              <span className="block text-[12px] text-ink-muted">
-                                ({drinksPerGuest} per guest)
-                              </span>
+                              cocktails per guest.
                             </p>
                           );
                         })()}

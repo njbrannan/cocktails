@@ -625,7 +625,26 @@ export default function RequestOrderPage() {
             <span>
               {(() => {
                 const guests = parseNonNegativeInt(guestCountInput);
-                return `Total guests: ${guests ?? "—"}`;
+                const perGuest =
+                  guests && guests > 0 ? totalDrinks / guests : null;
+                const perGuestLabel =
+                  perGuest === null || !Number.isFinite(perGuest)
+                    ? null
+                    : perGuest
+                        .toFixed(2)
+                        .replace(/\.00$/, "")
+                        .replace(/(\.\d)0$/, "$1");
+
+                return (
+                  <span className="flex flex-col items-end leading-tight">
+                    <span>{`Total guests: ${guests ?? "—"}`}</span>
+                    {perGuestLabel !== null ? (
+                      <span className="text-[12px] text-ink-muted">
+                        {perGuestLabel} cocktails per guest
+                      </span>
+                    ) : null}
+                  </span>
+                );
               })()}
             </span>
           </div>

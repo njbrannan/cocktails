@@ -549,7 +549,7 @@ export default function RequestOrderPage() {
       <div className="print-only">
         <div className="mx-auto w-full max-w-3xl py-6">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-black/70">
-            Brought to you by Get Involved - The Kings of Cocktail Catering
+            Brought to you by GET INVOLVED! Catering - The Connoisseurs of Cocktail Catering
           </p>
           <h1 className="text-xl font-semibold">Order List</h1>
           <p className="mt-1 text-sm text-black/70">

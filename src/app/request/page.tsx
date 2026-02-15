@@ -149,6 +149,16 @@ export default function RequestPage() {
 
   const canCreateOrder = selectedRecipes.length > 0;
 
+  const totalDrinksInput = useMemo(() => {
+    let sum = 0;
+    for (const recipe of selectedForQuantity) {
+      const raw = servingsByRecipeId[recipe.id] ?? "0";
+      const n = parseNonNegativeInt(raw);
+      if (n !== null) sum += n;
+    }
+    return sum;
+  }, [selectedForQuantity, servingsByRecipeId]);
+
   useEffect(() => {
     // When switching steps, jump back to the top so the next screen starts at the header.
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
@@ -766,7 +776,7 @@ export default function RequestPage() {
             </>
           )}
 
-          <div className="mt-6 flex flex-wrap gap-4">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
             {step === "select" ? (
               <button
                 type="button"
@@ -778,20 +788,33 @@ export default function RequestPage() {
               </button>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={() => setStep("select")}
-                  className="gi-btn-secondary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] hover:-translate-y-0.5"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={handleCreateOrderList}
-                  disabled={!canCreateOrder}
-                  className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
-                >
-                  Create Order List
-                </button>
+                <div className="flex flex-wrap items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setStep("select")}
+                    className="gi-btn-secondary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] hover:-translate-y-0.5"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleCreateOrderList}
+                    disabled={!canCreateOrder}
+                    className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
+                  >
+                    Create Order List
+                  </button>
+                </div>
+
+                <div className="min-w-[220px] text-right text-sm text-muted">
+                  <p>
+                    <span className="font-semibold text-ink">Number of guests:</span>{" "}
+                    {guestCount ?? "—"}
+                  </p>
+                  <p className="mt-1">
+                    <span className="font-semibold text-ink">Number of drinks:</span>{" "}
+                    {totalDrinksInput}
+                  </p>
+                </div>
               </>
             )}
           </div>

@@ -6,12 +6,11 @@ const config: CapacitorConfig = {
   webDir: "dist",
   // We host the Next.js app on the web and simply wrap it for iOS.
   server: {
-    url: "https://www.prawnstars.net/request",
+    url: "https://events.getinvolved.com.au/request",
     cleartext: false,
     allowNavigation: [
-      "prawnstars.net",
-      "*.prawnstars.net",
-      "www.prawnstars.net",
+      "events.getinvolved.com.au",
+      "*.getinvolved.com.au",
       "*.vercel.app",
       "vgieooqyseuriqdmbazp.supabase.co",
     ],

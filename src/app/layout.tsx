@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Playfair_Display, Roboto } from "next/font/google";
 import "./globals.css";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const playfair = Playfair_Display({
   variable: "--font-classic-display",
@@ -26,6 +27,7 @@ export const metadata: Metadata = {
   title: "Get Involved! Catering | Cocktail Party Planner",
   description:
     "Our Cocktail Party Planning App offers a seamless and innovative new way to organise the perfect cocktail party! Select from our 12 most popular creations, fill in the quantity of drinks you’re after and receive your comprehensive shopping list for the night. Then just click to book your Bartender and we turn your vision into an unforgettable experience.",
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: [{ url: "/prawn-icon.png", type: "image/png" }],
     apple: [{ url: "/apple-touch-icon.png", type: "image/png" }],
@@ -53,6 +55,10 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport = {
+  themeColor: "#0b0b0c",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -76,6 +82,7 @@ export default function RootLayout({
       <body
         className={`${playfair.variable} ${manrope.variable} ${roboto.variable} antialiased`}
       >
+        <ServiceWorkerRegister />
         {children}
       </body>
     </html>

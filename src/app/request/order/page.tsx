@@ -9,6 +9,12 @@ import {
   resolveSvgFallbackForImageSrc,
 } from "@/lib/cocktailImages";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  loadDrafts,
+  removeDraft,
+  saveDraft,
+  type OfflineDraft,
+} from "@/lib/offlineDrafts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { countries } from "countries-list";
@@ -80,6 +86,8 @@ export default function RequestOrderPage() {
   const router = useRouter();
   const orderBartendersRef = useRef<HTMLDivElement | null>(null);
   const [stored, setStored] = useState<StoredOrder | null>(null);
+  const [drafts, setDrafts] = useState<OfflineDraft[]>([]);
+  const [sendingDraftId, setSendingDraftId] = useState<string | null>(null);
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [servingsByRecipeId, setServingsByRecipeId] = useState<
@@ -174,6 +182,13 @@ export default function RequestOrderPage() {
     } catch {
       // Ignore parse errors; user can go back and recreate.
     }
+  }, []);
+
+  useEffect(() => {
+    setDrafts(loadDrafts());
+    const onStorage = () => setDrafts(loadDrafts());
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   const parseNonNegativeInt = (raw: string) => {
@@ -466,26 +481,37 @@ export default function RequestOrderPage() {
         return;
       }
 
+      const payload = {
+        title: eventName.trim() ? eventName.trim() : "Cocktail booking request",
+        eventDate,
+        notes,
+        clientEmail,
+        guestCount: Number(guestCountInput),
+        clientPhone: combinedPhone || null,
+        submit: true,
+        cocktails: cocktailsSummary.map((c) => ({
+          recipeId: c.recipeId,
+          recipeName: c.recipeName,
+          servings:
+            Number(
+              servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0),
+            ) || 0,
+        })),
+      };
+
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        saveDraft(payload);
+        setDrafts(loadDrafts());
+        setSuccess(
+          "You’re offline. We saved your booking request on this device. When you’re back online, return here and send it from Saved drafts.",
+        );
+        return;
+      }
+
       const response = await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: eventName.trim() ? eventName.trim() : "Cocktail booking request",
-          eventDate,
-          notes,
-          clientEmail,
-          guestCount: Number(guestCountInput),
-          clientPhone: combinedPhone || null,
-          submit: true,
-          cocktails: cocktailsSummary.map((c) => ({
-            recipeId: c.recipeId,
-            recipeName: c.recipeName,
-            servings:
-              Number(
-                servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0),
-              ) || 0,
-          })),
-        }),
+        body: JSON.stringify(payload),
       });
 
       let data: any = null;
@@ -511,9 +537,70 @@ export default function RequestOrderPage() {
       setEditLink(link);
       setSuccess("Request sent. We’ll be in touch soon.");
     } catch (err: any) {
-      setError(err?.message || "Network error while sending request.");
+      // If the network request fails, store it as a draft so nothing is lost.
+      saveDraft({
+        title: eventName.trim() ? eventName.trim() : "Cocktail booking request",
+        eventDate,
+        notes,
+        clientEmail,
+        guestCount: Number(guestCountInput),
+        clientPhone: combinedPhone || null,
+        submit: true,
+        cocktails: cocktailsSummary.map((c) => ({
+          recipeId: c.recipeId,
+          recipeName: c.recipeName,
+          servings:
+            Number(
+              servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0),
+            ) || 0,
+        })),
+      });
+      setDrafts(loadDrafts());
+      setError(
+        err?.message ||
+          "Network error while sending request. We saved it as a draft on this device.",
+      );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendDraft = async (draft: OfflineDraft) => {
+    if (!draft?.payload) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setError("You’re offline. Connect to the internet to send this draft.");
+      return;
+    }
+    setSendingDraftId(draft.id);
+    setError(null);
+    setSuccess(null);
+    setEditLink(null);
+    try {
+      const response = await fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft.payload),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        setError(data?.error || `Unable to send draft (HTTP ${response.status}).`);
+        return;
+      }
+
+      removeDraft(draft.id);
+      setDrafts(loadDrafts());
+
+      const token = data?.editToken as string | undefined;
+      const slug = data?.editSlug as string | undefined | null;
+      if (token || slug) {
+        const link = `${window.location.origin}/request/edit/${slug || token}`;
+        setEditLink(link);
+      }
+      setSuccess("Draft sent. We’ll be in touch soon.");
+    } catch (err: any) {
+      setError(err?.message || "Network error while sending draft.");
+    } finally {
+      setSendingDraftId(null);
     }
   };
 
@@ -611,6 +698,56 @@ export default function RequestOrderPage() {
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
         {success ? <p className="text-sm text-muted">{success}</p> : null}
         {recalcError ? <p className="text-sm text-red-600">{recalcError}</p> : null}
+
+        {drafts.length ? (
+          <div className="rounded-[28px] border border-subtle bg-white/70 px-8 py-6">
+            <h2 className="font-display text-2xl text-accent">Saved drafts</h2>
+            <p className="mt-2 text-sm text-muted">
+              If you were offline, your booking request was saved here. When you’re online, you can send it.
+            </p>
+            <div className="mt-4 grid gap-3">
+              {drafts.map((d) => (
+                <div
+                  key={d.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-subtle bg-white/80 px-5 py-4"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-ink">
+                      {String(d.payload?.title || "Draft request")}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      {new Date(d.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={
+                        sendingDraftId === d.id ||
+                        loading ||
+                        (typeof navigator !== "undefined" && !navigator.onLine)
+                      }
+                      onClick={() => sendDraft(d)}
+                      className="gi-btn-primary px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5 disabled:opacity-60"
+                    >
+                      {sendingDraftId === d.id ? "Sending..." : "Send"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        removeDraft(d.id);
+                        setDrafts(loadDrafts());
+                      }}
+                      className="gi-btn-secondary px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
           <h2 className="font-display text-2xl text-accent">

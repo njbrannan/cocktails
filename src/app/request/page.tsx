@@ -9,6 +9,7 @@ import {
   resolveNextCocktailImageSrc,
   resolveSvgFallbackForImageSrc,
 } from "@/lib/cocktailImages";
+import { loadCachedRecipes, saveCachedRecipes } from "@/lib/offlineRecipes";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -184,6 +185,12 @@ export default function RequestPage() {
       .eq("is_active", true);
 
     if (recipeError) {
+      // If offline (or Supabase is unreachable), fall back to the last cached menu.
+      const cached = loadCachedRecipes<Recipe>();
+      if (cached?.recipes?.length) {
+        setRecipes([...cached.recipes].sort((a, b) => a.name.localeCompare(b.name)));
+        return;
+      }
       setError(recipeError.message);
       return;
     }
@@ -191,6 +198,7 @@ export default function RequestPage() {
     const list = ((data ?? []) as unknown as Recipe[]) || [];
     const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
     setRecipes(sorted);
+    saveCachedRecipes(sorted);
     setServingsByRecipeId((prev) => {
       const next = { ...prev };
       for (const recipe of sorted) {

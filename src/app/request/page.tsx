@@ -301,7 +301,8 @@ export default function RequestPage() {
     const guestCount = parseNonNegativeInt(guestCountInput);
     if (!guestCount || guestCount <= 0) return;
     if (selectedForQuantity.length === 0) return;
-    applyGuestRecommendation();
+    // Defer the heavy updates to the next tick so iOS <select> interactions stay snappy.
+    window.setTimeout(() => applyGuestRecommendation(), 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guestCountInput, drinksPerGuest, selectedForQuantityIdsKey, step, hasManualQuantities]);
 
@@ -483,7 +484,7 @@ export default function RequestPage() {
                             }}
                           />
                           {isSelected ? (
-                            <div className="absolute left-3 top-3 rounded-full gi-selected-chip px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em]">
+                            <div className="absolute right-3 top-3 rounded-full gi-selected-chip px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]">
                               Selected
                             </div>
                           ) : null}
@@ -502,7 +503,7 @@ export default function RequestPage() {
                           </div>
 
                           {/* Action hint bottom-right */}
-                          <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold tracking-normal text-ink/80 backdrop-blur">
+                          <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/70 px-2.5 py-0.5 text-[10px] font-semibold tracking-normal text-ink/80 backdrop-blur">
                             Tap to {isSelected ? "remove" : "add"}
                           </div>
                         </div>
@@ -581,26 +582,39 @@ export default function RequestPage() {
                         {(() => {
                           const guests = parseNonNegativeInt(guestCountInput);
                           if (!guests || guests <= 0) return null;
+                          const totalSuggested =
+                            guests && guests > 0 ? guests * drinksPerGuest : null;
                           if (occasion === "custom") {
                             return (
-                              <p className="mt-3 text-sm text-muted">
+                              <p className="mt-3 text-xs text-muted whitespace-nowrap">
                                 <span className="font-semibold text-ink">
                                   You choose
                                 </span>{" "}
                                 how many cocktails{" "}
                                 <span className="font-semibold text-ink">total</span>{" "}
                                 per guest!
+                                {totalSuggested ? (
+                                  <span className="ml-2 text-ink/60">
+                                    · Suggested drinks: {totalSuggested}
+                                  </span>
+                                ) : null}
                               </p>
                             );
                           }
                           return (
-                            <p className="mt-3 text-sm text-muted">
-                              Suggested starting point:
-                              <br />
+                            <p className="mt-3 text-xs text-muted whitespace-nowrap">
+                              Suggested starting point:{" "}
                               <span className="font-semibold text-ink">
                                 {drinksPerGuest}
                               </span>{" "}
-                              cocktails <span className="font-semibold text-ink">total</span> per guest.
+                              cocktails <span className="font-semibold text-ink">total</span>{" "}
+                              per guest
+                              {totalSuggested ? (
+                                <span className="ml-2 text-ink/60">
+                                  · Suggested drinks: {totalSuggested}
+                                </span>
+                              ) : null}
+                              .
                             </p>
                           );
                         })()}

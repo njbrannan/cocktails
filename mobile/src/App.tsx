@@ -35,6 +35,15 @@ function edgeSwipeThresholdPx() {
   return 28;
 }
 
+function base64UrlEncodeJson(value: any) {
+  const json = JSON.stringify(value);
+  const bytes = new TextEncoder().encode(json);
+  let bin = "";
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  const b64 = btoa(bin);
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 function parseNonNegativeInt(raw: string) {
   const trimmed = raw.trim();
   if (trimmed === "") return null;
@@ -94,9 +103,12 @@ function drinksPerGuestForOccasion(value: Occasion): 2 | 3 | 4 | null {
 
 export default function App() {
   const bookingRef = useRef<HTMLDivElement | null>(null);
+  const pagerOuterRef = useRef<HTMLDivElement | null>(null);
+  const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [step, setStep] = useState<"select" | "quantity" | "order">("select");
   const stepIndex = step === "select" ? 0 : step === "quantity" ? 1 : 2;
+  const [pagerHeight, setPagerHeight] = useState<number | undefined>(undefined);
 
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(() => new Set());
   const [servingsByRecipeId, setServingsByRecipeId] = useState<Record<string, string>>({});
@@ -166,6 +178,35 @@ export default function App() {
 
     if (typeof navigator !== "undefined" && navigator.onLine) refresh();
   }, []);
+
+  // Keep the pager wrapper height matched to the active page so we don't get huge
+  // blank scroll space on short steps (the order step is much taller).
+  useEffect(() => {
+    const page = pageRefs.current[stepIndex];
+    if (!page) return;
+
+    const update = () => {
+      const next = Math.ceil(page.scrollHeight || page.getBoundingClientRect().height || 0);
+      if (next > 0) setPagerHeight(next);
+    };
+
+    update();
+
+    let ro: ResizeObserver | null = null;
+    try {
+      ro = new ResizeObserver(() => update());
+      ro.observe(page);
+    } catch {
+      ro = null;
+    }
+
+    const onResize = () => update();
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      ro?.disconnect();
+    };
+  }, [stepIndex, recipes.length, selectedRecipeIds.size, orderList.length]);
 
   const selectedRecipes = useMemo(() => {
     return recipes.filter((r) => selectedRecipeIds.has(r.id));
@@ -266,7 +307,8 @@ export default function App() {
     const per = Math.ceil(total / selectedRecipes.length);
     const next: Record<string, string> = { ...servingsByRecipeId };
     for (const r of selectedRecipes) next[r.id] = String(per);
-    setServingsByRecipeId(next);
+    // Defer so changing the Occasion dropdown stays responsive on iOS.
+    window.setTimeout(() => setServingsByRecipeId(next), 0);
   }, [step, guestCount, drinksPerGuest, selectedRecipes, hasManualQuantities]);
 
   // Compute order list when moving to order step.
@@ -544,57 +586,21 @@ export default function App() {
             : `${t.total} ${t.unit}`,
       }));
 
-      const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Order List</title>
-  <style>
-    body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;line-height:1.4;margin:24px;color:#111}
-    h1{font-size:20px;margin:0 0 6px}
-    p{margin:0 0 14px;color:#444}
-    h2{font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:18px 0 8px;color:#333}
-    ul{list-style:none;padding:0;margin:0}
-    li{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-top:1px solid #eee}
-    .muted{color:#666;font-size:12px}
-  </style>
-</head>
-<body>
-  <p class="muted">Brought to you by GET INVOLVED! Catering - The Connoisseurs of Cocktail Catering</p>
-  <h1>Order List</h1>
-  <p class="muted">Totals include a 10% buffer. Liquor is rounded to 700ml bottles.</p>
+      const payload = {
+        version: 1,
+        createdAt: new Date().toISOString(),
+        eventName: eventName.trim() || undefined,
+        eventDate: eventDate || undefined,
+        guests: guestCount ?? undefined,
+        cocktails,
+        shopping,
+      };
 
-  <h2>Cocktails</h2>
-  <ul>
-    ${cocktails.map((c) => `<li><span>${c.name}</span><span><strong>${c.servings}</strong></span></li>`).join("")}
-  </ul>
+      const token = base64UrlEncodeJson(payload);
+      const url = `${API_BASE}/print#${token}`;
 
-  <h2>Shopping list</h2>
-  <ul>
-    ${shopping
-      .map((i) => `<li><span>${i.name} <span class="muted">(${i.type})</span></span><span><strong>${i.right}</strong></span></li>`)
-      .join("")}
-  </ul>
-
-  <p class="muted" style="margin-top:18px">Tip: on iPhone, use the Share button → Print.</p>
-</body>
-</html>`;
-
-      const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
-
-      // In Capacitor, open a Safari view so users can Share → Print reliably.
-      if (typeof window !== "undefined" && (window as any).Capacitor) {
-        Browser.open({ url: dataUrl });
-        return;
-      }
-
-      // Regular web fallback.
-      const w = window.open(dataUrl, "_blank");
-      if (!w) {
-        if (typeof window.print === "function") window.print();
-        else setError("Printing isn’t available on this device.");
-      }
+      // Open in Safari view; user can Share → Print.
+      Browser.open({ url });
     } catch {
       setError("Unable to print on this device.");
     }
@@ -623,11 +629,10 @@ export default function App() {
     return "You choose how many cocktails total per guest!";
   }, [occasion]);
 
-  // If occasion isn't custom, lock drinks-per-guest to preset.
-  useEffect(() => {
-    const per = drinksPerGuestForOccasion(occasion);
-    if (per) setDrinksPerGuestInput(String(per));
-  }, [occasion]);
+  const suggestedTotalDrinks = useMemo(() => {
+    if (!guestCount) return null;
+    return guestCount * drinksPerGuest;
+  }, [guestCount, drinksPerGuest]);
 
   const priorityCountries: Array<keyof typeof countries> = [
     "AU",
@@ -670,9 +675,19 @@ export default function App() {
           </>
         ) : null}
 
-        <div className="pagerOuter">
+        <div
+          className="pagerOuter"
+          ref={pagerOuterRef}
+          style={pagerHeight ? { height: `${pagerHeight}px` } : undefined}
+        >
           <div className="pager" style={{ transform: `translateX(-${stepIndex * 100}%)` }}>
-            <div className="page" {...pageProps(0)}>
+            <div
+              className="page"
+              ref={(el) => {
+                pageRefs.current[0] = el;
+              }}
+              {...pageProps(0)}
+            >
               <div className="card">
                 <div className="muted">Select cocktails (tap to add).</div>
                 <div style={{ height: 10 }} />
@@ -690,9 +705,9 @@ export default function App() {
                       >
                         <div className="tileTop">
                           <div className="tileName">{normalizeCocktailDisplayName(r.name)}</div>
-                          <div className={`pill ${selected ? "pillSelected" : ""}`}>
-                            {selected ? "Selected" : "Tap"}
-                          </div>
+                        </div>
+                        <div className={`pill tilePill ${selected ? "pillSelected" : ""}`}>
+                          {selected ? "Selected" : "Tap"}
                         </div>
                         <div className="tileImgWrap">
                           <img className="tileImg" src={img} alt={r.name} loading="lazy" />
@@ -710,7 +725,13 @@ export default function App() {
               </div>
             </div>
 
-            <div className="page" {...pageProps(1)}>
+            <div
+              className="page"
+              ref={(el) => {
+                pageRefs.current[1] = el;
+              }}
+              {...pageProps(1)}
+            >
               <div className="card">
                 <div className="muted">Set the quantity for each selected cocktail.</div>
 
@@ -719,7 +740,10 @@ export default function App() {
                   className="select"
                   value={occasion}
                   onChange={(e) => {
-                    setOccasion(e.target.value as Occasion);
+                    const next = e.target.value as Occasion;
+                    setOccasion(next);
+                    const per = drinksPerGuestForOccasion(next);
+                    if (per) setDrinksPerGuestInput(String(per));
                   }}
                 >
                   <option value="relaxed">{occasionLabel("relaxed")}</option>
@@ -762,7 +786,18 @@ export default function App() {
                 />
 
                 <div style={{ height: 10 }} />
-                <div className="muted">{suggestedLine.replace("total", "total")}</div>
+                <div
+                  className="muted"
+                  style={{
+                    fontSize: 12,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {suggestedLine}
+                  {suggestedTotalDrinks ? ` · Suggested drinks: ${suggestedTotalDrinks}` : ""}
+                </div>
 
                 <ul className="list">
                   {selectedRecipes.map((r) => {
@@ -815,7 +850,13 @@ export default function App() {
               </div>
             </div>
 
-            <div className="page" {...pageProps(2)}>
+            <div
+              className="page"
+              ref={(el) => {
+                pageRefs.current[2] = el;
+              }}
+              {...pageProps(2)}
+            >
               <div className="printOnly">
                 <div className="card">
                   <div className="muted">
@@ -890,7 +931,12 @@ export default function App() {
                       <div className="summaryK">Total guests</div>
                       <div className="summaryV">{guestCount ?? "-"}</div>
                       <div className="muted">
-                        {guestCount && drinksPerGuest ? `${drinksPerGuest} cocktails total per guest` : ""}
+                        {guestCount
+                          ? `${(totalDrinks / guestCount)
+                              .toFixed(2)
+                              .replace(/\\.00$/, "")
+                              .replace(/(\\.\\d)0$/, "$1")} cocktails per guest`
+                          : ""}
                       </div>
                     </div>
                   </div>

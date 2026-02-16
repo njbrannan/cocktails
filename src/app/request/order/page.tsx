@@ -865,7 +865,7 @@ export default function RequestOrderPage() {
                         }}
                       />
                     </div>
-                    <p className="min-w-0 text-sm font-semibold leading-snug text-ink line-clamp-2">
+                    <p className="min-w-0 truncate text-sm font-semibold text-ink">
                       {displayName}
                     </p>
                   </div>
@@ -908,11 +908,11 @@ export default function RequestOrderPage() {
                             }))
                           }
                           // iOS Safari zooms when inputs are < 16px font-size.
-                          className="h-10 w-20 rounded-xl border border-soft bg-white/90 px-1 py-0 text-right text-[16px] text-ink tabular-nums sm:w-24"
+                          className="h-10 w-[5.2ch] rounded-xl border border-soft bg-white/90 px-1 py-0 text-right text-[16px] text-ink tabular-nums"
                         />
                       </div>
                     ) : (
-                      <div className="h-10 w-24 px-1 text-right text-[16px] leading-10 text-ink-muted tabular-nums">
+                      <div className="h-10 w-[5.2ch] px-1 text-right text-[16px] leading-10 text-ink-muted tabular-nums">
                         {Number(servingsByRecipeId[c.recipeId] ?? c.servings ?? 0) || 0}
                       </div>
                     )}

@@ -622,7 +622,6 @@ export default function RequestPage() {
                               <span className="mt-1 block text-ink/60">
                                 Suggested drinks: {totalSuggested}
                               </span>
-                              .
                             </p>
                           );
                         })()}

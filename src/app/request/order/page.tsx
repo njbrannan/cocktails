@@ -990,11 +990,20 @@ export default function RequestOrderPage() {
                   </p>
                 </div>
                 <div className="shrink-0 text-right tabular-nums">
-                  <p className="text-sm font-semibold text-ink">
-                    {item.bottlesNeeded
-                      ? `${item.bottlesNeeded} × ${item.bottleSizeMl}ml`
-                      : `${item.total} ${item.unit}`}
-                  </p>
+                  {item.bottlesNeeded ? (
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-ink">
+                        {item.bottlesNeeded} × {item.bottleSizeMl}ml
+                      </p>
+                      <p className="mt-1 text-[12px] text-ink-muted">
+                        {item.total} ml
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-semibold text-ink">
+                      {item.total} {item.unit}
+                    </p>
+                  )}
                 </div>
               </li>
             ))}

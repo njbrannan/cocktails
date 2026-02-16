@@ -736,7 +736,7 @@ export default function RequestPage() {
                                   }));
                                 }}
                                 // iOS Safari zooms when inputs are < 16px font-size.
-                                className="mt-2 w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px]"
+                                className="mt-2 w-full min-w-0 max-w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px] tracking-normal tabular-nums text-ink"
                               />
                             </label>
 

@@ -561,35 +561,20 @@ export default function RequestOrderPage() {
       const emailConfigured = Boolean(data?.email?.configured);
       const adminOk = Boolean(data?.email?.admin?.ok);
       const clientOk = Boolean(data?.email?.client?.ok);
-      const adminId = String(data?.email?.admin?.id || "").trim();
-      const clientId = String(data?.email?.client?.id || "").trim();
       const clientErr = String(data?.email?.client?.error || "").trim();
       const adminErr = String(data?.email?.admin?.error || "").trim();
 
-      const idSuffix =
-        adminId || clientId
-          ? ` (Resend: ${[clientId ? `client ${clientId}` : "", adminId ? `admin ${adminId}` : ""]
-              .filter(Boolean)
-              .join(", ")})`
-          : "";
-
       if (!emailConfigured) {
         setSuccess(
-          "Request submitted. Email sending is not configured yet, but your request has been saved.",
+          "Booking request submitted, we will be in contact shortly.",
         );
-      } else if (adminOk && clientOk) {
-        setSuccess(`Request submitted. Confirmation email sent.${idSuffix}`);
-      } else if (adminOk && !clientOk) {
-        setSuccess(
-          `Request submitted. We couldn’t send the confirmation email (${clientErr || "email failed"}).`,
-        );
-      } else if (!adminOk && clientOk) {
-        setSuccess(
-          `Request submitted. (Admin notification email failed: ${adminErr || "email failed"}, but client confirmation was sent.)`,
-        );
+      } else if (adminOk || clientOk) {
+        // If either email sends successfully, keep the UI reassuring.
+        setSuccess("Booking request submitted, we will be in contact shortly.");
       } else {
+        // Keep the failure reason for debugging, but don't show provider IDs.
         setSuccess(
-          `Request submitted. Emails failed to send (${adminErr || clientErr || "email failed"}).`,
+          `Booking request submitted, but we couldn’t send emails (${adminErr || clientErr || "email failed"}).`,
         );
       }
     } catch (err: any) {
@@ -1018,7 +1003,9 @@ export default function RequestOrderPage() {
               <p className="mt-2 text-sm font-medium text-ink">{success}</p>
             ) : null}
             <p className="mt-2 text-sm text-muted">
-              Send this order list to Get Involved and we’ll follow up.
+              {success
+                ? "Booking request submitted, we will be in contact shortly."
+                : "Send this order list to Get Involved and we’ll follow up."}
             </p>
 
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">

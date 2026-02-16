@@ -170,6 +170,12 @@ export default function RequestPage() {
     return sum;
   }, [selectedForQuantity, servingsByRecipeId]);
 
+  const suggestedTotalDrinks = useMemo(() => {
+    if (!guestCount) return null;
+    // If drinksPerGuest is a decimal, round up so we never under-shoot.
+    return Math.ceil(guestCount * drinksPerGuest);
+  }, [guestCount, drinksPerGuest]);
+
   useEffect(() => {
     // When switching steps, jump back to the top so the next screen starts at the header.
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
@@ -841,19 +847,19 @@ export default function RequestPage() {
             ) : (
               <>
                 <div className="flex w-full flex-col gap-3">
-                  <div className="flex w-full items-start justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setStep("select")}
-                      className="gi-btn-secondary px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
-                    >
-                      Back
-                    </button>
+                    <div className="flex w-full items-start justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setStep("select")}
+                        className="gi-btn-secondary px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
+                      >
+                        Back
+                      </button>
 
-                    <div className="text-right text-[13px] text-muted">
+                    <div className="-mt-0.5 text-right text-[12px] text-muted">
                       <p>
-                        <span className="font-semibold text-ink">Number of guests:</span>{" "}
-                        {guestCount ?? "—"}
+                        <span className="font-semibold text-ink">Suggested drinks:</span>{" "}
+                        {suggestedTotalDrinks ?? "—"}
                       </p>
                       <p className="mt-0.5">
                         <span className="font-semibold text-ink">Number of drinks:</span>{" "}

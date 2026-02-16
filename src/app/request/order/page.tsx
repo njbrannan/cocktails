@@ -943,11 +943,11 @@ export default function RequestOrderPage() {
             })}
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-4">
+          <div className="mt-6">
             <button
               type="button"
               onClick={handleBack}
-              className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
+              className="gi-btn-primary w-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
             >
               Add/remove drinks
             </button>

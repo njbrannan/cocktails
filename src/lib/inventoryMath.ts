@@ -15,6 +15,7 @@ export type IngredientTotal = {
   unit: string;
   bottleSizeMl?: number;
   bottlesNeeded?: number;
+  purchaseUrl?: string;
 };
 
 const BUFFER_RATE = 0.1;
@@ -68,6 +69,7 @@ export function buildIngredientTotals(
     servings: number;
     unit?: string | null;
     bottleSizeMl?: number | null;
+    purchaseUrl?: string | null;
   }>,
 ) {
   const totals = new Map<string, IngredientTotal>();
@@ -85,6 +87,7 @@ export function buildIngredientTotals(
     };
 
     base.total += added;
+    base.purchaseUrl = base.purchaseUrl || (item.purchaseUrl || undefined);
     if (item.type === "liquor") {
       base.bottleSizeMl = item.bottleSizeMl ?? DEFAULT_BOTTLE_SIZE;
     }

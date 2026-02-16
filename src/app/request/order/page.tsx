@@ -40,6 +40,7 @@ type Ingredient = {
     | "glassware";
   bottle_size_ml: number | null;
   unit: string | null;
+  purchase_url?: string | null;
 };
 
 type RecipeIngredient = {
@@ -351,7 +352,7 @@ export default function RequestOrderPage() {
       const { data, error } = await supabase
         .from("recipes")
         .select(
-          "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml))",
+          "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url))",
         )
         .in("id", recipeIds);
 
@@ -420,6 +421,7 @@ export default function RequestOrderPage() {
               servings,
               unit: ingredient.unit,
               bottleSizeMl: ingredient.bottle_size_ml,
+              purchaseUrl: ingredient.purchase_url,
             },
           ];
         });
@@ -968,9 +970,21 @@ export default function RequestOrderPage() {
                 className="flex items-start justify-between gap-6 px-4 py-3"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-ink">
-                    {item.name}
-                  </p>
+                  {item.purchaseUrl ? (
+                    <a
+                      href={item.purchaseUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="truncate text-sm font-semibold text-ink underline underline-offset-2 hover:opacity-80"
+                      title={item.name}
+                    >
+                      {item.name}
+                    </a>
+                  ) : (
+                    <p className="truncate text-sm font-semibold text-ink">
+                      {item.name}
+                    </p>
+                  )}
                   <p className="text-[11px] uppercase tracking-[0.2em] text-accent">
                     {item.type}
                   </p>

@@ -40,6 +40,11 @@ function normalizeUnit(unit: string | null | undefined) {
 function roundByUnitAndType(amountWithBuffer: number, unit: string, type: IngredientType) {
   const u = normalizeUnit(unit);
 
+  // Glassware is typically ordered by the dozen, with a sensible minimum.
+  if (type === "glassware") {
+    return Math.max(24, roundUpToIncrement(amountWithBuffer, 12));
+  }
+
   // Fruit pieces, etc.
   if (u === "pc" || u === "pcs" || u === "piece" || u === "pieces") {
     return Math.ceil(amountWithBuffer);
@@ -107,4 +112,3 @@ export function buildIngredientTotals(
     };
   });
 }
-

@@ -908,7 +908,7 @@ export default function RequestOrderPage() {
                             }))
                           }
                           // iOS Safari zooms when inputs are < 16px font-size.
-                          className="h-10 w-24 rounded-xl border border-soft bg-white/90 px-3 py-0 text-right text-[16px] text-ink"
+                          className="h-10 w-24 rounded-xl border border-soft bg-white/90 px-1 py-0 text-right text-[16px] text-ink tabular-nums"
                         />
                       </div>
                     ) : (
@@ -1161,7 +1161,7 @@ export default function RequestOrderPage() {
           {editLink ? (
             <div className="mt-6 rounded-3xl border border-subtle bg-white/70 px-5 py-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                Private edit link
+                Booking request submitted, a member of our team will be in contact shortly.
               </p>
               <p className="mt-2 break-all text-sm text-ink">{editLink}</p>
             </div>

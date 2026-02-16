@@ -912,7 +912,7 @@ export default function RequestOrderPage() {
                         />
                       </div>
                     ) : (
-                      <div className="h-10 w-24 rounded-xl border border-soft bg-white/60 px-3 text-right text-[16px] font-semibold leading-10 text-ink tabular-nums">
+                      <div className="h-10 w-24 px-1 text-right text-[16px] leading-10 text-ink-muted tabular-nums">
                         {Number(servingsByRecipeId[c.recipeId] ?? c.servings ?? 0) || 0}
                       </div>
                     )}

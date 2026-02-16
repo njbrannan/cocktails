@@ -415,8 +415,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const emailReport: {
+      configured: boolean;
+      admin: { ok: boolean; error?: string };
+      client: { ok: boolean; error?: string };
+    } = {
+      configured: isEmailConfigured(),
+      admin: { ok: false },
+      client: { ok: false },
+    };
+
     // If it's submitted immediately, email admin + client confirmation (when email is configured).
-    if (submit && isEmailConfigured()) {
+    if (submit && emailReport.configured) {
       const safeTitle = escapeHtml(title || "Cocktail request");
       const safeDate = escapeHtml(eventDate || "Date TBD");
       const safeDrinks = escapeHtml(String(computedDrinksCount));
@@ -448,7 +458,7 @@ export async function POST(request: NextRequest) {
         const guestsHtml = cleanedGuestCount
           ? safeGuests
           : "<em>(not provided)</em>";
-        await sendEmail({
+        const res = await sendEmail({
           to: adminEmail,
           subject: `New booking request: ${title || "Cocktail request"}`,
           // Let the team simply hit "Reply" to respond to the client.
@@ -468,10 +478,11 @@ export async function POST(request: NextRequest) {
 </div>`,
           text: `New booking request submitted\nTitle: ${title || ""}\nDate: ${eventDate || ""}\nNumber of drinks: ${computedDrinksCount}\nNumber of guests: ${cleanedGuestCount || ""}\nClient: ${clientEmail || ""}\nTelephone: ${clientPhone || ""}\nNotes: ${notes || ""}\n${editLink ? `Edit: ${editLink}` : ""}`,
         });
+        emailReport.admin = res.ok ? { ok: true } : { ok: false, error: res.error };
       }
 
       if (clientEmail && editLink) {
-        await sendEmail({
+        const res = await sendEmail({
           to: clientEmail,
           subject: `Request sent: ${title || "Cocktail request"}`,
           html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
@@ -494,23 +505,18 @@ export async function POST(request: NextRequest) {
             `Cheers!`,
           replyTo: adminEmail || undefined,
         });
+        emailReport.client = res.ok ? { ok: true } : { ok: false, error: res.error };
       }
     }
 
-    return withCors(
-      NextResponse.json({
+    return json({
       id: data.id,
       editToken: data.edit_token,
       editSlug,
-      }),
-    );
+      email: emailReport,
+    });
   } catch (err: any) {
-    return withCors(
-      NextResponse.json(
-        { error: err?.message || "Server error" },
-        { status: 500 },
-      ),
-    );
+    return json({ error: err?.message || "Server error" }, { status: 500 });
   }
 }
 

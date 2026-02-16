@@ -556,7 +556,30 @@ export default function RequestOrderPage() {
 
       const link = `${window.location.origin}/request/edit/${slug || token}`;
       setEditLink(link);
-      setSuccess("Request sent. We’ll be in touch soon.");
+      const emailConfigured = Boolean(data?.email?.configured);
+      const adminOk = Boolean(data?.email?.admin?.ok);
+      const clientOk = Boolean(data?.email?.client?.ok);
+      const clientErr = String(data?.email?.client?.error || "").trim();
+
+      if (!emailConfigured) {
+        setSuccess(
+          "Request submitted. Email sending is not configured yet, but your request has been saved.",
+        );
+      } else if (adminOk && clientOk) {
+        setSuccess("Request submitted. Confirmation email sent.");
+      } else if (adminOk && !clientOk) {
+        setSuccess(
+          `Request submitted. We couldn’t send the confirmation email (${clientErr || "email failed"}).`,
+        );
+      } else if (!adminOk && clientOk) {
+        setSuccess(
+          "Request submitted. (Admin notification email failed, but client confirmation was sent.)",
+        );
+      } else {
+        setSuccess(
+          `Request submitted. Emails failed to send (${clientErr || "email failed"}).`,
+        );
+      }
     } catch (err: any) {
       // If the network request fails, store it as a draft so nothing is lost.
       saveDraft({
@@ -717,7 +740,6 @@ export default function RequestOrderPage() {
         </header>
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        {success ? <p className="text-sm text-muted">{success}</p> : null}
         {recalcError ? <p className="text-sm text-red-600">{recalcError}</p> : null}
 
         {drafts.length ? (
@@ -980,6 +1002,9 @@ export default function RequestOrderPage() {
             <h3 className="font-display text-xl text-ink">
               Book Bartenders for your Event
             </h3>
+            {success ? (
+              <p className="mt-2 text-sm font-medium text-ink">{success}</p>
+            ) : null}
             <p className="mt-2 text-sm text-muted">
               Send this order list to Get Involved and we’ll follow up.
             </p>

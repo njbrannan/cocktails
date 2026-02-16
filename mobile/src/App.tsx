@@ -450,7 +450,30 @@ export default function App() {
         return;
       }
 
-      setSuccess("Request sent. We’ll be in touch shortly.");
+      const emailConfigured = Boolean(data?.email?.configured);
+      const adminOk = Boolean(data?.email?.admin?.ok);
+      const clientOk = Boolean(data?.email?.client?.ok);
+      const clientErr = String(data?.email?.client?.error || "").trim();
+
+      if (!emailConfigured) {
+        setSuccess(
+          "Request submitted. Email sending is not configured yet, but your request has been saved.",
+        );
+      } else if (adminOk && clientOk) {
+        setSuccess("Request submitted. Confirmation email sent.");
+      } else if (adminOk && !clientOk) {
+        setSuccess(
+          `Request submitted. We couldn’t send the confirmation email (${clientErr || "email failed"}).`,
+        );
+      } else if (!adminOk && clientOk) {
+        setSuccess(
+          "Request submitted. (Admin notification email failed, but client confirmation was sent.)",
+        );
+      } else {
+        setSuccess(
+          `Request submitted. Emails failed to send (${clientErr || "email failed"}).`,
+        );
+      }
     } catch (e: any) {
       setError(e?.message || "Something went wrong.");
     } finally {
@@ -546,8 +569,12 @@ export default function App() {
 
         <h1 className="title">Cocktail Party Planner</h1>
 
-        {error ? <div className="toast">{error}</div> : null}
-        {success ? <div className="toast">{success}</div> : null}
+        {step !== "order" ? (
+          <>
+            {error ? <div className="toast">{error}</div> : null}
+            {success ? <div className="toast">{success}</div> : null}
+          </>
+        ) : null}
 
         <div className="pagerOuter">
           <div className="pager" style={{ transform: `translateX(-${stepIndex * 100}%)` }}>
@@ -733,6 +760,8 @@ export default function App() {
                 </ul>
 
                 <div style={{ height: 14 }} />
+                {success ? <div className="toast">{success}</div> : null}
+                {error ? <div className="toast">{error}</div> : null}
                 <div className="muted">Book Bartenders for your Event</div>
 
                 <label className="label">Date of Event</label>

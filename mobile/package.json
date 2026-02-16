@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/browser": "^8.0.1",
+    "@capacitor/core": "^8.1.0",
     "countries-list": "^3.2.2",
     "libphonenumber-js": "^1.12.36",
     "react": "^19.2.0",

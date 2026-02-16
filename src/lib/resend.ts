@@ -6,6 +6,10 @@ type SendEmailArgs = {
   replyTo?: string;
 };
 
+type SendEmailResult =
+  | { ok: true; id?: string }
+  | { ok: false; error: string };
+
 function getResendConfig() {
   const apiKey = process.env.RESEND_API_KEY || "";
   const fromEmail = process.env.RESEND_FROM_EMAIL || "";
@@ -37,7 +41,7 @@ export function isEmailConfigured() {
   return Boolean(apiKey && fromEmail);
 }
 
-export async function sendEmail(args: SendEmailArgs) {
+export async function sendEmail(args: SendEmailArgs): Promise<SendEmailResult> {
   const { apiKey, fromEmail, fromName } = getResendConfig();
   const from = formatFromHeader(fromEmail, fromName);
 
@@ -63,11 +67,17 @@ export async function sendEmail(args: SendEmailArgs) {
   });
 
   if (!response.ok) {
-    const body = await response.text();
-    return { ok: false as const, error: body || `HTTP ${response.status}` };
+    const body = await response.text().catch(() => "");
+    return {
+      ok: false as const,
+      error: body || `HTTP ${response.status}`,
+    };
   }
 
-  return { ok: true as const };
+  // Resend typically returns: { id: "..." }
+  const json = await response.json().catch(() => null);
+  const id = json && typeof json.id === "string" ? json.id : undefined;
+  return { ok: true as const, id };
 }
 
 export function getAdminEmail() {

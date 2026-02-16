@@ -417,8 +417,8 @@ export async function POST(request: NextRequest) {
 
     const emailReport: {
       configured: boolean;
-      admin: { ok: boolean; error?: string };
-      client: { ok: boolean; error?: string };
+      admin: { ok: boolean; id?: string; error?: string };
+      client: { ok: boolean; id?: string; error?: string };
     } = {
       configured: isEmailConfigured(),
       admin: { ok: false },
@@ -478,7 +478,9 @@ export async function POST(request: NextRequest) {
 </div>`,
           text: `New booking request submitted\nTitle: ${title || ""}\nDate: ${eventDate || ""}\nNumber of drinks: ${computedDrinksCount}\nNumber of guests: ${cleanedGuestCount || ""}\nClient: ${clientEmail || ""}\nTelephone: ${clientPhone || ""}\nNotes: ${notes || ""}\n${editLink ? `Edit: ${editLink}` : ""}`,
         });
-        emailReport.admin = res.ok ? { ok: true } : { ok: false, error: res.error };
+        emailReport.admin = res.ok
+          ? { ok: true, id: res.id }
+          : { ok: false, error: res.error };
       }
 
       if (clientEmail && editLink) {
@@ -505,7 +507,9 @@ export async function POST(request: NextRequest) {
             `Cheers!`,
           replyTo: adminEmail || undefined,
         });
-        emailReport.client = res.ok ? { ok: true } : { ok: false, error: res.error };
+        emailReport.client = res.ok
+          ? { ok: true, id: res.id }
+          : { ok: false, error: res.error };
       }
     }
 

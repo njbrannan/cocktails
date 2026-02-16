@@ -247,7 +247,9 @@ export default function RequestOrderPage() {
   const validatePhone = (value: string) => {
     if (!value.trim()) return "Telephone number is required.";
     const parsed = parsePhoneNumberFromString(value.trim(), phoneCountryIso2 as any);
-    if (!parsed || !parsed.isValid()) {
+    // `isValid()` is strict and can produce false negatives for some real-world formats.
+    // `isPossible()` is a better UX fit for event enquiries.
+    if (!parsed || !(parsed.isValid() || parsed.isPossible())) {
       return `Enter a valid telephone number for ${selectedCountryName}.`;
     }
     return null;
@@ -329,7 +331,7 @@ export default function RequestOrderPage() {
     const local = phoneLocal.trim();
     if (!local) return "";
     const parsed = parsePhoneNumberFromString(local, phoneCountryIso2 as any);
-    return parsed?.isValid() ? parsed.number : "";
+    return parsed && (parsed.isValid() || parsed.isPossible()) ? parsed.number : "";
   }, [phoneLocal, phoneCountryIso2]);
 
   const combinedPhone = useMemo(() => {
@@ -559,25 +561,35 @@ export default function RequestOrderPage() {
       const emailConfigured = Boolean(data?.email?.configured);
       const adminOk = Boolean(data?.email?.admin?.ok);
       const clientOk = Boolean(data?.email?.client?.ok);
+      const adminId = String(data?.email?.admin?.id || "").trim();
+      const clientId = String(data?.email?.client?.id || "").trim();
       const clientErr = String(data?.email?.client?.error || "").trim();
+      const adminErr = String(data?.email?.admin?.error || "").trim();
+
+      const idSuffix =
+        adminId || clientId
+          ? ` (Resend: ${[clientId ? `client ${clientId}` : "", adminId ? `admin ${adminId}` : ""]
+              .filter(Boolean)
+              .join(", ")})`
+          : "";
 
       if (!emailConfigured) {
         setSuccess(
           "Request submitted. Email sending is not configured yet, but your request has been saved.",
         );
       } else if (adminOk && clientOk) {
-        setSuccess("Request submitted. Confirmation email sent.");
+        setSuccess(`Request submitted. Confirmation email sent.${idSuffix}`);
       } else if (adminOk && !clientOk) {
         setSuccess(
           `Request submitted. We couldn’t send the confirmation email (${clientErr || "email failed"}).`,
         );
       } else if (!adminOk && clientOk) {
         setSuccess(
-          "Request submitted. (Admin notification email failed, but client confirmation was sent.)",
+          `Request submitted. (Admin notification email failed: ${adminErr || "email failed"}, but client confirmation was sent.)`,
         );
       } else {
         setSuccess(
-          `Request submitted. Emails failed to send (${clientErr || "email failed"}).`,
+          `Request submitted. Emails failed to send (${adminErr || clientErr || "email failed"}).`,
         );
       }
     } catch (err: any) {

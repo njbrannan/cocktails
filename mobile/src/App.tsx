@@ -13,6 +13,7 @@ import {
 } from "./lib/offlineStore";
 import { countries } from "countries-list";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { Browser } from "@capacitor/browser";
 
 function isEditableTarget(target: EventTarget | null) {
   const el = target as HTMLElement | null;
@@ -134,6 +135,13 @@ export default function App() {
   const [guestError, setGuestError] = useState<string | null>(null);
 
   const minDate = useMemo(() => todayIsoDate(), []);
+  const handleEventDateChange = (value: string) => {
+    if (!value) {
+      setEventDate("");
+      return;
+    }
+    setEventDate(value < minDate ? minDate : value);
+  };
 
   // Seed + cached recipes immediately; refresh from API when online.
   useEffect(() => {
@@ -335,7 +343,7 @@ export default function App() {
   const combinedPhone = useMemo(() => {
     const iso2 = String(phoneCountryIso2 || "AU").toUpperCase();
     const parsed = parsePhoneNumberFromString(phoneLocal, iso2 as any);
-    return parsed?.isValid() ? parsed.number : null;
+    return parsed && (parsed.isValid() || parsed.isPossible()) ? parsed.number : null;
   }, [phoneCountryIso2, phoneLocal]);
 
   const validatePhone = () => {
@@ -454,15 +462,24 @@ export default function App() {
       const emailConfigured = Boolean(data?.email?.configured);
       const adminOk = Boolean(data?.email?.admin?.ok);
       const clientOk = Boolean(data?.email?.client?.ok);
+      const adminId = String(data?.email?.admin?.id || "").trim();
+      const clientId = String(data?.email?.client?.id || "").trim();
       const adminErr = String(data?.email?.admin?.error || "").trim();
       const clientErr = String(data?.email?.client?.error || "").trim();
+
+      const idSuffix =
+        adminId || clientId
+          ? ` (Resend: ${[clientId ? `client ${clientId}` : "", adminId ? `admin ${adminId}` : ""]
+              .filter(Boolean)
+              .join(", ")})`
+          : "";
 
       if (!emailConfigured) {
         setSuccess(
           "Request submitted. Email sending is not configured yet, but your request has been saved.",
         );
       } else if (adminOk && clientOk) {
-        setSuccess("Request submitted. Confirmation email sent.");
+        setSuccess(`Request submitted. Confirmation email sent.${idSuffix}`);
       } else if (adminOk && !clientOk) {
         setSuccess(
           `Request submitted. We couldn’t send the confirmation email (${clientErr || "email failed"}).`,
@@ -510,11 +527,74 @@ export default function App() {
 
   const handlePrintOrderList = () => {
     try {
-      if (typeof window === "undefined" || typeof window.print !== "function") {
-        setError("Printing isn’t available on this device.");
+      const cocktails = selectedRecipes
+        .map((r) => ({
+          name: normalizeCocktailDisplayName(r.name),
+          servings: parseNonNegativeInt(servingsByRecipeId[r.id] ?? "0") ?? 0,
+        }))
+        .filter((c) => c.servings > 0)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      const shopping = orderList.map((t) => ({
+        name: t.name,
+        type: t.type,
+        right:
+          t.type === "liquor"
+            ? `${t.bottlesNeeded ?? 0} × ${t.bottleSizeMl ?? 700}ml`
+            : `${t.total} ${t.unit}`,
+      }));
+
+      const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Order List</title>
+  <style>
+    body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;line-height:1.4;margin:24px;color:#111}
+    h1{font-size:20px;margin:0 0 6px}
+    p{margin:0 0 14px;color:#444}
+    h2{font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:18px 0 8px;color:#333}
+    ul{list-style:none;padding:0;margin:0}
+    li{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-top:1px solid #eee}
+    .muted{color:#666;font-size:12px}
+  </style>
+</head>
+<body>
+  <p class="muted">Brought to you by GET INVOLVED! Catering - The Connoisseurs of Cocktail Catering</p>
+  <h1>Order List</h1>
+  <p class="muted">Totals include a 10% buffer. Liquor is rounded to 700ml bottles.</p>
+
+  <h2>Cocktails</h2>
+  <ul>
+    ${cocktails.map((c) => `<li><span>${c.name}</span><span><strong>${c.servings}</strong></span></li>`).join("")}
+  </ul>
+
+  <h2>Shopping list</h2>
+  <ul>
+    ${shopping
+      .map((i) => `<li><span>${i.name} <span class="muted">(${i.type})</span></span><span><strong>${i.right}</strong></span></li>`)
+      .join("")}
+  </ul>
+
+  <p class="muted" style="margin-top:18px">Tip: on iPhone, use the Share button → Print.</p>
+</body>
+</html>`;
+
+      const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+
+      // In Capacitor, open a Safari view so users can Share → Print reliably.
+      if (typeof window !== "undefined" && (window as any).Capacitor) {
+        Browser.open({ url: dataUrl });
         return;
       }
-      window.print();
+
+      // Regular web fallback.
+      const w = window.open(dataUrl, "_blank");
+      if (!w) {
+        if (typeof window.print === "function") window.print();
+        else setError("Printing isn’t available on this device.");
+      }
     } catch {
       setError("Unable to print on this device.");
     }
@@ -858,6 +938,14 @@ export default function App() {
                   <h2 className="bookTitle">Book Bartenders for your Event</h2>
                   {success ? <div className="toast">{success}</div> : null}
                   {error ? <div className="toast">{error}</div> : null}
+                  <div className="muted" style={{ marginTop: 8 }}>
+                    Occasion:{" "}
+                    <strong>
+                      {occasion === "custom"
+                        ? customOccasionName.trim() || "Custom"
+                        : occasionLabel(occasion)}
+                    </strong>
+                  </div>
 
                   <label className="label">Date of Event</label>
                   <input
@@ -865,7 +953,8 @@ export default function App() {
                     type="date"
                     value={eventDate}
                     min={minDate}
-                    onChange={(e) => setEventDate(e.target.value)}
+                    onChange={(e) => handleEventDateChange(e.target.value)}
+                    onBlur={(e) => handleEventDateChange(e.target.value)}
                   />
 
                   <label className="label">Event name</label>

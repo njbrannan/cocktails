@@ -93,6 +93,62 @@ a {
   padding: 16px;
 }
 
+.card + .card {
+  margin-top: 14px;
+}
+
+.bookHeader {
+  margin: 8px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(21, 18, 16, 0.1);
+}
+
+.bookTitle {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.01em;
+}
+
+.buttonRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.buttonRow .btn {
+  flex: 1 1 180px;
+}
+
+.printOnly {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  .noPrint {
+    display: none !important;
+  }
+
+  .printOnly {
+    display: block !important;
+  }
+
+  .shell {
+    padding: 0 !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: none !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+}
+
 .pagerOuter {
   overflow: hidden;
 }

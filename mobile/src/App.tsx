@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import recipesSeed from "./seed/recipes.json";
 import type { Recipe, RecipesPayload } from "./types";
 import { normalizeCocktailDisplayName, resolveCocktailImageSrc } from "./lib/cocktailImages";
@@ -92,6 +92,7 @@ function drinksPerGuestForOccasion(value: Occasion): 2 | 3 | 4 | null {
 }
 
 export default function App() {
+  const bookingRef = useRef<HTMLDivElement | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [step, setStep] = useState<"select" | "quantity" | "order">("select");
   const stepIndex = step === "select" ? 0 : step === "quantity" ? 1 : 2;
@@ -453,6 +454,7 @@ export default function App() {
       const emailConfigured = Boolean(data?.email?.configured);
       const adminOk = Boolean(data?.email?.admin?.ok);
       const clientOk = Boolean(data?.email?.client?.ok);
+      const adminErr = String(data?.email?.admin?.error || "").trim();
       const clientErr = String(data?.email?.client?.error || "").trim();
 
       if (!emailConfigured) {
@@ -467,11 +469,11 @@ export default function App() {
         );
       } else if (!adminOk && clientOk) {
         setSuccess(
-          "Request submitted. (Admin notification email failed, but client confirmation was sent.)",
+          `Request submitted. (Admin notification email failed: ${adminErr || "email failed"}, but client confirmation was sent.)`,
         );
       } else {
         setSuccess(
-          `Request submitted. Emails failed to send (${clientErr || "email failed"}).`,
+          `Request submitted. Emails failed to send (${adminErr || clientErr || "email failed"}).`,
         );
       }
     } catch (e: any) {
@@ -503,6 +505,18 @@ export default function App() {
       setError(e?.message || "Unable to send draft.");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handlePrintOrderList = () => {
+    try {
+      if (typeof window === "undefined" || typeof window.print !== "function") {
+        setError("Printing isn’t available on this device.");
+        return;
+      }
+      window.print();
+    } catch {
+      setError("Unable to print on this device.");
     }
   };
 
@@ -722,163 +736,245 @@ export default function App() {
             </div>
 
             <div className="page" {...pageProps(2)}>
-              <div className="card">
-                <div className="muted">Order list (includes 10% buffer).</div>
-
-                <div className="summaryLine">
-                  <div>
-                    <div className="summaryK">Total drinks</div>
-                    <div className="summaryV">{totalDrinks}</div>
+              <div className="printOnly">
+                <div className="card">
+                  <div className="muted">
+                    Brought to you by GET INVOLVED! Catering - The Connoisseurs of Cocktail Catering
                   </div>
-                  <div>
-                    <div className="summaryK">Total guests</div>
-                    <div className="summaryV">{guestCount ?? "-"}</div>
-                    <div className="muted">
-                      {guestCount && drinksPerGuest ? `${drinksPerGuest} cocktails total per guest` : ""}
+                  <div style={{ height: 10 }} />
+                  <div className="listName">Order List</div>
+                  <div className="muted">Totals include a 10% buffer. Liquor is rounded to 700ml bottles.</div>
+
+                  <div style={{ height: 14 }} />
+                  <div className="summaryLine">
+                    <div>
+                      <div className="summaryK">Total drinks</div>
+                      <div className="summaryV">{totalDrinks}</div>
+                    </div>
+                    <div>
+                      <div className="summaryK">Total guests</div>
+                      <div className="summaryV">{guestCount ?? "-"}</div>
                     </div>
                   </div>
-                </div>
 
-                <ul className="list">
-                  {orderList.map((t) => {
-                    const right =
-                      t.type === "liquor"
-                        ? `${t.bottlesNeeded ?? 0} × ${t.bottleSizeMl ?? 700}ml`
-                        : `${t.total} ${t.unit}`;
-                    const meta =
-                      t.type === "liquor" ? `${Math.ceil(t.total)} ml total` : `${t.type}`;
-                    return (
+                  <div style={{ height: 14 }} />
+                  <div className="summaryK">Cocktails</div>
+                  <ul className="list">
+                    {selectedRecipes
+                      .map((r) => ({
+                        name: normalizeCocktailDisplayName(r.name),
+                        servings: parseNonNegativeInt(servingsByRecipeId[r.id] ?? "0") ?? 0,
+                      }))
+                      .filter((c) => c.servings > 0)
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((c) => (
+                        <li key={c.name} className="listItem">
+                          <div className="listLeft">
+                            <div className="listName">{c.name}</div>
+                          </div>
+                          <div className="listRight">{c.servings}</div>
+                        </li>
+                      ))}
+                  </ul>
+
+                  <div style={{ height: 14 }} />
+                  <div className="summaryK">Shopping list</div>
+                  <ul className="list">
+                    {orderList.map((t) => (
                       <li key={t.ingredientId} className="listItem">
                         <div className="listLeft">
                           <div className="listName">{t.name}</div>
-                          <div className="listMeta">{meta}</div>
+                          <div className="listMeta">{t.type}</div>
                         </div>
-                        <div className="listRight">{right}</div>
+                        <div className="listRight">
+                          {t.type === "liquor"
+                            ? `${t.bottlesNeeded ?? 0} × ${t.bottleSizeMl ?? 700}ml`
+                            : `${t.total} ${t.unit}`}
+                        </div>
                       </li>
-                    );
-                  })}
-                </ul>
-
-                <div style={{ height: 14 }} />
-                {success ? <div className="toast">{success}</div> : null}
-                {error ? <div className="toast">{error}</div> : null}
-                <div className="muted">Book Bartenders for your Event</div>
-
-                <label className="label">Date of Event</label>
-                <input
-                  className="input"
-                  type="date"
-                  value={eventDate}
-                  min={minDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                />
-
-                <label className="label">Event name</label>
-                <input
-                  className="input"
-                  value={eventName}
-                  onChange={(e) => setEventName(e.target.value)}
-                  placeholder="Cocktail party"
-                  inputMode="text"
-                />
-
-                <label className="label">Email</label>
-                <input
-                  className={`input ${emailError ? "inputError" : ""}`}
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  inputMode="email"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                />
-                {emailError ? <div className="errorText">{emailError}</div> : null}
-
-                <label className="label">Telephone</label>
-                <div className="row">
-                  <select
-                    className="select"
-                    value={phoneCountryIso2}
-                    onChange={(e) => setPhoneCountryIso2(e.target.value as any)}
-                    style={{ width: 120, flex: "0 0 auto" }}
-                  >
-                    {phoneCountryOptions.map((iso2) => (
-                      <option key={iso2} value={iso2}>
-                        {flagEmoji(iso2)} {iso2}
-                      </option>
                     ))}
-                  </select>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="noPrint">
+                <div className="card">
+                  <div className="muted">Order list (includes 10% buffer).</div>
+
+                  <div className="summaryLine">
+                    <div>
+                      <div className="summaryK">Total drinks</div>
+                      <div className="summaryV">{totalDrinks}</div>
+                    </div>
+                    <div>
+                      <div className="summaryK">Total guests</div>
+                      <div className="summaryV">{guestCount ?? "-"}</div>
+                      <div className="muted">
+                        {guestCount && drinksPerGuest ? `${drinksPerGuest} cocktails total per guest` : ""}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="buttonRow">
+                    <button className="btn" type="button" onClick={handlePrintOrderList}>
+                      Print order list
+                    </button>
+                    <button
+                      className="btn btnPrimary"
+                      type="button"
+                      onClick={() =>
+                        bookingRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        })
+                      }
+                    >
+                      Book Bartenders
+                    </button>
+                  </div>
+
+                  <ul className="list">
+                    {orderList.map((t) => {
+                      const right =
+                        t.type === "liquor"
+                          ? `${t.bottlesNeeded ?? 0} × ${t.bottleSizeMl ?? 700}ml`
+                          : `${t.total} ${t.unit}`;
+                      const meta =
+                        t.type === "liquor" ? `${Math.ceil(t.total)} ml total` : `${t.type}`;
+                      return (
+                        <li key={t.ingredientId} className="listItem">
+                          <div className="listLeft">
+                            <div className="listName">{t.name}</div>
+                            <div className="listMeta">{meta}</div>
+                          </div>
+                          <div className="listRight">{right}</div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
+                <div ref={bookingRef} className="card bookHeader">
+                  <h2 className="bookTitle">Book Bartenders for your Event</h2>
+                  {success ? <div className="toast">{success}</div> : null}
+                  {error ? <div className="toast">{error}</div> : null}
+
+                  <label className="label">Date of Event</label>
                   <input
-                    className={`input ${phoneError ? "inputError" : ""}`}
-                    value={phoneLocal}
-                    onChange={(e) => setPhoneLocal(e.target.value)}
-                    placeholder="0412 345 678"
-                    inputMode="tel"
+                    className="input"
+                    type="date"
+                    value={eventDate}
+                    min={minDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                  />
+
+                  <label className="label">Event name</label>
+                  <input
+                    className="input"
+                    value={eventName}
+                    onChange={(e) => setEventName(e.target.value)}
+                    placeholder="Cocktail party"
+                    inputMode="text"
+                  />
+
+                  <label className="label">Email</label>
+                  <input
+                    className={`input ${emailError ? "inputError" : ""}`}
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    inputMode="email"
+                    autoCapitalize="none"
                     autoCorrect="off"
                   />
-                </div>
-                {phoneError ? <div className="errorText">{phoneError}</div> : null}
+                  {emailError ? <div className="errorText">{emailError}</div> : null}
 
-                <label className="label">Number of guests</label>
-                <input
-                  className={`input ${guestError ? "inputError" : ""}`}
-                  value={guestCountInput}
-                  onChange={(e) => setGuestCountInput(e.target.value)}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                />
-                {guestError ? <div className="errorText">{guestError}</div> : null}
-
-                <label className="label">Message</label>
-                <textarea
-                  className="textarea"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={
-                    "What’s the special occasion?\nEvent schedule?\nSpecial/signature cocktail requests?\nAllergies?"
-                  }
-                />
-
-                <div className="actions">
-                  <button className="btn" onClick={() => setStep("quantity")}>
-                    Edit quantities
-                  </button>
-                  <button className="btn btnPrimary" onClick={handleSend} disabled={sending}>
-                    {sending ? "Sending..." : "Book Bartenders"}
-                  </button>
-                </div>
-
-                {drafts.length ? (
-                  <>
-                    <div style={{ height: 16 }} />
-                    <div className="muted">Saved drafts</div>
-                    <ul className="list">
-                      {drafts.map((d) => (
-                        <li key={d.id} className="listItem">
-                          <div className="listLeft">
-                            <div className="listName">{d.payload.title}</div>
-                            <div className="listMeta">{new Date(d.createdAt).toLocaleString()}</div>
-                          </div>
-                          <div className="row" style={{ justifyContent: "flex-end" }}>
-                            <button className="btn btnInlineLink" onClick={() => sendDraft(d)} disabled={sending}>
-                              Send
-                            </button>
-                            <button
-                              className="btn btnInlineLink"
-                              onClick={() => {
-                                removeDraft(d.id);
-                                setDrafts(loadDrafts());
-                              }}
-                              disabled={sending}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </li>
+                  <label className="label">Telephone</label>
+                  <div className="row">
+                    <select
+                      className="select"
+                      value={phoneCountryIso2}
+                      onChange={(e) => setPhoneCountryIso2(e.target.value as any)}
+                      style={{ width: 120, flex: "0 0 auto" }}
+                    >
+                      {phoneCountryOptions.map((iso2) => (
+                        <option key={iso2} value={iso2}>
+                          {flagEmoji(iso2)} {iso2}
+                        </option>
                       ))}
-                    </ul>
-                  </>
-                ) : null}
+                    </select>
+                    <input
+                      className={`input ${phoneError ? "inputError" : ""}`}
+                      value={phoneLocal}
+                      onChange={(e) => setPhoneLocal(e.target.value)}
+                      placeholder="0412 345 678"
+                      inputMode="tel"
+                      autoCorrect="off"
+                    />
+                  </div>
+                  {phoneError ? <div className="errorText">{phoneError}</div> : null}
+
+                  <label className="label">Number of guests</label>
+                  <input
+                    className={`input ${guestError ? "inputError" : ""}`}
+                    value={guestCountInput}
+                    onChange={(e) => setGuestCountInput(e.target.value)}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                  />
+                  {guestError ? <div className="errorText">{guestError}</div> : null}
+
+                  <label className="label">Message</label>
+                  <textarea
+                    className="textarea"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder={
+                      "What’s the special occasion?\nEvent schedule?\nSpecial/signature cocktail requests?\nAllergies?"
+                    }
+                  />
+
+                  <div className="actions">
+                    <button className="btn" onClick={() => setStep("quantity")}>
+                      Edit quantities
+                    </button>
+                    <button className="btn btnPrimary" onClick={handleSend} disabled={sending}>
+                      {sending ? "Sending..." : "Book Bartenders"}
+                    </button>
+                  </div>
+
+                  {drafts.length ? (
+                    <>
+                      <div style={{ height: 16 }} />
+                      <div className="muted">Saved drafts</div>
+                      <ul className="list">
+                        {drafts.map((d) => (
+                          <li key={d.id} className="listItem">
+                            <div className="listLeft">
+                              <div className="listName">{d.payload.title}</div>
+                              <div className="listMeta">{new Date(d.createdAt).toLocaleString()}</div>
+                            </div>
+                            <div className="row" style={{ justifyContent: "flex-end" }}>
+                              <button className="btn btnInlineLink" onClick={() => sendDraft(d)} disabled={sending}>
+                                Send
+                              </button>
+                              <button
+                                className="btn btnInlineLink"
+                                onClick={() => {
+                                  removeDraft(d.id);
+                                  setDrafts(loadDrafts());
+                                }}
+                                disabled={sending}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>

@@ -872,7 +872,7 @@ export default function RequestOrderPage() {
 
                   <div className="shrink-0 text-right">
                     {editingQuantities ? (
-                      <div className="flex flex-col items-end">
+                      <div className="flex items-center justify-end">
                         <input
                           type="number"
                           min={0}
@@ -908,19 +908,13 @@ export default function RequestOrderPage() {
                             }))
                           }
                           // iOS Safari zooms when inputs are < 16px font-size.
-                          className="w-24 rounded-xl border border-soft bg-white/90 px-3 py-2 text-right text-[16px] text-ink"
+                          className="h-10 w-24 rounded-xl border border-soft bg-white/90 px-3 py-0 text-right text-[16px] text-ink"
                         />
-                        <p className="mt-1 text-xs text-muted">Quantity</p>
                       </div>
                     ) : (
-                      <>
-                        <p className="text-sm font-semibold text-ink tabular-nums">
-                          {Number(
-                            servingsByRecipeId[c.recipeId] ?? c.servings ?? 0,
-                          ) || 0}
-                        </p>
-                        <p className="mt-1 text-xs text-muted">Quantity</p>
-                      </>
+                      <div className="h-10 w-24 rounded-xl border border-soft bg-white/60 px-3 text-right text-[16px] font-semibold leading-10 text-ink tabular-nums">
+                        {Number(servingsByRecipeId[c.recipeId] ?? c.servings ?? 0) || 0}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -999,9 +993,6 @@ export default function RequestOrderPage() {
             <h3 className="font-display text-xl text-ink">
               Book Bartenders for your Event
             </h3>
-            {success ? (
-              <p className="mt-2 text-sm font-medium text-ink">{success}</p>
-            ) : null}
             <p className="mt-2 text-sm text-muted">
               {success
                 ? "Booking request submitted, we will be in contact shortly."

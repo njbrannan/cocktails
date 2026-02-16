@@ -13,7 +13,6 @@ import {
 } from "./lib/offlineStore";
 import { countries } from "countries-list";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
-import { Browser } from "@capacitor/browser";
 
 function isEditableTarget(target: EventTarget | null) {
   const el = target as HTMLElement | null;
@@ -50,6 +49,15 @@ function parseNonNegativeInt(raw: string) {
   if (!/^\d+$/.test(trimmed)) return null;
   const n = Number(trimmed);
   if (!Number.isSafeInteger(n)) return null;
+  return n;
+}
+
+function parsePositiveNumber(raw: string) {
+  const trimmed = raw.trim().replace(",", ".");
+  if (trimmed === "") return null;
+  if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n <= 0) return null;
   return n;
 }
 
@@ -125,8 +133,8 @@ export default function App() {
   }, [guestCountInput]);
 
   const drinksPerGuest = useMemo(() => {
-    const n = parseNonNegativeInt(drinksPerGuestInput);
-    return n && n > 0 ? n : 2;
+    const n = parsePositiveNumber(drinksPerGuestInput);
+    return n ?? 2;
   }, [drinksPerGuestInput]);
 
   const [orderList, setOrderList] = useState<IngredientTotal[]>([]);
@@ -303,7 +311,7 @@ export default function App() {
     if (!guestCount) return;
     if (selectedRecipes.length === 0) return;
 
-    const total = guestCount * drinksPerGuest;
+    const total = Math.ceil(guestCount * drinksPerGuest);
     const per = Math.ceil(total / selectedRecipes.length);
     const next: Record<string, string> = { ...servingsByRecipeId };
     for (const r of selectedRecipes) next[r.id] = String(per);
@@ -596,11 +604,115 @@ export default function App() {
         shopping,
       };
 
-      const token = base64UrlEncodeJson(payload);
-      const url = `${API_BASE}/print#${token}`;
+      const printHtml = (html: string) => {
+        // Try to trigger the native print sheet directly from the app webview.
+        // (More reliable than expecting users to find Share → Print.)
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "0";
+        iframe.srcdoc = html;
+        document.body.appendChild(iframe);
 
-      // Open in Safari view; user can Share → Print.
-      Browser.open({ url });
+        const cleanup = () => {
+          try {
+            document.body.removeChild(iframe);
+          } catch {
+            // ignore
+          }
+        };
+
+        iframe.onload = () => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch {
+            // ignore
+          } finally {
+            window.setTimeout(cleanup, 1000);
+          }
+        };
+      };
+
+      const title = "Cocktail order list";
+      const heading = `Brought to you by GET INVOLVED! Catering - The Connoisseurs of Cocktail Catering`;
+      const safe = (s: any) =>
+        String(s ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+
+      const cocktailsHtml = cocktails.length
+        ? `<ul>${cocktails
+            .map((c) => `<li>${safe(c.name)} — ${safe(c.servings)}</li>`)
+            .join("")}</ul>`
+        : "<p>(No cocktails selected)</p>";
+
+      const shoppingHtml = shopping.length
+        ? `<table><tbody>${shopping
+            .map(
+              (s) =>
+                `<tr><td><strong>${safe(s.name)}</strong><div class="meta">${safe(
+                  s.type,
+                )}</div></td><td class="right">${safe(s.right)}</td></tr>`,
+            )
+            .join("")}</tbody></table>`
+        : "<p>(No order list)</p>";
+
+      const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${safe(title)}</title>
+    <style>
+      :root { color-scheme: light; }
+      body { font-family: -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; color: #111; }
+      h1 { font-size: 18px; margin: 0 0 8px; }
+      .sub { color: #444; font-size: 12px; margin: 0 0 18px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin: 12px 0 18px; }
+      .k { color: #555; font-size: 11px; text-transform: uppercase; letter-spacing: .14em; }
+      .v { font-weight: 700; }
+      table { width: 100%; border-collapse: collapse; }
+      td { padding: 10px 0; border-top: 1px solid #ddd; vertical-align: top; }
+      .right { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; padding-left: 12px; }
+      .meta { color: #666; font-size: 11px; margin-top: 2px; }
+      ul { margin: 8px 0 0; padding-left: 18px; }
+      li { margin: 6px 0; }
+      @media print { body { margin: 0; } }
+    </style>
+  </head>
+  <body>
+    <h1>${safe(heading)}</h1>
+    <p class="sub">${safe(eventName.trim() || "")}</p>
+    <div class="grid">
+      <div><div class="k">Date</div><div class="v">${safe(eventDate || "")}</div></div>
+      <div><div class="k">Guests</div><div class="v">${safe(guestCount ?? "")}</div></div>
+    </div>
+    <h2 style="font-size:14px;margin:0 0 6px;">Selected cocktails</h2>
+    ${cocktailsHtml}
+    <h2 style="font-size:14px;margin:18px 0 6px;">Shopping list</h2>
+    ${shoppingHtml}
+  </body>
+</html>`;
+
+      // Prefer in-app print sheet.
+      printHtml(html);
+
+      // Also keep the hosted print view available (useful fallback).
+      // (We don't block on it; the user can tap Print again if needed.)
+      try {
+        const token = base64UrlEncodeJson(payload);
+        const url = `${API_BASE}/print#${token}`;
+        void url;
+      } catch {
+        // ignore
+      }
     } catch {
       setError("Unable to print on this device.");
     }
@@ -631,7 +743,7 @@ export default function App() {
 
   const suggestedTotalDrinks = useMemo(() => {
     if (!guestCount) return null;
-    return guestCount * drinksPerGuest;
+    return Math.ceil(guestCount * drinksPerGuest);
   }, [guestCount, drinksPerGuest]);
 
   const priorityCountries: Array<keyof typeof countries> = [
@@ -705,14 +817,11 @@ export default function App() {
                       >
                         <div className="tileTop">
                           <div className="tileName">{normalizeCocktailDisplayName(r.name)}</div>
-                        </div>
-                        <div className={`pill tilePill ${selected ? "pillSelected" : ""}`}>
-                          {selected ? "Selected" : "Tap"}
+                          {selected ? <div className="tileTick">✓</div> : null}
                         </div>
                         <div className="tileImgWrap">
                           <img className="tileImg" src={img} alt={r.name} loading="lazy" />
                         </div>
-                        <div className="tapHint">{selected ? "Tap to remove" : "Tap to add"}</div>
                       </div>
                     );
                   })}
@@ -768,8 +877,8 @@ export default function App() {
                       className="input"
                       value={drinksPerGuestInput}
                       onChange={(e) => setDrinksPerGuestInput(e.target.value)}
-                      inputMode="numeric"
-                      pattern="[0-9]*"
+                      inputMode="decimal"
+                      pattern="[0-9]*[\\.,]?[0-9]*"
                       placeholder="2"
                     />
                   </>
@@ -786,17 +895,13 @@ export default function App() {
                 />
 
                 <div style={{ height: 10 }} />
-                <div
-                  className="muted"
-                  style={{
-                    fontSize: 12,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {suggestedLine}
-                  {suggestedTotalDrinks ? ` · Suggested drinks: ${suggestedTotalDrinks}` : ""}
+                <div className="muted" style={{ fontSize: 12, lineHeight: 1.35 }}>
+                  <div>{suggestedLine}</div>
+                  {suggestedTotalDrinks ? (
+                    <div style={{ marginTop: 3, color: "rgba(21, 18, 16, 0.6)" }}>
+                      Suggested drinks: {suggestedTotalDrinks}
+                    </div>
+                  ) : null}
                 </div>
 
                 <ul className="list">

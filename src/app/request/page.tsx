@@ -25,6 +25,15 @@ function parseNonNegativeInt(raw: string) {
   return n;
 }
 
+function parsePositiveNumber(raw: string) {
+  const trimmed = raw.trim().replace(",", ".");
+  if (trimmed === "") return null;
+  if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
+
 type Ingredient = {
   id: string;
   name: string;
@@ -81,8 +90,8 @@ export default function RequestPage() {
   const [guestCountInput, setGuestCountInput] = useState("");
   const [drinksPerGuestInput, setDrinksPerGuestInput] = useState("2");
   const drinksPerGuest = useMemo(() => {
-    const n = parseNonNegativeInt(drinksPerGuestInput);
-    return n && n > 0 ? n : 2;
+    const n = parsePositiveNumber(drinksPerGuestInput);
+    return n ?? 2;
   }, [drinksPerGuestInput]);
   const [occasion, setOccasion] = useState<Occasion>("relaxed");
   const [customOccasionName, setCustomOccasionName] = useState("");
@@ -236,8 +245,10 @@ export default function RequestPage() {
           : {};
       const guestsRaw = typeof parsed.guestCount === "number" ? String(parsed.guestCount) : "";
       const drinksPerGuestRaw =
-        typeof parsed.drinksPerGuest === "number" && Number.isFinite(parsed.drinksPerGuest) && parsed.drinksPerGuest > 0
-          ? String(Math.floor(parsed.drinksPerGuest))
+        typeof parsed.drinksPerGuest === "number" &&
+        Number.isFinite(parsed.drinksPerGuest) &&
+        parsed.drinksPerGuest > 0
+          ? String(parsed.drinksPerGuest)
           : "2";
       const occasionRaw =
         parsed.occasion === "relaxed" ||
@@ -277,7 +288,8 @@ export default function RequestPage() {
     if (!guestCount || guestCount <= 0) return;
     if (selectedForQuantity.length === 0) return;
 
-    const totalDrinks = guestCount * drinksPerGuest;
+    // If drinksPerGuest is a decimal, round total drinks up so we never under-shoot.
+    const totalDrinks = Math.ceil(guestCount * drinksPerGuest);
     const n = selectedForQuantity.length;
     // Round up so every selected cocktail starts with the same integer quantity.
     // This makes it easier to scan and ensures we're never short on total drinks.
@@ -570,7 +582,8 @@ export default function RequestPage() {
                               <input
                                 type="number"
                                 min={1}
-                                inputMode="numeric"
+                                step="0.1"
+                                inputMode="decimal"
                                 value={drinksPerGuestInput}
                                 onChange={(event) => setDrinksPerGuestInput(event.target.value)}
                                 className="mt-2 w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px]"
@@ -582,38 +595,33 @@ export default function RequestPage() {
                         {(() => {
                           const guests = parseNonNegativeInt(guestCountInput);
                           if (!guests || guests <= 0) return null;
-                          const totalSuggested =
-                            guests && guests > 0 ? guests * drinksPerGuest : null;
+                          const totalSuggested = Math.ceil(guests * drinksPerGuest);
+
                           if (occasion === "custom") {
                             return (
-                              <p className="mt-3 text-xs text-muted whitespace-nowrap">
-                                <span className="font-semibold text-ink">
-                                  You choose
-                                </span>{" "}
+                              <p className="mt-3 text-xs text-muted">
+                                <span className="font-semibold text-ink">You choose</span>{" "}
                                 how many cocktails{" "}
-                                <span className="font-semibold text-ink">total</span>{" "}
-                                per guest!
-                                {totalSuggested ? (
-                                  <span className="ml-2 text-ink/60">
-                                    · Suggested drinks: {totalSuggested}
-                                  </span>
-                                ) : null}
+                                <span className="font-semibold text-ink">total</span> per
+                                guest!
+                                <span className="mt-1 block text-ink/60">
+                                  Suggested drinks: {totalSuggested}
+                                </span>
                               </p>
                             );
                           }
+
                           return (
-                            <p className="mt-3 text-xs text-muted whitespace-nowrap">
+                            <p className="mt-3 text-xs text-muted">
                               Suggested starting point:{" "}
                               <span className="font-semibold text-ink">
                                 {drinksPerGuest}
                               </span>{" "}
                               cocktails <span className="font-semibold text-ink">total</span>{" "}
                               per guest
-                              {totalSuggested ? (
-                                <span className="ml-2 text-ink/60">
-                                  · Suggested drinks: {totalSuggested}
-                                </span>
-                              ) : null}
+                              <span className="mt-1 block text-ink/60">
+                                Suggested drinks: {totalSuggested}
+                              </span>
                               .
                             </p>
                           );

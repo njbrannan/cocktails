@@ -842,7 +842,7 @@ export default function RequestOrderPage() {
               return (
                 <div
                   key={c.recipeId}
-                  className="flex flex-nowrap items-center justify-between gap-4 rounded-2xl border border-subtle bg-white/80 px-5 py-4"
+                  className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-subtle bg-white/80 px-4 py-3 sm:px-5 sm:py-4"
                 >
                   <div className="flex min-w-0 items-center gap-3 overflow-hidden">
                     <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
@@ -870,7 +870,7 @@ export default function RequestOrderPage() {
                     </p>
                   </div>
 
-                  <div className="shrink-0 text-right">
+                  <div className="shrink-0 justify-self-end text-right">
                     {editingQuantities ? (
                       <div className="flex items-center justify-end">
                         <input
@@ -908,7 +908,7 @@ export default function RequestOrderPage() {
                             }))
                           }
                           // iOS Safari zooms when inputs are < 16px font-size.
-                          className="h-10 w-24 rounded-xl border border-soft bg-white/90 px-1 py-0 text-right text-[16px] text-ink tabular-nums"
+                          className="h-10 w-20 rounded-xl border border-soft bg-white/90 px-1 py-0 text-right text-[16px] text-ink tabular-nums sm:w-24"
                         />
                       </div>
                     ) : (

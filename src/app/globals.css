@@ -78,6 +78,13 @@ html:not([data-theme="legacy"]) .glass-panel {
   text-shadow: 0 10px 30px var(--color-glow);
 }
 
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .hero-grid {
   background-image:
     radial-gradient(circle at top right, rgba(196, 123, 74, 0.18), transparent 45%),

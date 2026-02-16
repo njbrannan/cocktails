@@ -865,7 +865,7 @@ export default function RequestOrderPage() {
                         }}
                       />
                     </div>
-                    <p className="min-w-0 truncate text-sm font-semibold text-ink">
+                    <p className="min-w-0 text-sm font-semibold leading-snug text-ink line-clamp-2">
                       {displayName}
                     </p>
                   </div>

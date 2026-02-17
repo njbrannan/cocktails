@@ -109,9 +109,13 @@ export default function RequestPage() {
   const swipeDragRef = useRef<{
     id: string | null;
     startX: number;
+    startY: number;
     startOffset: number;
     active: boolean;
-  }>({ id: null, startX: 0, startOffset: 0, active: false });
+    // We wait until the user clearly swipes horizontally before taking over.
+    directionLocked: "x" | "y" | null;
+  }>({ id: null, startX: 0, startY: 0, startOffset: 0, active: false, directionLocked: null });
+  const [swipeDraggingId, setSwipeDraggingId] = useState<string | null>(null);
   const [swipeOpenRecipeId, setSwipeOpenRecipeId] = useState<string | null>(null);
   const [undoRemoval, setUndoRemoval] = useState<{
     recipeId: string;
@@ -748,16 +752,19 @@ export default function RequestPage() {
                       );
                       const displayName = normalizeCocktailDisplayName(recipe.name);
                       const offset = swipeOffsetByRecipeId[recipe.id] ?? 0;
-                      const DELETE_REVEAL_PX = 72;
+                      const DELETE_REVEAL_PX = 84;
 
                       const closeSwipe = () => {
                         setSwipeOffsetByRecipeId((prev) => ({ ...prev, [recipe.id]: 0 }));
                         if (swipeOpenRecipeId === recipe.id) setSwipeOpenRecipeId(null);
                       };
                       return (
-                        <div key={recipe.id} className="relative overflow-hidden rounded-[28px]">
+                        <div
+                          key={recipe.id}
+                          className="relative overflow-hidden rounded-[28px] border border-subtle bg-white/70"
+                        >
                           {/* Swipe-reveal delete action (tap trash) */}
-                          <div className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-red-600/90">
+                          <div className="absolute inset-y-0 right-0 flex w-[84px] items-center justify-center bg-red-600/90">
                             <button
                               type="button"
                               onClick={() => {
@@ -803,10 +810,9 @@ export default function RequestPage() {
 
                           {/* Foreground card (draggable) */}
                           <div
-                            className={`relative grid w-full max-w-full items-start gap-4 border border-subtle bg-white/70 p-5 transition-transform ${
+                            className={`relative grid w-full max-w-full items-start gap-4 bg-transparent p-5 ${
                               ingredientsOpen ? "md:grid-cols-[240px_1fr]" : "md:grid-cols-[240px]"
                             }`}
-                            style={{ transform: `translateX(${offset}px)` }}
                             onPointerDown={(event) => {
                               // Only handle primary pointer (finger/mouse). Don't interfere with inputs.
                               if ((event as any).button !== undefined && (event as any).button !== 0)
@@ -827,8 +833,11 @@ export default function RequestPage() {
 
                               swipeDragRef.current.id = recipe.id;
                               swipeDragRef.current.startX = event.clientX;
+                              swipeDragRef.current.startY = event.clientY;
                               swipeDragRef.current.startOffset = swipeOffsetByRecipeId[recipe.id] ?? 0;
                               swipeDragRef.current.active = true;
+                              swipeDragRef.current.directionLocked = null;
+                              setSwipeDraggingId(recipe.id);
                               try {
                                 (event.currentTarget as any).setPointerCapture?.(event.pointerId);
                               } catch {}
@@ -837,6 +846,17 @@ export default function RequestPage() {
                               if (!swipeDragRef.current.active) return;
                               if (swipeDragRef.current.id !== recipe.id) return;
                               const dx = event.clientX - swipeDragRef.current.startX;
+                              const dy = event.clientY - swipeDragRef.current.startY;
+
+                              // If the user is scrolling vertically, don't hijack the gesture.
+                              if (!swipeDragRef.current.directionLocked) {
+                                const absX = Math.abs(dx);
+                                const absY = Math.abs(dy);
+                                if (absX < 6 && absY < 6) return;
+                                swipeDragRef.current.directionLocked = absX > absY ? "x" : "y";
+                              }
+                              if (swipeDragRef.current.directionLocked === "y") return;
+
                               // We only reveal to the left; clamp between -DELETE_REVEAL_PX and 0.
                               const next = Math.max(
                                 -DELETE_REVEAL_PX,
@@ -848,6 +868,8 @@ export default function RequestPage() {
                               if (!swipeDragRef.current.active) return;
                               if (swipeDragRef.current.id !== recipe.id) return;
                               swipeDragRef.current.active = false;
+                              swipeDragRef.current.directionLocked = null;
+                              setSwipeDraggingId(null);
                               const cur = swipeOffsetByRecipeId[recipe.id] ?? 0;
                               const shouldOpen = cur <= -DELETE_REVEAL_PX / 2;
                               const snap = shouldOpen ? -DELETE_REVEAL_PX : 0;
@@ -858,7 +880,20 @@ export default function RequestPage() {
                               if (!swipeDragRef.current.active) return;
                               if (swipeDragRef.current.id !== recipe.id) return;
                               swipeDragRef.current.active = false;
+                              swipeDragRef.current.directionLocked = null;
+                              setSwipeDraggingId(null);
                               closeSwipe();
+                            }}
+                            // Let the page scroll vertically like normal; we only capture once we detect horizontal intent.
+                            // This makes the gesture feel closer to iOS native list swipe.
+                            // eslint-disable-next-line react/style-prop-object
+                            style={{
+                              transform: `translateX(${offset}px)`,
+                              touchAction: "pan-y",
+                              transition:
+                                swipeDraggingId === recipe.id
+                                  ? "none"
+                                  : "transform 200ms cubic-bezier(0.2, 0.85, 0.2, 1)",
                             }}
                           >
                             <div className="space-y-3">

@@ -597,25 +597,25 @@ export default function RequestPage() {
                           Tap to {isSelected ? "remove" : "add"}
                         </div>
 
-                        {/* Selected indicator: small green tick bottom-right of the photo area */}
-                        {isSelected ? (
-                          <div className="pointer-events-none absolute bottom-12 right-3 grid h-6 w-6 place-items-center rounded-full gi-selected-chip text-[14px] font-black leading-none shadow-sm">
-                            ✓
-                          </div>
-                        ) : null}
-
-                          {/* Always show name + action text; keep it off the photo area */}
-                          <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
-                            <p
-                              className="font-display text-lg text-ink"
-                              style={{
-                                textShadow:
-                                  "0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(255,255,255,0.35)",
-                              }}
-                            >
+                        {/* Cocktail name row (with selected tick on the same line) */}
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
+                          <div
+                            className="flex items-center justify-between gap-3"
+                            style={{
+                              textShadow:
+                                "0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(255,255,255,0.35)",
+                            }}
+                          >
+                            <p className="min-w-0 flex-1 truncate font-display text-lg text-ink">
                               {displayName}
                             </p>
+                            {isSelected ? (
+                              <span className="grid h-6 w-6 place-items-center rounded-full gi-selected-chip text-[14px] font-black leading-none shadow-sm">
+                                ✓
+                              </span>
+                            ) : null}
                           </div>
+                        </div>
                         </div>
                       </button>
                     );

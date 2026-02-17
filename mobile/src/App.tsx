@@ -109,6 +109,23 @@ function drinksPerGuestForOccasion(value: Occasion): 2 | 3 | 4 | null {
   }
 }
 
+function occasionGuidance(value: Occasion) {
+  switch (value) {
+    case "relaxed":
+      return "Light planning: allow time for food, water, and non-alcoholic options. This planner estimates total stock required, not consumption.";
+    case "cocktail":
+      return "A classic pace is 1–2 cocktails per guest per hour, alongside water and non-alcoholic options. This planner estimates total stock required, not consumption.";
+    case "wedding":
+      return "Weddings vary a lot—plan for a steady flow plus water and non-alcoholic options. This planner estimates total stock required, not consumption.";
+    case "big-night":
+      return "Provide approximately 1–2 cocktails per guest per hour, alongside water and non-alcoholic options. This planner estimates total stock required, not consumption.";
+    case "custom":
+      return "You’re in control—consider event length, food, water, and non-alcoholic options. This planner estimates total stock required, not consumption.";
+    default:
+      return "";
+  }
+}
+
 export default function App() {
   const bookingRef = useRef<HTMLDivElement | null>(null);
   const pagerOuterRef = useRef<HTMLDivElement | null>(null);
@@ -727,7 +744,7 @@ export default function App() {
       case "wedding":
         return "Wedding / formal event";
       case "big-night":
-        return "Big night";
+        return "Big Celebration";
       case "custom":
         return "Custom";
       default:
@@ -902,6 +919,9 @@ export default function App() {
                       Suggested drinks: {suggestedTotalDrinks}
                     </div>
                   ) : null}
+                  <div style={{ marginTop: 3, fontSize: 11, color: "rgba(21, 18, 16, 0.6)" }}>
+                    {occasionGuidance(occasion)}
+                  </div>
                 </div>
 
                 <ul className="list">

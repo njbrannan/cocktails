@@ -194,7 +194,7 @@ export default function RequestOrderPage() {
                 : occ === "wedding"
                   ? "Wedding / celebration"
                   : occ === "big-night"
-                    ? "Big night"
+                    ? "Big Celebration"
                     : occ === "custom"
                       ? "Custom"
                       : occ;

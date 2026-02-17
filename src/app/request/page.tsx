@@ -143,6 +143,23 @@ export default function RequestPage() {
     }
   };
 
+  const occasionGuidance = (value: Occasion) => {
+    switch (value) {
+      case "relaxed":
+        return "Light planning: allow time for food, water, and non-alcoholic options. This planner estimates total stock required, not consumption.";
+      case "cocktail":
+        return "A classic pace is 1–2 cocktails per guest per hour, alongside water and non-alcoholic options. This planner estimates total stock required, not consumption.";
+      case "wedding":
+        return "Weddings vary a lot—plan for a steady flow plus water and non-alcoholic options. This planner estimates total stock required, not consumption.";
+      case "big-night":
+        return "Provide approximately 1–2 cocktails per guest per hour, alongside water and non-alcoholic options. This planner estimates total stock required, not consumption.";
+      case "custom":
+        return "You’re in control—consider event length, food, water, and non-alcoholic options. This planner estimates total stock required, not consumption.";
+      default:
+        return null;
+    }
+  };
+
   const selectedForQuantity = useMemo(() => {
     return recipes.filter((recipe) => selectedRecipeIds.has(recipe.id));
   }, [recipes, selectedRecipeIds]);
@@ -553,7 +570,7 @@ export default function RequestPage() {
                               <option value="relaxed">Dinner / relaxed</option>
                               <option value="cocktail">Cocktail party</option>
                               <option value="wedding">Wedding / celebration</option>
-                              <option value="big-night">Big night</option>
+                              <option value="big-night">Big Celebration</option>
                               <option value="custom">Custom</option>
                             </select>
                           </label>
@@ -630,13 +647,9 @@ export default function RequestPage() {
                               <span className="mt-1 block text-ink/60">
                                 Suggested drinks: {totalSuggested}
                               </span>
-                              {occasion === "big-night" ? (
-                                <span className="mt-1 block text-[11px] leading-snug text-ink/60">
-                                  Provide approximately 1–2 cocktails per guest per hour,
-                                  alongside water and non-alcoholic options. This planner
-                                  estimates total stock required, not consumption.
-                                </span>
-                              ) : null}
+                              <span className="mt-1 block text-[11px] leading-snug text-ink/60">
+                                {occasionGuidance(occasion)}
+                              </span>
                             </p>
                           );
                         })()}

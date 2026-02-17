@@ -83,6 +83,8 @@ export default function RequestPage() {
   type Occasion = "relaxed" | "cocktail" | "wedding" | "big-night" | "custom";
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [menuLoading, setMenuLoading] = useState(true);
+  const [menuLoadedOnce, setMenuLoadedOnce] = useState(false);
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -250,6 +252,7 @@ export default function RequestPage() {
 
   const loadMenu = async () => {
     setError(null);
+    setMenuLoading(true);
     const { data, error: recipeError } = await supabase
       .from("recipes")
       .select(
@@ -262,9 +265,13 @@ export default function RequestPage() {
       const cached = loadCachedRecipes<Recipe>();
       if (cached?.recipes?.length) {
         setRecipes([...cached.recipes].sort((a, b) => a.name.localeCompare(b.name)));
+        setMenuLoadedOnce(true);
+        setMenuLoading(false);
         return;
       }
       setError(recipeError.message);
+      setMenuLoadedOnce(true);
+      setMenuLoading(false);
       return;
     }
 
@@ -281,6 +288,8 @@ export default function RequestPage() {
       }
       return next;
     });
+    setMenuLoadedOnce(true);
+    setMenuLoading(false);
   };
 
   useEffect(() => {
@@ -504,9 +513,23 @@ export default function RequestPage() {
               : "Add quantities and we’ll calculate ingredients per drink."}
           </p>
 
-          {recipes.length === 0 ? (
+          {menuLoading ? (
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="overflow-hidden rounded-[26px] border border-subtle bg-white/70 shadow-sm"
+                >
+                  <div className="h-[180px] w-full animate-pulse bg-black/5" />
+                  <div className="px-4 py-4">
+                    <div className="h-5 w-3/4 animate-pulse rounded bg-black/5" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : menuLoadedOnce && recipes.length === 0 ? (
             <p className="mt-4 text-sm text-muted">
-              No cocktails found yet. Add recipes in Supabase (recipes + recipe_ingredients).
+              No cocktails available yet.
             </p>
           ) : (
             <>
@@ -717,7 +740,7 @@ export default function RequestPage() {
                       return (
                         <div
                           key={recipe.id}
-                          className={`relative grid gap-4 rounded-[28px] border border-subtle bg-white/70 p-5 ${
+                          className={`relative grid gap-4 overflow-hidden rounded-[28px] border border-subtle bg-white/70 p-5 ${
                             ingredientsOpen ? "md:grid-cols-[240px_1fr]" : "md:grid-cols-[240px]"
                           }`}
                         >
@@ -869,12 +892,12 @@ export default function RequestPage() {
                                     .map((row) => (
                                       <div
                                         key={row.key}
-                                        className="flex items-center justify-between gap-4"
+                                        className="flex min-w-0 items-center justify-between gap-4"
                                       >
-                                        <span className="font-medium text-ink">
+                                        <span className="min-w-0 flex-1 break-words font-medium text-ink">
                                           {row.name}
                                         </span>
-                                        <span>
+                                        <span className="shrink-0">
                                           {row.amount} {row.unit}
                                         </span>
                                       </div>

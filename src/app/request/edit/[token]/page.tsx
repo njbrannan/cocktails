@@ -885,6 +885,92 @@ export default function RequestEditPage() {
                             <div
                               className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-600/90"
                               style={{ width: `${deleteRevealWidth}px` }}
+                              onPointerDown={(event) => {
+                                if (
+                                  (event as any).button !== undefined &&
+                                  (event as any).button !== 0
+                                )
+                                  return;
+
+                                // Allow dragging from anywhere in the revealed red area.
+                                swipeDragRef.current.id = recipe.id;
+                                swipeDragRef.current.startX = event.clientX;
+                                swipeDragRef.current.startY = event.clientY;
+                                swipeDragRef.current.startOffset =
+                                  swipeOffsetByRecipeId[recipe.id] ?? 0;
+                                swipeDragRef.current.active = true;
+                                swipeDragRef.current.directionLocked = null;
+                                setSwipeDraggingId(recipe.id);
+                                try {
+                                  (event.currentTarget as any).setPointerCapture?.(
+                                    event.pointerId,
+                                  );
+                                } catch {}
+                              }}
+                              onPointerMove={(event) => {
+                                if (isLocked) return;
+                                if (!swipeDragRef.current.active) return;
+                                if (swipeDragRef.current.id !== recipe.id) return;
+                                const dx = event.clientX - swipeDragRef.current.startX;
+                                const dy = event.clientY - swipeDragRef.current.startY;
+
+                                if (!swipeDragRef.current.directionLocked) {
+                                  const absX = Math.abs(dx);
+                                  const absY = Math.abs(dy);
+                                  if (absX < 6 && absY < 6) return;
+                                  swipeDragRef.current.directionLocked =
+                                    absX > absY ? "x" : "y";
+                                }
+                                if (swipeDragRef.current.directionLocked === "y") return;
+
+                                const allowFullDelete =
+                                  swipeDragRef.current.startOffset < 0;
+                                const maxLeft = allowFullDelete
+                                  ? -FULL_SWIPE_DELETE_PX
+                                  : -DELETE_REVEAL_PX;
+                                const next = Math.max(
+                                  maxLeft,
+                                  Math.min(
+                                    0,
+                                    swipeDragRef.current.startOffset + dx,
+                                  ),
+                                );
+                                setSwipeOffsetByRecipeId((prev) => ({
+                                  ...prev,
+                                  [recipe.id]: next,
+                                }));
+                              }}
+                              onPointerUp={() => {
+                                if (isLocked) return;
+                                if (!swipeDragRef.current.active) return;
+                                if (swipeDragRef.current.id !== recipe.id) return;
+                                const wasOpen = swipeDragRef.current.startOffset < 0;
+                                swipeDragRef.current.active = false;
+                                swipeDragRef.current.directionLocked = null;
+                                setSwipeDraggingId(null);
+                                const cur = swipeOffsetByRecipeId[recipe.id] ?? 0;
+                                if (wasOpen && cur <= -FULL_SWIPE_DELETE_PX + 10) {
+                                  removeRecipe();
+                                  closeSwipe();
+                                  return;
+                                }
+                                const shouldOpen = cur <= -DELETE_REVEAL_PX / 2;
+                                const snap = shouldOpen ? -DELETE_REVEAL_PX : 0;
+                                setSwipeOffsetByRecipeId((prev) => ({
+                                  ...prev,
+                                  [recipe.id]: snap,
+                                }));
+                                setSwipeOpenRecipeId(shouldOpen ? recipe.id : null);
+                              }}
+                              onPointerCancel={() => {
+                                if (isLocked) return;
+                                if (!swipeDragRef.current.active) return;
+                                if (swipeDragRef.current.id !== recipe.id) return;
+                                swipeDragRef.current.active = false;
+                                swipeDragRef.current.directionLocked = null;
+                                setSwipeDraggingId(null);
+                                closeSwipe();
+                              }}
                             >
                               <button
                                 type="button"

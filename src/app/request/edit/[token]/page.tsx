@@ -600,14 +600,6 @@ export default function RequestEditPage() {
                   >
                     Amend quantities
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-accent hover:-translate-y-0.5"
-                  >
-                    Print order list
-                  </button>
                 </div>
               </div>
 
@@ -653,6 +645,16 @@ export default function RequestEditPage() {
                     Add cocktails and set quantities below.
                   </p>
                 )}
+              </div>
+
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-accent hover:-translate-y-0.5"
+                >
+                  Print order list
+                </button>
               </div>
             </div>
 
@@ -835,43 +837,205 @@ export default function RequestEditPage() {
                         recipe.name,
                       );
                       const displayName = normalizeCocktailDisplayName(recipe.name);
+                      const perGuestLabel = perGuestLabelForServings(servings);
+                      const offset = isLocked
+                        ? 0
+                        : swipeOffsetByRecipeId[recipe.id] ?? 0;
+                      const DELETE_REVEAL_PX = 84;
+                      // Delete is a deliberate second action: first swipe opens, then a long swipe deletes.
+                      const FULL_SWIPE_DELETE_PX = 240;
+                      const deleteRevealWidth = Math.max(
+                        DELETE_REVEAL_PX,
+                        Math.min(DELETE_REVEAL_PX * 2.4, -offset),
+                      );
+
+                      const removeRecipe = () => {
+                        setSelectedRecipeIds((prev) => {
+                          const next = new Set(prev);
+                          next.delete(recipe.id);
+                          return next;
+                        });
+                        setIngredientsOpenByRecipeId((prev) => ({
+                          ...prev,
+                          [recipe.id]: false,
+                        }));
+                        setServingsByRecipeId((prev) => ({
+                          ...prev,
+                          [recipe.id]: "0",
+                        }));
+                        setUndoRemoval({
+                          recipeId: recipe.id,
+                          recipeName: displayName,
+                          previousServings: servingsRaw,
+                          expiresAt: Date.now() + 4000,
+                        });
+                      };
+
+                      const closeSwipe = () => {
+                        setSwipeOffsetByRecipeId((prev) => ({ ...prev, [recipe.id]: 0 }));
+                        if (swipeOpenRecipeId === recipe.id) setSwipeOpenRecipeId(null);
+                      };
                       return (
                         <div
                           key={recipe.id}
-                          className={`relative grid gap-4 rounded-[28px] border border-subtle bg-white/70 p-5 ${
-                            ingredientsOpen ? "md:grid-cols-[240px_1fr]" : "md:grid-cols-[240px]"
-                          }`}
+                          data-swipe-row={recipe.id}
+                          className="relative overflow-hidden rounded-[28px] border border-subtle bg-white/70"
                         >
-                          <button
-                            type="button"
-                            disabled={isLocked}
-                            onClick={() => {
-                              setSelectedRecipeIds((prev) => {
-                                const next = new Set(prev);
-                                next.delete(recipe.id);
-                                return next;
-                              });
-                              setIngredientsOpenByRecipeId((prev) => ({
-                                ...prev,
-                                [recipe.id]: false,
-                              }));
-                              setServingsByRecipeId((prev) => ({
-                                ...prev,
-                                [recipe.id]: "0",
-                              }));
-                              setUndoRemoval({
-                                recipeId: recipe.id,
-                                recipeName: displayName,
-                                previousServings: servingsRaw,
-                                expiresAt: Date.now() + 4000,
-                              });
+                          {!isLocked ? (
+                            <div
+                              className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-600/90"
+                              style={{ width: `${deleteRevealWidth}px` }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  removeRecipe();
+                                  closeSwipe();
+                                }}
+                                data-swipe-trash="1"
+                                className="grid h-10 w-10 place-items-center rounded-2xl bg-white/15 text-white hover:bg-white/20"
+                                aria-label={`Remove ${displayName}`}
+                                title="Remove"
+                              >
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  width="20"
+                                  height="20"
+                                  aria-hidden="true"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M3 6h18" />
+                                  <path d="M8 6V4h8v2" />
+                                  <path d="M6 6l1 16h10l1-16" />
+                                  <path d="M10 11v6" />
+                                  <path d="M14 11v6" />
+                                </svg>
+                              </button>
+                            </div>
+                          ) : null}
+
+                          <div
+                            className={`relative grid w-full max-w-full items-start gap-4 bg-white p-5 ${
+                              ingredientsOpen
+                                ? "md:grid-cols-[240px_1fr]"
+                                : "md:grid-cols-[240px]"
+                            }`}
+                            onPointerDown={(event) => {
+                              if (isLocked) return;
+                              if (
+                                (event as any).button !== undefined &&
+                                (event as any).button !== 0
+                              )
+                                return;
+                              const target = event.target as HTMLElement | null;
+                              const tag = (target?.tagName || "").toLowerCase();
+                              if (
+                                tag === "input" ||
+                                tag === "textarea" ||
+                                tag === "select"
+                              )
+                                return;
+                              if ((target as any)?.isContentEditable) return;
+
+                              if (swipeOpenRecipeId && swipeOpenRecipeId !== recipe.id) {
+                                setSwipeOffsetByRecipeId((prev) => ({
+                                  ...prev,
+                                  [swipeOpenRecipeId]: 0,
+                                }));
+                                setSwipeOpenRecipeId(null);
+                              }
+
+                              swipeDragRef.current.id = recipe.id;
+                              swipeDragRef.current.startX = event.clientX;
+                              swipeDragRef.current.startY = event.clientY;
+                              swipeDragRef.current.startOffset =
+                                swipeOffsetByRecipeId[recipe.id] ?? 0;
+                              swipeDragRef.current.active = true;
+                              swipeDragRef.current.directionLocked = null;
+                              setSwipeDraggingId(recipe.id);
+                              try {
+                                (event.currentTarget as any).setPointerCapture?.(
+                                  event.pointerId,
+                                );
+                              } catch {}
                             }}
-                            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/60 text-accent shadow-sm hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-40"
-                            aria-label={`Remove ${displayName}`}
-                            title="Remove"
+                            onPointerMove={(event) => {
+                              if (isLocked) return;
+                              if (!swipeDragRef.current.active) return;
+                              if (swipeDragRef.current.id !== recipe.id) return;
+                              const dx = event.clientX - swipeDragRef.current.startX;
+                              const dy = event.clientY - swipeDragRef.current.startY;
+
+                              if (!swipeDragRef.current.directionLocked) {
+                                const absX = Math.abs(dx);
+                                const absY = Math.abs(dy);
+                                if (absX < 6 && absY < 6) return;
+                                swipeDragRef.current.directionLocked =
+                                  absX > absY ? "x" : "y";
+                              }
+                              if (swipeDragRef.current.directionLocked === "y") return;
+
+                              const allowFullDelete =
+                                swipeDragRef.current.startOffset < 0;
+                              const maxLeft = allowFullDelete
+                                ? -FULL_SWIPE_DELETE_PX
+                                : -DELETE_REVEAL_PX;
+                              const next = Math.max(
+                                maxLeft,
+                                Math.min(
+                                  0,
+                                  swipeDragRef.current.startOffset + dx,
+                                ),
+                              );
+                              setSwipeOffsetByRecipeId((prev) => ({
+                                ...prev,
+                                [recipe.id]: next,
+                              }));
+                            }}
+                            onPointerUp={() => {
+                              if (isLocked) return;
+                              if (!swipeDragRef.current.active) return;
+                              if (swipeDragRef.current.id !== recipe.id) return;
+                              const wasOpen = swipeDragRef.current.startOffset < 0;
+                              swipeDragRef.current.active = false;
+                              swipeDragRef.current.directionLocked = null;
+                              setSwipeDraggingId(null);
+                              const cur = swipeOffsetByRecipeId[recipe.id] ?? 0;
+                              if (wasOpen && cur <= -FULL_SWIPE_DELETE_PX + 10) {
+                                removeRecipe();
+                                closeSwipe();
+                                return;
+                              }
+                              const shouldOpen = cur <= -DELETE_REVEAL_PX / 2;
+                              const snap = shouldOpen ? -DELETE_REVEAL_PX : 0;
+                              setSwipeOffsetByRecipeId((prev) => ({
+                                ...prev,
+                                [recipe.id]: snap,
+                              }));
+                              setSwipeOpenRecipeId(shouldOpen ? recipe.id : null);
+                            }}
+                            onPointerCancel={() => {
+                              if (isLocked) return;
+                              if (!swipeDragRef.current.active) return;
+                              if (swipeDragRef.current.id !== recipe.id) return;
+                              swipeDragRef.current.active = false;
+                              swipeDragRef.current.directionLocked = null;
+                              setSwipeDraggingId(null);
+                              closeSwipe();
+                            }}
+                            style={{
+                              transform: `translateX(${offset}px)`,
+                              touchAction: "pan-y",
+                              transition:
+                                swipeDraggingId === recipe.id
+                                  ? "none"
+                                  : "transform 200ms cubic-bezier(0.2, 0.85, 0.2, 1)",
+                            }}
                           >
-                            <span className="text-lg leading-none">×</span>
-                          </button>
                           <div className="space-y-3">
                             <div className="flex min-w-0 items-center gap-3">
                               <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
@@ -901,9 +1065,9 @@ export default function RequestEditPage() {
                             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                               <span className="flex items-baseline justify-between gap-3">
                                 <span>Quantity</span>
-                                {perGuestLabelForServings(servings) !== null ? (
+                                {perGuestLabel !== null ? (
                                   <span className="text-[11px] font-semibold tracking-normal text-ink-muted">
-                                    ({perGuestLabelForServings(servings)} per guest)
+                                    ({perGuestLabel} per guest)
                                   </span>
                                 ) : null}
                               </span>
@@ -935,7 +1099,7 @@ export default function RequestEditPage() {
                                   }))
                                 }
                                 // iOS Safari zooms when inputs are < 16px font-size.
-                                className="mt-2 w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px]"
+                                className="mt-2 w-full min-w-0 max-w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px] tracking-normal tabular-nums text-ink"
                               />
                             </label>
 
@@ -992,41 +1156,22 @@ export default function RequestEditPage() {
                                   .map((row) => (
                                     <div
                                       key={row.key}
-                                      className="flex items-center justify-between gap-4"
+                                      className="flex min-w-0 items-center justify-between gap-4"
                                     >
-                                      <span className="font-medium text-ink">
+                                      <span className="min-w-0 flex-1 break-words font-medium text-ink">
                                         {row.name}
                                       </span>
-                                      <span>
+                                      <span className="shrink-0">
                                         {row.amount} {row.unit}
                                       </span>
                                     </div>
-                ))}
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-4">
-                <button
-                  type="button"
-                  disabled={isLocked}
-                  onClick={() => {
-                    setStep("select");
-                    pendingScrollRef.current = "select";
-                    window.setTimeout(() => {
-                      selectCocktailsRef.current?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start",
-                      });
-                    }, 50);
-                  }}
-                  className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
-                >
-                  Add/remove drinks
-                </button>
-              </div>
-            </div>
+                                  ))}
+                              </div>
+                            </div>
                           ) : null}
+                          </div>
                         </div>
-                      );
+                    );
                     })}
                 </div>
               )}
@@ -1048,14 +1193,14 @@ export default function RequestEditPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex flex-nowrap items-center justify-between gap-4">
+                    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <button
                         type="button"
                         onClick={() => {
                           pendingScrollRef.current = "select";
                           setStep("select");
                         }}
-                        className="rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent hover:-translate-y-0.5"
+                        className="w-full rounded-full border border-[#6a2e2a]/30 bg-white/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent hover:-translate-y-0.5 sm:w-auto"
                       >
                         Add/remove drinks
                       </button>
@@ -1064,7 +1209,7 @@ export default function RequestEditPage() {
                         type="button"
                         onClick={handleSave}
                         disabled={saving || isLocked}
-                        className="rounded-full bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-on-accent shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="w-full rounded-full bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-on-accent shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                       >
                         {saving ? "Submitting..." : "Submit changes"}
                       </button>
@@ -1095,6 +1240,21 @@ export default function RequestEditPage() {
                         next.add(undoRemoval.recipeId);
                         return next;
                       });
+                      setServingsByRecipeId((prev) => ({
+                        ...prev,
+                        [undoRemoval.recipeId]: undoRemoval.previousServings || "0",
+                      }));
+                      setIngredientsOpenByRecipeId((prev) => ({
+                        ...prev,
+                        [undoRemoval.recipeId]: false,
+                      }));
+                      setSwipeOffsetByRecipeId((prev) => ({
+                        ...prev,
+                        [undoRemoval.recipeId]: 0,
+                      }));
+                      if (swipeOpenRecipeId === undoRemoval.recipeId) {
+                        setSwipeOpenRecipeId(null);
+                      }
                       setUndoRemoval(null);
                     }}
                     className="rounded-full bg-accent px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-on-accent hover:-translate-y-0.5"

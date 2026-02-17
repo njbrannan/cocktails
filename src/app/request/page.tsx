@@ -668,9 +668,6 @@ export default function RequestPage() {
                                 how many cocktails{" "}
                                 <span className="font-semibold text-ink">total</span> per
                                 guest!
-                                <span className="mt-1 block text-ink/60">
-                                  Suggested drinks: {totalSuggested}
-                                </span>
                               </p>
                             );
                           }

@@ -914,7 +914,7 @@ export default function App() {
                 <div style={{ height: 10 }} />
                 <div className="muted" style={{ fontSize: 12, lineHeight: 1.35 }}>
                   <div>{suggestedLine}</div>
-                  {suggestedTotalDrinks ? (
+                  {occasion !== "custom" && suggestedTotalDrinks ? (
                     <div style={{ marginTop: 3, color: "rgba(21, 18, 16, 0.6)" }}>
                       Suggested drinks: {suggestedTotalDrinks}
                     </div>

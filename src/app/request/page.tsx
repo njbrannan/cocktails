@@ -12,6 +12,7 @@ import {
 import { loadCachedRecipes, saveCachedRecipes } from "@/lib/offlineRecipes";
 import { useEdgeSwipeNav } from "@/hooks/useEdgeSwipeNav";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 const ORDER_STORAGE_KEY = "get-involved:order:v1";
@@ -143,18 +144,56 @@ export default function RequestPage() {
     }
   };
 
-  const occasionGuidance = (value: Occasion) => {
+  const nonAlcoholicLink = (
+    <a
+      href="https://www.getinvolved.com.au/cocktails/virgin-espresso-martini"
+      target="_blank"
+      rel="noreferrer noopener"
+      className="underline underline-offset-2"
+    >
+      non-alcoholic options
+    </a>
+  );
+
+  const occasionGuidance = (value: Occasion): ReactNode => {
     switch (value) {
       case "relaxed":
-        return "Light planning: allow time for food, water, and non-alcoholic options. This planner estimates total stock required, not consumption.";
+        return (
+          <>
+            Light planning: allow time for food, water, and {nonAlcoholicLink}. This
+            planner estimates total stock required, not consumption.
+          </>
+        );
       case "cocktail":
-        return "A classic pace is 1–2 cocktails per guest per hour, alongside water and non-alcoholic options. This planner estimates total stock required, not consumption.";
+        return (
+          <>
+            A classic pace is 1–2 cocktails per guest per hour, alongside water and{" "}
+            {nonAlcoholicLink}. This planner estimates total stock required, not
+            consumption.
+          </>
+        );
       case "wedding":
-        return "Weddings vary a lot—plan for a steady flow plus water and non-alcoholic options. This planner estimates total stock required, not consumption.";
+        return (
+          <>
+            Weddings vary a lot—plan for a steady flow plus water and {nonAlcoholicLink}.
+            This planner estimates total stock required, not consumption.
+          </>
+        );
       case "big-night":
-        return "Provide approximately 1–2 cocktails per guest per hour, alongside water and non-alcoholic options. This planner estimates total stock required, not consumption.";
+        return (
+          <>
+            Provide approximately 1–2 cocktails per guest per hour, alongside water and{" "}
+            {nonAlcoholicLink}. This planner estimates total stock required, not
+            consumption.
+          </>
+        );
       case "custom":
-        return "You’re in control—consider event length, food, water, and non-alcoholic options. This planner estimates total stock required, not consumption.";
+        return (
+          <>
+            You’re in control—consider event length, food, water, and {nonAlcoholicLink}.
+            This planner estimates total stock required, not consumption.
+          </>
+        );
       default:
         return null;
     }

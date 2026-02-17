@@ -21,6 +21,7 @@ const PHOTO_OVERRIDES_BY_SLUG: Record<string, "png" | "jpg" | "webp"> = {
   negroni: "webp",
   "old-fashioned": "webp",
   "pornstar-martini": "webp",
+  "virgin-espresso-martini": "webp",
   "whiskey-sour": "webp",
 };
 

@@ -776,6 +776,24 @@ export default function RequestPage() {
                       const displayName = normalizeCocktailDisplayName(recipe.name);
                       const offset = swipeOffsetByRecipeId[recipe.id] ?? 0;
                       const DELETE_REVEAL_PX = 84;
+                      const FULL_SWIPE_DELETE_PX = 132;
+
+                      const removeRecipe = () => {
+                        setSelectedRecipeIds((prev) => {
+                          const next = new Set(prev);
+                          next.delete(recipe.id);
+                          return next;
+                        });
+                        setIngredientsOpenByRecipeId((prev) => ({
+                          ...prev,
+                          [recipe.id]: false,
+                        }));
+                        setUndoRemoval({
+                          recipeId: recipe.id,
+                          recipeName: displayName,
+                          expiresAt: Date.now() + 4000,
+                        });
+                      };
 
                       const closeSwipe = () => {
                         setSwipeOffsetByRecipeId((prev) => ({ ...prev, [recipe.id]: 0 }));
@@ -792,20 +810,7 @@ export default function RequestPage() {
                             <button
                               type="button"
                               onClick={() => {
-                                setSelectedRecipeIds((prev) => {
-                                  const next = new Set(prev);
-                                  next.delete(recipe.id);
-                                  return next;
-                                });
-                                setIngredientsOpenByRecipeId((prev) => ({
-                                  ...prev,
-                                  [recipe.id]: false,
-                                }));
-                                setUndoRemoval({
-                                  recipeId: recipe.id,
-                                  recipeName: displayName,
-                                  expiresAt: Date.now() + 4000,
-                                });
+                                removeRecipe();
                                 closeSwipe();
                               }}
                               data-swipe-trash="1"
@@ -884,7 +889,7 @@ export default function RequestPage() {
 
                               // We only reveal to the left; clamp between -DELETE_REVEAL_PX and 0.
                               const next = Math.max(
-                                -DELETE_REVEAL_PX,
+                                -FULL_SWIPE_DELETE_PX,
                                 Math.min(0, swipeDragRef.current.startOffset + dx),
                               );
                               setSwipeOffsetByRecipeId((prev) => ({ ...prev, [recipe.id]: next }));
@@ -896,6 +901,12 @@ export default function RequestPage() {
                               swipeDragRef.current.directionLocked = null;
                               setSwipeDraggingId(null);
                               const cur = swipeOffsetByRecipeId[recipe.id] ?? 0;
+                              // Full swipe (past the reveal width) deletes immediately, iOS-style.
+                              if (cur <= -FULL_SWIPE_DELETE_PX + 10) {
+                                removeRecipe();
+                                closeSwipe();
+                                return;
+                              }
                               const shouldOpen = cur <= -DELETE_REVEAL_PX / 2;
                               const snap = shouldOpen ? -DELETE_REVEAL_PX : 0;
                               setSwipeOffsetByRecipeId((prev) => ({ ...prev, [recipe.id]: snap }));

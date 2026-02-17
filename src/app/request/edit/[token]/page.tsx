@@ -107,9 +107,32 @@ export default function RequestEditPage() {
   const [ingredientsOpenByRecipeId, setIngredientsOpenByRecipeId] = useState<
     Record<string, boolean>
   >({});
+  const [swipeOffsetByRecipeId, setSwipeOffsetByRecipeId] = useState<
+    Record<string, number>
+  >({});
+  const swipeDragRef = useRef<{
+    id: string | null;
+    startX: number;
+    startY: number;
+    startOffset: number;
+    active: boolean;
+    directionLocked: "x" | "y" | null;
+  }>({
+    id: null,
+    startX: 0,
+    startY: 0,
+    startOffset: 0,
+    active: false,
+    directionLocked: null,
+  });
+  const [swipeDraggingId, setSwipeDraggingId] = useState<string | null>(null);
+  const [swipeOpenRecipeId, setSwipeOpenRecipeId] = useState<string | null>(
+    null,
+  );
   const [undoRemoval, setUndoRemoval] = useState<{
     recipeId: string;
     recipeName: string;
+    previousServings: string;
     expiresAt: number;
   } | null>(null);
   const [step, setStep] = useState<"select" | "quantity">("select");
@@ -165,6 +188,29 @@ export default function RequestEditPage() {
     }, 100);
     return () => window.clearInterval(id);
   }, [undoRemoval]);
+
+  useEffect(() => {
+    if (!swipeOpenRecipeId) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      if (target.closest("[data-swipe-trash='1']")) return;
+
+      if (!target.closest(`[data-swipe-row='${swipeOpenRecipeId}']`)) {
+        setSwipeOffsetByRecipeId((prev) => ({ ...prev, [swipeOpenRecipeId]: 0 }));
+        setSwipeOpenRecipeId(null);
+      }
+    };
+
+    window.addEventListener("pointerdown", onPointerDown, { capture: true });
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, {
+        capture: true,
+      } as any);
+    };
+  }, [swipeOpenRecipeId]);
 
   const normalizeIngredient = (value: Ingredient | Ingredient[] | null) => {
     if (!value) return null;
@@ -724,23 +770,15 @@ export default function RequestEditPage() {
                           }
                         }}
                         className={`group relative overflow-hidden rounded-[26px] border bg-white/80 text-left shadow-sm transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 ${
-                          isSelected
-                            ? "border-[#6a2e2a] ring-2 ring-[#6a2e2a]/20"
-                            : "border-subtle"
+                          isSelected ? "gi-selected" : "border-subtle"
                         }`}
                       >
-                        <div
-                          className={`relative h-[180px] w-full ${
-                            isSelected
-                              ? "bg-gradient-to-br from-[#fbf3ea] to-[#efe0d3]"
-                              : "bg-white/80"
-                          }`}
-                        >
+                        <div className="relative h-[180px] w-full bg-white/80">
                           <img
                             src={imageSrc}
                             alt={recipe.name}
                             loading="lazy"
-                            className="h-full w-full object-contain px-6 pb-8 pt-4"
+                            className="h-full w-full object-contain px-6 pb-14 pt-4"
                             onError={(event) => {
                               const img = event.currentTarget;
                               const stage = Number(img.dataset.fallbackStage || "0") || 0;
@@ -754,32 +792,27 @@ export default function RequestEditPage() {
                               img.src = next || PLACEHOLDER_IMAGE;
                             }}
                           />
-                          {isSelected ? (
-                            <div className="absolute left-3 top-3 rounded-full bg-accent px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-on-accent">
-                              Selected
-                            </div>
-                          ) : null}
+                          <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-white/70 px-2.5 py-0.5 text-[10px] font-semibold tracking-normal text-ink/80 backdrop-blur">
+                            Tap to {isSelected ? "remove" : "add"}
+                          </div>
 
-                          {/* Always show name + action text; no background box so the drink stays visible */}
                           <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
-                            <p
-                              className="font-display text-lg text-ink"
+                            <div
+                              className="flex items-center justify-between gap-3"
                               style={{
                                 textShadow:
                                   "0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(255,255,255,0.35)",
                               }}
                             >
-                              {displayName}
-                            </p>
-                            <p
-                              className="mt-1 text-[11px] text-ink/75"
-                              style={{
-                                textShadow:
-                                  "0 1px 0 rgba(255,255,255,0.85), 0 2px 10px rgba(255,255,255,0.3)",
-                              }}
-                            >
-                              Tap to {isSelected ? "remove" : "add"}
-                            </p>
+                              <p className="min-w-0 flex-1 truncate font-display text-lg text-ink">
+                                {displayName}
+                              </p>
+                              {isSelected ? (
+                                <span className="grid h-6 w-6 place-items-center rounded-full gi-selected-chip text-[14px] font-black leading-none shadow-sm">
+                                  ✓
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       </button>
@@ -829,6 +862,7 @@ export default function RequestEditPage() {
                               setUndoRemoval({
                                 recipeId: recipe.id,
                                 recipeName: displayName,
+                                previousServings: servingsRaw,
                                 expiresAt: Date.now() + 4000,
                               });
                             }}

@@ -776,7 +776,13 @@ export default function RequestPage() {
                       const displayName = normalizeCocktailDisplayName(recipe.name);
                       const offset = swipeOffsetByRecipeId[recipe.id] ?? 0;
                       const DELETE_REVEAL_PX = 84;
-                      const FULL_SWIPE_DELETE_PX = 132;
+                      // Full delete should be a deliberate second action: first swipe opens (reveals),
+                      // then a follow-up long swipe deletes (iOS alarms style).
+                      const FULL_SWIPE_DELETE_PX = 240;
+                      const deleteRevealWidth = Math.max(
+                        DELETE_REVEAL_PX,
+                        Math.min(DELETE_REVEAL_PX * 2.4, -offset),
+                      );
 
                       const removeRecipe = () => {
                         setSelectedRecipeIds((prev) => {
@@ -806,7 +812,10 @@ export default function RequestPage() {
                           className="relative overflow-hidden rounded-[28px] border border-subtle bg-white/70"
                         >
                           {/* Swipe-reveal delete action (tap trash) */}
-                          <div className="absolute inset-y-0 right-0 flex w-[84px] items-center justify-center bg-red-600/90">
+                          <div
+                            className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-600/90"
+                            style={{ width: `${deleteRevealWidth}px` }}
+                          >
                             <button
                               type="button"
                               onClick={() => {
@@ -888,8 +897,14 @@ export default function RequestPage() {
                               if (swipeDragRef.current.directionLocked === "y") return;
 
                               // We only reveal to the left; clamp between -DELETE_REVEAL_PX and 0.
+                              // First swipe: clamp to the reveal width.
+                              // Second swipe (starting with row already open): allow a longer, deliberate swipe-to-delete.
+                              const allowFullDelete = swipeDragRef.current.startOffset < 0;
+                              const maxLeft = allowFullDelete
+                                ? -FULL_SWIPE_DELETE_PX
+                                : -DELETE_REVEAL_PX;
                               const next = Math.max(
-                                -FULL_SWIPE_DELETE_PX,
+                                maxLeft,
                                 Math.min(0, swipeDragRef.current.startOffset + dx),
                               );
                               setSwipeOffsetByRecipeId((prev) => ({ ...prev, [recipe.id]: next }));
@@ -901,8 +916,9 @@ export default function RequestPage() {
                               swipeDragRef.current.directionLocked = null;
                               setSwipeDraggingId(null);
                               const cur = swipeOffsetByRecipeId[recipe.id] ?? 0;
-                              // Full swipe (past the reveal width) deletes immediately, iOS-style.
-                              if (cur <= -FULL_SWIPE_DELETE_PX + 10) {
+                              // Only allow full-swipe delete if the row was already opened (second, deliberate action).
+                              const wasOpen = swipeDragRef.current.startOffset < 0;
+                              if (wasOpen && cur <= -FULL_SWIPE_DELETE_PX + 10) {
                                 removeRecipe();
                                 closeSwipe();
                                 return;

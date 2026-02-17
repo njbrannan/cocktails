@@ -13,7 +13,7 @@ import { loadCachedRecipes, saveCachedRecipes } from "@/lib/offlineRecipes";
 import { useEdgeSwipeNav } from "@/hooks/useEdgeSwipeNav";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const ORDER_STORAGE_KEY = "get-involved:order:v1";
 
@@ -103,6 +103,16 @@ export default function RequestPage() {
   const [ingredientsOpenByRecipeId, setIngredientsOpenByRecipeId] = useState<
     Record<string, boolean>
   >({});
+  const [swipeOffsetByRecipeId, setSwipeOffsetByRecipeId] = useState<Record<string, number>>(
+    {},
+  );
+  const swipeDragRef = useRef<{
+    id: string | null;
+    startX: number;
+    startOffset: number;
+    active: boolean;
+  }>({ id: null, startX: 0, startOffset: 0, active: false });
+  const [swipeOpenRecipeId, setSwipeOpenRecipeId] = useState<string | null>(null);
   const [undoRemoval, setUndoRemoval] = useState<{
     recipeId: string;
     recipeName: string;
@@ -737,39 +747,122 @@ export default function RequestPage() {
                         recipe.name,
                       );
                       const displayName = normalizeCocktailDisplayName(recipe.name);
+                      const offset = swipeOffsetByRecipeId[recipe.id] ?? 0;
+                      const DELETE_REVEAL_PX = 72;
+
+                      const closeSwipe = () => {
+                        setSwipeOffsetByRecipeId((prev) => ({ ...prev, [recipe.id]: 0 }));
+                        if (swipeOpenRecipeId === recipe.id) setSwipeOpenRecipeId(null);
+                      };
                       return (
-                        <div
-                          key={recipe.id}
-                          className={`relative grid w-full max-w-full gap-4 overflow-hidden rounded-[28px] border border-subtle bg-white/70 p-5 ${
-                            ingredientsOpen ? "md:grid-cols-[240px_1fr]" : "md:grid-cols-[240px]"
-                          }`}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedRecipeIds((prev) => {
-                                const next = new Set(prev);
-                                next.delete(recipe.id);
-                                return next;
-                              });
-                              setIngredientsOpenByRecipeId((prev) => ({
-                                ...prev,
-                                [recipe.id]: false,
-                              }));
-                              setUndoRemoval({
-                                recipeId: recipe.id,
-                                recipeName: displayName,
-                                expiresAt: Date.now() + 4000,
-                              });
+                        <div key={recipe.id} className="relative overflow-hidden rounded-[28px]">
+                          {/* Swipe-reveal delete action (tap trash) */}
+                          <div className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-red-600/90">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedRecipeIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.delete(recipe.id);
+                                  return next;
+                                });
+                                setIngredientsOpenByRecipeId((prev) => ({
+                                  ...prev,
+                                  [recipe.id]: false,
+                                }));
+                                setUndoRemoval({
+                                  recipeId: recipe.id,
+                                  recipeName: displayName,
+                                  expiresAt: Date.now() + 4000,
+                                });
+                                closeSwipe();
+                              }}
+                              className="grid h-10 w-10 place-items-center rounded-2xl bg-white/15 text-white hover:bg-white/20"
+                              aria-label={`Remove ${displayName}`}
+                              title="Remove"
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                width="20"
+                                height="20"
+                                aria-hidden="true"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M3 6h18" />
+                                <path d="M8 6V4h8v2" />
+                                <path d="M6 6l1 16h10l1-16" />
+                                <path d="M10 11v6" />
+                                <path d="M14 11v6" />
+                              </svg>
+                            </button>
+                          </div>
+
+                          {/* Foreground card (draggable) */}
+                          <div
+                            className={`relative grid w-full max-w-full items-start gap-4 border border-subtle bg-white/70 p-5 transition-transform ${
+                              ingredientsOpen ? "md:grid-cols-[240px_1fr]" : "md:grid-cols-[240px]"
+                            }`}
+                            style={{ transform: `translateX(${offset}px)` }}
+                            onPointerDown={(event) => {
+                              // Only handle primary pointer (finger/mouse). Don't interfere with inputs.
+                              if ((event as any).button !== undefined && (event as any).button !== 0)
+                                return;
+                              const target = event.target as HTMLElement | null;
+                              const tag = (target?.tagName || "").toLowerCase();
+                              if (tag === "input" || tag === "textarea" || tag === "select") return;
+                              if ((target as any)?.isContentEditable) return;
+
+                              // Close any other open swipe row.
+                              if (swipeOpenRecipeId && swipeOpenRecipeId !== recipe.id) {
+                                setSwipeOffsetByRecipeId((prev) => ({
+                                  ...prev,
+                                  [swipeOpenRecipeId]: 0,
+                                }));
+                                setSwipeOpenRecipeId(null);
+                              }
+
+                              swipeDragRef.current.id = recipe.id;
+                              swipeDragRef.current.startX = event.clientX;
+                              swipeDragRef.current.startOffset = swipeOffsetByRecipeId[recipe.id] ?? 0;
+                              swipeDragRef.current.active = true;
+                              try {
+                                (event.currentTarget as any).setPointerCapture?.(event.pointerId);
+                              } catch {}
                             }}
-                            className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white/60 text-accent shadow-sm hover:bg-white/80"
-                            aria-label={`Remove ${displayName}`}
-                            title="Remove"
+                            onPointerMove={(event) => {
+                              if (!swipeDragRef.current.active) return;
+                              if (swipeDragRef.current.id !== recipe.id) return;
+                              const dx = event.clientX - swipeDragRef.current.startX;
+                              // We only reveal to the left; clamp between -DELETE_REVEAL_PX and 0.
+                              const next = Math.max(
+                                -DELETE_REVEAL_PX,
+                                Math.min(0, swipeDragRef.current.startOffset + dx),
+                              );
+                              setSwipeOffsetByRecipeId((prev) => ({ ...prev, [recipe.id]: next }));
+                            }}
+                            onPointerUp={() => {
+                              if (!swipeDragRef.current.active) return;
+                              if (swipeDragRef.current.id !== recipe.id) return;
+                              swipeDragRef.current.active = false;
+                              const cur = swipeOffsetByRecipeId[recipe.id] ?? 0;
+                              const shouldOpen = cur <= -DELETE_REVEAL_PX / 2;
+                              const snap = shouldOpen ? -DELETE_REVEAL_PX : 0;
+                              setSwipeOffsetByRecipeId((prev) => ({ ...prev, [recipe.id]: snap }));
+                              setSwipeOpenRecipeId(shouldOpen ? recipe.id : null);
+                            }}
+                            onPointerCancel={() => {
+                              if (!swipeDragRef.current.active) return;
+                              if (swipeDragRef.current.id !== recipe.id) return;
+                              swipeDragRef.current.active = false;
+                              closeSwipe();
+                            }}
                           >
-                            <span className="text-[13px] leading-none">×</span>
-                          </button>
-                          <div className="space-y-3">
-                            <div className="flex min-w-0 items-center gap-3 pr-12">
+                            <div className="space-y-3">
+                            <div className="flex min-w-0 items-center gap-3 pr-2">
                               <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
                                 <img
                                   src={imageSrc}
@@ -906,6 +999,7 @@ export default function RequestPage() {
                               </div>
                             </div>
                           ) : null}
+                          </div>
                         </div>
                       );
                     })}

@@ -582,17 +582,17 @@ export default function RequestPage() {
                             img.src = next || COCKTAIL_PLACEHOLDER_IMAGE;
                           }}
                         />
-                        {/* Top-right status + hint (kept away from long drink names at the bottom) */}
-                        <div className="pointer-events-none absolute right-3 top-3 flex flex-col items-end gap-1">
-                          {isSelected ? (
-                            <div className="rounded-full gi-selected-chip px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]">
-                              Selected
-                            </div>
-                          ) : null}
-                          <div className="rounded-full bg-white/70 px-2.5 py-0.5 text-[10px] font-semibold tracking-normal text-ink/80 backdrop-blur">
-                            Tap to {isSelected ? "remove" : "add"}
-                          </div>
+                        {/* Action hint: keep in one consistent place + style */}
+                        <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-white/70 px-2.5 py-0.5 text-[10px] font-semibold tracking-normal text-ink/80 backdrop-blur">
+                          Tap to {isSelected ? "remove" : "add"}
                         </div>
+
+                        {/* Selected indicator: small green tick bottom-right of the photo area */}
+                        {isSelected ? (
+                          <div className="pointer-events-none absolute bottom-12 right-3 grid h-6 w-6 place-items-center rounded-full gi-selected-chip text-[14px] font-black leading-none shadow-sm">
+                            ✓
+                          </div>
+                        ) : null}
 
                           {/* Always show name + action text; keep it off the photo area */}
                           <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">

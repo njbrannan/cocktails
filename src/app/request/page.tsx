@@ -630,6 +630,13 @@ export default function RequestPage() {
                               <span className="mt-1 block text-ink/60">
                                 Suggested drinks: {totalSuggested}
                               </span>
+                              {occasion === "big-night" ? (
+                                <span className="mt-1 block text-[11px] leading-snug text-ink/60">
+                                  Provide approximately 1–2 cocktails per guest per hour,
+                                  alongside water and non-alcoholic options. This planner
+                                  estimates total stock required, not consumption.
+                                </span>
+                              ) : null}
                             </p>
                           );
                         })()}

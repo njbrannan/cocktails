@@ -556,14 +556,20 @@ export default function RequestPage() {
                               const current = img.getAttribute("src") || "";
                               const next = resolveNextCocktailImageSrc(current);
                               img.dataset.fallbackStage = String(stage + 1);
-                              img.src = next || COCKTAIL_PLACEHOLDER_IMAGE;
-                            }}
-                          />
+                            img.src = next || COCKTAIL_PLACEHOLDER_IMAGE;
+                          }}
+                        />
+                        {/* Top-right status + hint (kept away from long drink names at the bottom) */}
+                        <div className="pointer-events-none absolute right-3 top-3 flex flex-col items-end gap-1">
                           {isSelected ? (
-                            <div className="absolute right-3 top-3 rounded-full gi-selected-chip px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]">
+                            <div className="rounded-full gi-selected-chip px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]">
                               Selected
                             </div>
                           ) : null}
+                          <div className="rounded-full bg-white/70 px-2.5 py-0.5 text-[10px] font-semibold tracking-normal text-ink/80 backdrop-blur">
+                            Tap to {isSelected ? "remove" : "add"}
+                          </div>
+                        </div>
 
                           {/* Always show name + action text; keep it off the photo area */}
                           <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-4 pt-2 text-left">
@@ -576,11 +582,6 @@ export default function RequestPage() {
                             >
                               {displayName}
                             </p>
-                          </div>
-
-                          {/* Action hint bottom-right */}
-                          <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/70 px-2.5 py-0.5 text-[10px] font-semibold tracking-normal text-ink/80 backdrop-blur">
-                            Tap to {isSelected ? "remove" : "add"}
                           </div>
                         </div>
                       </button>
@@ -738,14 +739,14 @@ export default function RequestPage() {
                                 expiresAt: Date.now() + 4000,
                               });
                             }}
-                            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/60 text-accent shadow-sm hover:bg-white/80"
+                            className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full border border-black/10 bg-white/60 text-accent shadow-sm hover:bg-white/80"
                             aria-label={`Remove ${displayName}`}
                             title="Remove"
                           >
-                            <span className="text-lg leading-none">×</span>
+                            <span className="text-base leading-none">×</span>
                           </button>
                           <div className="space-y-3">
-                            <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex min-w-0 items-center gap-3 pr-10">
                               <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
                                 <img
                                   src={imageSrc}

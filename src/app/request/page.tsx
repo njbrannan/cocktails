@@ -740,7 +740,7 @@ export default function RequestPage() {
                       return (
                         <div
                           key={recipe.id}
-                          className={`relative grid gap-4 overflow-hidden rounded-[28px] border border-subtle bg-white/70 p-5 ${
+                          className={`relative grid w-full max-w-full gap-4 overflow-hidden rounded-[28px] border border-subtle bg-white/70 p-5 ${
                             ingredientsOpen ? "md:grid-cols-[240px_1fr]" : "md:grid-cols-[240px]"
                           }`}
                         >
@@ -762,14 +762,14 @@ export default function RequestPage() {
                                 expiresAt: Date.now() + 4000,
                               });
                             }}
-                            className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full border border-black/10 bg-white/60 text-accent shadow-sm hover:bg-white/80"
+                            className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white/60 text-accent shadow-sm hover:bg-white/80"
                             aria-label={`Remove ${displayName}`}
                             title="Remove"
                           >
-                            <span className="text-base leading-none">×</span>
+                            <span className="text-[13px] leading-none">×</span>
                           </button>
                           <div className="space-y-3">
-                            <div className="flex min-w-0 items-center gap-3 pr-10">
+                            <div className="flex min-w-0 items-center gap-3 pr-12">
                               <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-white/70 p-1">
                                 <img
                                   src={imageSrc}

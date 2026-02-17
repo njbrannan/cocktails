@@ -264,6 +264,29 @@ export default function RequestPage() {
     return () => window.clearInterval(id);
   }, [undoRemoval]);
 
+  useEffect(() => {
+    if (!swipeOpenRecipeId) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      // If they tap the red bin button, let the click happen.
+      if (target.closest("[data-swipe-trash='1']")) return;
+
+      // If they tap anywhere outside the currently-open row, close it (iOS-style).
+      if (!target.closest(`[data-swipe-row='${swipeOpenRecipeId}']`)) {
+        setSwipeOffsetByRecipeId((prev) => ({ ...prev, [swipeOpenRecipeId]: 0 }));
+        setSwipeOpenRecipeId(null);
+      }
+    };
+
+    window.addEventListener("pointerdown", onPointerDown, { capture: true });
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, { capture: true } as any);
+    };
+  }, [swipeOpenRecipeId]);
+
   const loadMenu = async () => {
     setError(null);
     setMenuLoading(true);
@@ -761,6 +784,7 @@ export default function RequestPage() {
                       return (
                         <div
                           key={recipe.id}
+                          data-swipe-row={recipe.id}
                           className="relative overflow-hidden rounded-[28px] border border-subtle bg-white/70"
                         >
                           {/* Swipe-reveal delete action (tap trash) */}
@@ -784,6 +808,7 @@ export default function RequestPage() {
                                 });
                                 closeSwipe();
                               }}
+                              data-swipe-trash="1"
                               className="grid h-10 w-10 place-items-center rounded-2xl bg-white/15 text-white hover:bg-white/20"
                               aria-label={`Remove ${displayName}`}
                               title="Remove"
@@ -810,7 +835,7 @@ export default function RequestPage() {
 
                           {/* Foreground card (draggable) */}
                           <div
-                            className={`relative grid w-full max-w-full items-start gap-4 bg-transparent p-5 ${
+                            className={`relative grid w-full max-w-full items-start gap-4 bg-white p-5 ${
                               ingredientsOpen ? "md:grid-cols-[240px_1fr]" : "md:grid-cols-[240px]"
                             }`}
                             onPointerDown={(event) => {

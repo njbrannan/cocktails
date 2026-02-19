@@ -13,6 +13,19 @@ import {
 } from "@/lib/cocktailImages";
 import { useEdgeSwipeNav } from "@/hooks/useEdgeSwipeNav";
 
+function formatAud(amount: number) {
+  if (!Number.isFinite(amount) || amount <= 0) return "";
+  try {
+    return new Intl.NumberFormat("en-AU", {
+      style: "currency",
+      currency: "AUD",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `$${Math.round(amount)}`;
+  }
+}
+
 type EventRecord = {
   id: string;
   title: string | null;
@@ -525,7 +538,11 @@ export default function RequestEditPage() {
               <li key={item.ingredientId} className="flex items-baseline justify-between gap-6">
                 <span>
                   <span className="font-medium">{item.name}</span>{" "}
-                  <span className="text-black/60">({item.type})</span>
+                  <span className="text-black/60">
+                    ({item.type}
+                    {item.totalCost ? ` · ${formatAud(item.totalCost)}` : ""}
+                    )
+                  </span>
                 </span>
                 <span className="tabular-nums text-right">
                   {item.bottlesNeeded ? (
@@ -1517,6 +1534,7 @@ export default function RequestEditPage() {
                         </p>
                         <p className="text-xs uppercase tracking-[0.2em] text-accent">
                           {item.type}
+                          {item.totalCost ? ` (${formatAud(item.totalCost)})` : ""}
                         </p>
                       </div>
                       <div className="text-right">

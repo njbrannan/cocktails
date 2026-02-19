@@ -85,6 +85,19 @@ function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function formatAud(amount: number) {
+  if (!Number.isFinite(amount) || amount <= 0) return "";
+  try {
+    return new Intl.NumberFormat("en-AU", {
+      style: "currency",
+      currency: "AUD",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `$${Math.round(amount)}`;
+  }
+}
+
 export default function RequestOrderPage() {
   const router = useRouter();
   const orderBartendersRef = useRef<HTMLDivElement | null>(null);
@@ -125,18 +138,7 @@ export default function RequestOrderPage() {
     return Number.isFinite(sum) ? sum : 0;
   }, [orderList]);
 
-  const formattedEstimatedCost = useMemo(() => {
-    if (!estimatedCost) return "";
-    try {
-      return new Intl.NumberFormat("en-AU", {
-        style: "currency",
-        currency: "AUD",
-        maximumFractionDigits: 0,
-      }).format(estimatedCost);
-    } catch {
-      return `$${Math.round(estimatedCost)}`;
-    }
-  }, [estimatedCost]);
+  const formattedEstimatedCost = useMemo(() => formatAud(estimatedCost), [estimatedCost]);
 
   useEdgeSwipeNav({
     canGoBack: true,
@@ -726,7 +728,11 @@ export default function RequestOrderPage() {
               <li key={item.ingredientId} className="flex items-baseline justify-between gap-6">
                 <span>
                   <span className="font-medium">{item.name}</span>{" "}
-                  <span className="text-black/60">({item.type})</span>
+                  <span className="text-black/60">
+                    ({item.type}
+                    {item.totalCost ? ` · ${formatAud(item.totalCost)}` : ""}
+                    )
+                  </span>
                 </span>
                 <span className="tabular-nums text-right">
                   {item.bottlesNeeded ? (
@@ -1022,6 +1028,7 @@ export default function RequestOrderPage() {
                   )}
                   <p className="text-[11px] uppercase tracking-[0.2em] text-accent">
                     {item.type}
+                    {item.totalCost ? ` (${formatAud(item.totalCost)})` : ""}
                   </p>
                 </div>
                 <div className="shrink-0 text-right tabular-nums">

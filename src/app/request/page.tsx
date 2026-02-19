@@ -50,6 +50,11 @@ type Ingredient = {
   unit: string | null;
   purchase_url?: string | null;
   price?: number | null;
+  ingredient_packs?: Array<{
+    pack_size: number;
+    pack_price: number;
+    is_active: boolean;
+  }> | null;
 };
 
 type RecipeIngredient = {
@@ -306,12 +311,26 @@ export default function RequestPage() {
   const loadMenu = async () => {
     setError(null);
     setMenuLoading(true);
-    const { data, error: recipeError } = await supabase
+    const selectWithPacks =
+      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, is_active)))";
+    const selectWithoutPacks =
+      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
+
+    let { data, error: recipeError } = await supabase
       .from("recipes")
-      .select(
-        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))",
-      )
+      .select(selectWithPacks)
       .eq("is_active", true);
+
+    if (
+      recipeError &&
+      (String((recipeError as any).code || "") === "42703" ||
+        String(recipeError.message || "").toLowerCase().includes("ingredient_packs"))
+    ) {
+      ({ data, error: recipeError } = await supabase
+        .from("recipes")
+        .select(selectWithoutPacks)
+        .eq("is_active", true));
+    }
 
     if (recipeError) {
       // If offline (or Supabase is unreachable), fall back to the last cached menu.
@@ -467,6 +486,13 @@ export default function RequestPage() {
             bottleSizeMl: ingredient.bottle_size_ml,
             purchaseUrl: ingredient.purchase_url,
             price: ingredient.price ?? null,
+            packOptions:
+              ingredient.ingredient_packs
+                ?.filter((p) => p?.is_active)
+                .map((p) => ({
+                  packSize: Number(p.pack_size) || 0,
+                  packPrice: Number(p.pack_price) || 0,
+                })) ?? null,
           },
         ];
       }),

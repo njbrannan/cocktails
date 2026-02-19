@@ -203,8 +203,18 @@ function formatOrderListHtml(
 ) {
   const rows = totals
     .map((t) => {
-      const right = t.bottlesNeeded
-        ? `${t.total} ${t.unit} · ${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit}`
+      const pack =
+        t.packPlan && t.packPlan.length
+          ? t.packPlan
+              .slice()
+              .sort((a, b) => b.packSize - a.packSize)
+              .map((p) => `${p.count} × ${p.packSize}${t.unit}`)
+              .join(" + ")
+          : t.bottlesNeeded
+            ? `${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit}`
+            : "";
+      const right = pack
+        ? `${t.total} ${t.unit} · ${pack}`
         : `${t.total} ${t.unit}`;
       return `<tr>
   <td style="padding:8px 10px;border-bottom:1px solid #eee"><strong>${escapeHtml(t.name)}</strong><br/><span style="color:#666;font-size:12px">${escapeHtml(t.type)}</span></td>
@@ -217,12 +227,26 @@ function formatOrderListHtml(
 }
 
 async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
-  const { data, error } = await supabaseServer
+  const selectWithPacks =
+    "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, is_active))))";
+  const selectWithoutPacks =
+    "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price)))";
+
+  let { data, error } = await supabaseServer
     .from("event_recipes")
-    .select(
-      "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price)))",
-    )
+    .select(selectWithPacks)
     .eq("event_id", eventId);
+
+  if (
+    error &&
+    (String((error as any).code || "") === "42703" ||
+      String(error.message || "").toLowerCase().includes("ingredient_packs"))
+  ) {
+    ({ data, error } = await supabaseServer
+      .from("event_recipes")
+      .select(selectWithoutPacks)
+      .eq("event_id", eventId));
+  }
 
   if (error) {
     throw new Error(error.message);
@@ -258,6 +282,12 @@ async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
           bottleSizeMl: ingredient.bottle_size_ml,
           purchaseUrl: ingredient.purchase_url,
           price: ingredient.price ?? null,
+          packOptions: (ingredient.ingredient_packs ?? [])
+            .filter((p: any) => p?.is_active)
+            .map((p: any) => ({
+              packSize: Number(p.pack_size) || 0,
+              packPrice: Number(p.pack_price) || 0,
+            })),
         }));
       });
     });

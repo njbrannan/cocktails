@@ -42,6 +42,11 @@ type Ingredient = {
   unit: string | null;
   purchase_url?: string | null;
   price?: number | null;
+  ingredient_packs?: Array<{
+    pack_size: number;
+    pack_price: number;
+    is_active: boolean;
+  }> | null;
 };
 
 type RecipeIngredient = {
@@ -96,6 +101,18 @@ function formatAud(amount: number) {
   } catch {
     return `$${Math.round(amount)}`;
   }
+}
+
+function formatPackPlan(
+  packPlan: Array<{ packSize: number; count: number }> | null | undefined,
+  unit: string,
+) {
+  if (!packPlan?.length) return "";
+  return packPlan
+    .filter((p) => p && p.count > 0 && p.packSize > 0)
+    .sort((a, b) => b.packSize - a.packSize)
+    .map((p) => `${p.count} × ${p.packSize}${unit}`)
+    .join(" + ");
 }
 
 export default function RequestOrderPage() {
@@ -370,12 +387,26 @@ export default function RequestOrderPage() {
       const recipeIds = stored.cocktails.map((c) => c.recipeId).filter(Boolean);
       if (recipeIds.length === 0) return;
 
-      const { data, error } = await supabase
+      const selectWithPacks =
+        "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, is_active)))";
+      const selectWithoutPacks =
+        "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
+
+      let { data, error } = await supabase
         .from("recipes")
-        .select(
-          "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))",
-        )
+        .select(selectWithPacks)
         .in("id", recipeIds);
+
+      if (
+        error &&
+        (String((error as any).code || "") === "42703" ||
+          String(error.message || "").toLowerCase().includes("ingredient_packs"))
+      ) {
+        ({ data, error } = await supabase
+          .from("recipes")
+          .select(selectWithoutPacks)
+          .in("id", recipeIds));
+      }
 
       if (error) {
         setRecalcError(error.message);
@@ -444,6 +475,13 @@ export default function RequestOrderPage() {
               bottleSizeMl: ingredient.bottle_size_ml,
               purchaseUrl: ingredient.purchase_url,
               price: ingredient.price ?? null,
+              packOptions:
+                ingredient.ingredient_packs
+                  ?.filter((p) => p?.is_active)
+                  .map((p) => ({
+                    packSize: Number(p.pack_size) || 0,
+                    packPrice: Number(p.pack_price) || 0,
+                  })) ?? null,
             },
           ];
         });
@@ -735,7 +773,14 @@ export default function RequestOrderPage() {
                   </span>
                 </span>
                 <span className="tabular-nums text-right">
-                  {item.bottlesNeeded ? (
+                  {item.packPlan?.length ? (
+                    <span>
+                      {formatPackPlan(item.packPlan, item.unit)}
+                      <span className="block text-[11px] text-black/60">
+                        Total: {item.total} {item.unit}
+                      </span>
+                    </span>
+                  ) : item.bottlesNeeded ? (
                     <span>
                       {item.bottlesNeeded} × {item.bottleSizeMl}
                       {item.unit}
@@ -1032,7 +1077,16 @@ export default function RequestOrderPage() {
                   </p>
                 </div>
                 <div className="shrink-0 text-right tabular-nums">
-                  {item.bottlesNeeded ? (
+                  {item.packPlan?.length ? (
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-ink">
+                        {formatPackPlan(item.packPlan, item.unit)}
+                      </p>
+                      <p className="mt-1 text-[12px] text-ink-muted">
+                        {item.total} {item.unit}
+                      </p>
+                    </div>
+                  ) : item.bottlesNeeded ? (
                     <div className="text-right">
                       <p className="text-sm font-semibold text-ink">
                         {item.bottlesNeeded} × {item.bottleSizeMl}

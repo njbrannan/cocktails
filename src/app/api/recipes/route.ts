@@ -9,12 +9,26 @@ export function OPTIONS() {
 export async function GET() {
   try {
     const supabaseServer = getSupabaseServerClient();
-    const { data, error } = await supabaseServer
+    const selectWithPacks =
+      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, is_active)))";
+    const selectWithoutPacks =
+      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
+
+    let { data, error } = await supabaseServer
       .from("recipes")
-      .select(
-        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))",
-      )
+      .select(selectWithPacks)
       .eq("is_active", true);
+
+    if (
+      error &&
+      (String((error as any).code || "") === "42703" ||
+        String(error.message || "").toLowerCase().includes("ingredient_packs"))
+    ) {
+      ({ data, error } = await supabaseServer
+        .from("recipes")
+        .select(selectWithoutPacks)
+        .eq("is_active", true));
+    }
 
     if (error) {
       return withCors(NextResponse.json({ error: error.message }, { status: 400 }));

@@ -80,6 +80,15 @@ const typePriority: Record<string, number> = {
   glassware: 6,
 };
 
+const formatPackPlan = (packPlan: any, unit: string) => {
+  if (!packPlan?.length) return "";
+  return [...packPlan]
+    .filter((p) => p && p.count > 0 && p.packSize > 0)
+    .sort((a, b) => (b.packSize ?? 0) - (a.packSize ?? 0))
+    .map((p) => `${p.count} × ${p.packSize}${unit}`)
+    .join(" + ");
+};
+
 function flagEmoji(iso2: string) {
   const upper = iso2.toUpperCase();
   if (!/^[A-Z]{2}$/.test(upper)) return "";
@@ -348,6 +357,8 @@ export default function App() {
       servings: number;
       unit?: string | null;
       bottleSizeMl?: number | null;
+      price?: number | null;
+      packOptions?: Array<{ packSize: number; packPrice: number }> | null;
     }> = [];
 
     for (const recipe of selectedRecipes) {
@@ -365,6 +376,14 @@ export default function App() {
           servings,
           unit: ing.unit,
           bottleSizeMl: ing.bottle_size_ml,
+          price: (ing as any).price ?? null,
+          packOptions:
+            (ing as any).ingredient_packs
+              ?.filter((p: any) => p?.is_active)
+              .map((p: any) => ({
+                packSize: Number(p.pack_size) || 0,
+                packPrice: Number(p.pack_price) || 0,
+              })) ?? null,
         });
       }
     }
@@ -606,9 +625,11 @@ export default function App() {
         name: t.name,
         type: t.type,
         right:
-          t.bottlesNeeded
-            ? `${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit} · ${t.total} ${t.unit}`
-            : `${t.total} ${t.unit}`,
+          t.packPlan?.length
+            ? `${formatPackPlan(t.packPlan, t.unit)} · ${t.total} ${t.unit}`
+            : t.bottlesNeeded
+              ? `${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit} · ${t.total} ${t.unit}`
+              : `${t.total} ${t.unit}`,
       }));
 
       const payload = {
@@ -1033,9 +1054,11 @@ export default function App() {
                           <div className="listMeta">{t.type}</div>
                         </div>
                         <div className="listRight">
-                          {t.bottlesNeeded
-                            ? `${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit}`
-                            : `${t.total} ${t.unit}`}
+                          {t.packPlan?.length
+                            ? formatPackPlan(t.packPlan, t.unit)
+                            : t.bottlesNeeded
+                              ? `${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit}`
+                              : `${t.total} ${t.unit}`}
                         </div>
                       </li>
                     ))}
@@ -1087,11 +1110,13 @@ export default function App() {
                   <ul className="list">
                     {orderList.map((t) => {
                       const right =
-                        t.bottlesNeeded
-                          ? `${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit}`
-                          : `${t.total} ${t.unit}`;
+                        t.packPlan?.length
+                          ? formatPackPlan(t.packPlan, t.unit)
+                          : t.bottlesNeeded
+                            ? `${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit}`
+                            : `${t.total} ${t.unit}`;
                       const meta =
-                        t.bottlesNeeded
+                        t.packPlan?.length || t.bottlesNeeded
                           ? `${t.total} ${t.unit} total`
                           : `${t.type}`;
                       return (

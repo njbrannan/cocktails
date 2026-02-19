@@ -13,6 +13,12 @@ export type Ingredient = {
   type: IngredientType;
   bottle_size_ml: number | null;
   unit: string | null;
+  price?: number | null;
+  ingredient_packs?: Array<{
+    pack_size: number;
+    pack_price: number;
+    is_active: boolean;
+  }> | null;
 };
 
 export type RecipeIngredient = {
@@ -29,4 +35,3 @@ export type Recipe = {
 };
 
 export type RecipesPayload = { recipes: Recipe[] };
-

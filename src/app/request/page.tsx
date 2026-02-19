@@ -562,16 +562,29 @@ export default function RequestPage() {
     <div className="min-h-screen hero-grid px-6 py-16">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
         <header>
-          <p className="flex items-baseline gap-2 font-semibold uppercase tracking-[0.22em] text-accent">
+          <p className="flex items-center justify-between gap-3 font-semibold uppercase tracking-[0.22em] text-accent">
             <a
               href="https://www.getinvolved.com.au"
               target="_blank"
               rel="noreferrer"
-              className="text-[13px] font-bold sm:text-sm"
+              className="whitespace-nowrap text-[13px] font-bold sm:text-sm"
             >
-              Get Involved! Catering
+              Involved Events
             </a>
-            <span className="text-[11px] sm:text-xs">with our</span>
+            <a
+              href="https://www.getinvolved.com.au"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Get Involved! Catering"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-subtle bg-white/70 shadow-sm hover:-translate-y-0.5"
+            >
+              <img
+                src="/prawn-icon.png"
+                alt=""
+                aria-hidden="true"
+                className="h-5 w-5 object-contain"
+              />
+            </a>
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">
             Cocktail Party Planner
@@ -1076,7 +1089,12 @@ export default function RequestPage() {
                                 return;
                               const target = event.target as HTMLElement | null;
                               const tag = (target?.tagName || "").toLowerCase();
-                              if (tag === "input" || tag === "textarea" || tag === "select") return;
+                              if (
+                                target?.closest(
+                                  "input, textarea, select, button, a, [data-no-swipe='1']",
+                                )
+                              )
+                                return;
                               if ((target as any)?.isContentEditable) return;
 
                               // Close any other open swipe row.
@@ -1287,6 +1305,7 @@ export default function RequestPage() {
                                   [recipe.id]: !prev[recipe.id],
                                 }))
                               }
+                              data-no-swipe="1"
                               className="w-fit appearance-none bg-transparent p-0 text-[11px] font-semibold text-accent underline underline-offset-2"
                             >
                               {ingredientsOpen ? "Hide ingredients" : "Show ingredients"}

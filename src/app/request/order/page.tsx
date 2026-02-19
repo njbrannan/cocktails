@@ -814,13 +814,13 @@ export default function RequestOrderPage() {
               target="_blank"
               rel="noreferrer"
               aria-label="Get Involved! Catering"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-subtle bg-white/70 shadow-sm hover:-translate-y-0.5"
+              className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border border-subtle bg-white/70 shadow-sm hover:-translate-y-0.5"
             >
               <img
                 src="/prawn-icon.png"
                 alt=""
                 aria-hidden="true"
-                className="h-5 w-5 object-contain"
+                className="h-full w-full object-cover"
               />
             </a>
           </p>

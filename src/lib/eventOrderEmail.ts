@@ -95,8 +95,8 @@ export async function computeOrderListForEvent(supabaseServer: any, eventId: str
           packOptions: (ingredient.ingredient_packs ?? [])
             .filter((p: any) => p?.is_active)
             .map((p: any) => ({
-              packSize: Number(p.pack_size) || 0,
-              packPrice: Number(p.pack_price) || 0,
+              packSize: Number(p.pack_size),
+              packPrice: Number(p.pack_price),
               purchaseUrl: p.purchase_url || null,
               tier: (p.tier as any) || null,
             })),

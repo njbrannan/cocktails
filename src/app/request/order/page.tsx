@@ -506,8 +506,8 @@ export default function RequestOrderPage() {
                 ingredient.ingredient_packs
                   ?.filter((p) => p?.is_active && (p.tier || "budget") === pricingTier)
                   .map((p) => ({
-                    packSize: Number(p.pack_size) || 0,
-                    packPrice: Number(p.pack_price) || 0,
+                    packSize: Number(p.pack_size),
+                    packPrice: Number(p.pack_price),
                     purchaseUrl: p.purchase_url || null,
                     tier: (p.tier as any) || null,
                   })) ?? null,
@@ -1104,7 +1104,7 @@ export default function RequestOrderPage() {
                     : "hover:bg-white"
                 }`}
               >
-                Premium
+                First class
               </button>
               <button
                 type="button"
@@ -1115,7 +1115,7 @@ export default function RequestOrderPage() {
                     : "hover:bg-white"
                 }`}
               >
-                Budget
+                Premium economy
               </button>
             </div>
           </div>

@@ -293,8 +293,8 @@ async function computeOrderListForEvent(
           purchaseUrl: ingredient.purchase_url,
           price: ingredient.price ?? null,
           packOptions: packs.map((p: any) => ({
-              packSize: Number(p.pack_size) || 0,
-              packPrice: Number(p.pack_price) || 0,
+              packSize: Number(p.pack_size),
+              packPrice: Number(p.pack_price),
               purchaseUrl: p.purchase_url || null,
               tier: (p.tier as any) || null,
             })),

@@ -220,7 +220,7 @@ async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
   const { data, error } = await supabaseServer
     .from("event_recipes")
     .select(
-      "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url)))",
+      "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price)))",
     )
     .eq("event_id", eventId);
 
@@ -257,6 +257,7 @@ async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
           unit: ingredient.unit,
           bottleSizeMl: ingredient.bottle_size_ml,
           purchaseUrl: ingredient.purchase_url,
+          price: ingredient.price ?? null,
         }));
       });
     });

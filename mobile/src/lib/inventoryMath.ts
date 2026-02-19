@@ -16,6 +16,8 @@ export type IngredientTotal = {
   bottleSizeMl?: number;
   bottlesNeeded?: number;
   purchaseUrl?: string;
+  price?: number;
+  totalCost?: number;
 };
 
 const BUFFER_RATE = 0.1;
@@ -70,6 +72,7 @@ export function buildIngredientTotals(
     unit?: string | null;
     bottleSizeMl?: number | null;
     purchaseUrl?: string | null;
+    price?: number | null;
   }>,
 ) {
   const totals = new Map<string, IngredientTotal>();
@@ -88,6 +91,9 @@ export function buildIngredientTotals(
 
     base.total += added;
     base.purchaseUrl = base.purchaseUrl || (item.purchaseUrl || undefined);
+    if (item.price != null && Number.isFinite(item.price)) {
+      base.price = base.price ?? item.price;
+    }
     // bottleSizeMl is treated as a generic "pack size" in the ingredient's unit (e.g. 700 ml, 1000 g, 1 pc).
     if (item.bottleSizeMl != null) {
       base.bottleSizeMl = item.bottleSizeMl;
@@ -105,6 +111,12 @@ export function buildIngredientTotals(
     const packSize = total.bottleSizeMl ?? null;
     const packsNeeded =
       packSize && packSize > 0 ? Math.ceil(rounded / packSize) : undefined;
+    const totalCost =
+      total.price != null
+        ? packsNeeded != null
+          ? packsNeeded * total.price
+          : rounded * total.price
+        : undefined;
 
     if (total.type === "liquor") {
       const bottleSize = total.bottleSizeMl ?? DEFAULT_BOTTLE_SIZE;
@@ -115,6 +127,10 @@ export function buildIngredientTotals(
         total: mlTotal,
         bottleSizeMl: bottleSize,
         bottlesNeeded: calculateBottleCount(mlTotal, bottleSize),
+        totalCost:
+          total.price != null
+            ? calculateBottleCount(mlTotal, bottleSize) * total.price
+            : undefined,
       };
     }
 
@@ -122,6 +138,7 @@ export function buildIngredientTotals(
       ...total,
       total: rounded,
       bottlesNeeded: packsNeeded,
+      totalCost,
     };
   });
 }

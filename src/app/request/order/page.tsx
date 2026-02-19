@@ -41,6 +41,7 @@ type Ingredient = {
   bottle_size_ml: number | null;
   unit: string | null;
   purchase_url?: string | null;
+  price?: number | null;
 };
 
 type RecipeIngredient = {
@@ -118,6 +119,24 @@ export default function RequestOrderPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [editLink, setEditLink] = useState<string | null>(null);
   const minDate = useMemo(() => todayIsoDate(), []);
+
+  const estimatedCost = useMemo(() => {
+    const sum = (orderList ?? []).reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
+    return Number.isFinite(sum) ? sum : 0;
+  }, [orderList]);
+
+  const formattedEstimatedCost = useMemo(() => {
+    if (!estimatedCost) return "";
+    try {
+      return new Intl.NumberFormat("en-AU", {
+        style: "currency",
+        currency: "AUD",
+        maximumFractionDigits: 0,
+      }).format(estimatedCost);
+    } catch {
+      return `$${Math.round(estimatedCost)}`;
+    }
+  }, [estimatedCost]);
 
   useEdgeSwipeNav({
     canGoBack: true,
@@ -352,7 +371,7 @@ export default function RequestOrderPage() {
       const { data, error } = await supabase
         .from("recipes")
         .select(
-          "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url))",
+          "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))",
         )
         .in("id", recipeIds);
 
@@ -422,6 +441,7 @@ export default function RequestOrderPage() {
               unit: ingredient.unit,
               bottleSizeMl: ingredient.bottle_size_ml,
               purchaseUrl: ingredient.purchase_url,
+              price: ingredient.price ?? null,
             },
           ];
         });
@@ -968,9 +988,16 @@ export default function RequestOrderPage() {
             </button>
           </div>
 
-          <h3 className="mt-10 text-xs font-semibold uppercase tracking-[0.25em] text-accent">
-            Shopping list
-          </h3>
+          <div className="mt-10 flex items-baseline justify-between gap-3">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">
+              Shopping list
+            </h3>
+            {formattedEstimatedCost ? (
+              <p className="shrink-0 whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.2em] text-accent/80 sm:text-[11px]">
+                Est. cost: {formattedEstimatedCost}
+              </p>
+            ) : null}
+          </div>
           <ul className="mt-4 divide-y divide-[#c47b4a]/15 overflow-hidden rounded-2xl border border-subtle bg-white/70">
             {(orderList ?? []).map((item) => (
               <li

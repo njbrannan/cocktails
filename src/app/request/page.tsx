@@ -49,6 +49,7 @@ type Ingredient = {
   bottle_size_ml: number | null;
   unit: string | null;
   purchase_url?: string | null;
+  price?: number | null;
 };
 
 type RecipeIngredient = {
@@ -308,7 +309,7 @@ export default function RequestPage() {
     const { data, error: recipeError } = await supabase
       .from("recipes")
       .select(
-        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url))",
+        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))",
       )
       .eq("is_active", true);
 
@@ -465,6 +466,7 @@ export default function RequestPage() {
             unit: ingredient.unit,
             bottleSizeMl: ingredient.bottle_size_ml,
             purchaseUrl: ingredient.purchase_url,
+            price: ingredient.price ?? null,
           },
         ];
       }),

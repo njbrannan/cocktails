@@ -12,7 +12,7 @@ export async function GET() {
     const { data, error } = await supabaseServer
       .from("recipes")
       .select(
-        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml))",
+        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))",
       )
       .eq("is_active", true);
 

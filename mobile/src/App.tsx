@@ -606,8 +606,8 @@ export default function App() {
         name: t.name,
         type: t.type,
         right:
-          t.type === "liquor"
-            ? `${t.bottlesNeeded ?? 0} × ${t.bottleSizeMl ?? 700}ml`
+          t.bottlesNeeded
+            ? `${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit} · ${t.total} ${t.unit}`
             : `${t.total} ${t.unit}`,
       }));
 
@@ -1033,8 +1033,8 @@ export default function App() {
                           <div className="listMeta">{t.type}</div>
                         </div>
                         <div className="listRight">
-                          {t.type === "liquor"
-                            ? `${t.bottlesNeeded ?? 0} × ${t.bottleSizeMl ?? 700}ml`
+                          {t.bottlesNeeded
+                            ? `${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit}`
                             : `${t.total} ${t.unit}`}
                         </div>
                       </li>
@@ -1087,11 +1087,13 @@ export default function App() {
                   <ul className="list">
                     {orderList.map((t) => {
                       const right =
-                        t.type === "liquor"
-                          ? `${t.bottlesNeeded ?? 0} × ${t.bottleSizeMl ?? 700}ml`
+                        t.bottlesNeeded
+                          ? `${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit}`
                           : `${t.total} ${t.unit}`;
                       const meta =
-                        t.type === "liquor" ? `${Math.ceil(t.total)} ml total` : `${t.type}`;
+                        t.bottlesNeeded
+                          ? `${t.total} ${t.unit} total`
+                          : `${t.type}`;
                       return (
                         <li key={t.ingredientId} className="listItem">
                           <div className="listLeft">

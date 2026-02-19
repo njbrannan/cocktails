@@ -86,7 +86,7 @@ export default function PrintPage() {
         </p>
         <h1 className="mt-2 text-2xl font-semibold">Order List</h1>
         <p className="mt-1 text-sm text-black/70">
-          Totals include a 10% buffer. Liquor is rounded to 700ml bottles.
+          Totals include a 10% buffer. Items are rounded up to pack sizes where provided (for example, 700ml bottles).
         </p>
 
         {payload?.eventName ? (
@@ -150,4 +150,3 @@ export default function PrintPage() {
     </div>
   );
 }
-

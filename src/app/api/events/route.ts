@@ -204,7 +204,7 @@ function formatOrderListHtml(
   const rows = totals
     .map((t) => {
       const right = t.bottlesNeeded
-        ? `${t.total} ml · ${t.bottlesNeeded} × ${t.bottleSizeMl}ml`
+        ? `${t.total} ${t.unit} · ${t.bottlesNeeded} × ${t.bottleSizeMl}${t.unit}`
         : `${t.total} ${t.unit}`;
       return `<tr>
   <td style="padding:8px 10px;border-bottom:1px solid #eee"><strong>${escapeHtml(t.name)}</strong><br/><span style="color:#666;font-size:12px">${escapeHtml(t.type)}</span></td>

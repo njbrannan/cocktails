@@ -498,7 +498,7 @@ export default function RequestEditPage() {
           </p>
           <h1 className="text-xl font-semibold">Order List</h1>
           <p className="mt-1 text-sm text-black/70">
-            Totals include a 10% buffer. Liquor is rounded to 700ml bottles.
+            Totals include a 10% buffer. Items are rounded up to pack sizes where provided (for example, 700ml bottles).
           </p>
 
           <h2 className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-black/80">
@@ -523,10 +523,18 @@ export default function RequestEditPage() {
                   <span className="font-medium">{item.name}</span>{" "}
                   <span className="text-black/60">({item.type})</span>
                 </span>
-                <span className="tabular-nums">
-                  {item.bottlesNeeded
-                    ? `${item.bottlesNeeded} × ${item.bottleSizeMl}ml`
-                    : `${item.total} ${item.unit}`}
+                <span className="tabular-nums text-right">
+                  {item.bottlesNeeded ? (
+                    <span>
+                      {item.bottlesNeeded} × {item.bottleSizeMl}
+                      {item.unit}
+                      <span className="block text-[11px] text-black/60">
+                        Total: {item.total} {item.unit}
+                      </span>
+                    </span>
+                  ) : (
+                    `${item.total} ${item.unit}`
+                  )}
                 </span>
               </li>
             ))}
@@ -1508,11 +1516,21 @@ export default function RequestEditPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold text-ink tabular-nums">
-                          {item.bottlesNeeded
-                            ? `${item.bottlesNeeded} × ${item.bottleSizeMl}ml`
-                            : `${item.total} ${item.unit}`}
-                        </p>
+                        {item.bottlesNeeded ? (
+                          <div className="text-right tabular-nums">
+                            <p className="text-sm font-semibold text-ink">
+                              {item.bottlesNeeded} × {item.bottleSizeMl}
+                              {item.unit}
+                            </p>
+                            <p className="mt-1 text-xs text-ink-muted">
+                              {item.total} {item.unit}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-sm font-semibold text-ink tabular-nums">
+                            {item.total} {item.unit}
+                          </p>
+                        )}
                       </div>
                     </li>
                   ))

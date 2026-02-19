@@ -203,7 +203,8 @@ export default function InventoryAdmin() {
                     </p>
                     {item.bottlesNeeded ? (
                       <p className="text-xs text-[#4b3f3a]">
-                        {item.bottlesNeeded} bottles @ {item.bottleSizeMl}ml
+                        Order: {item.bottlesNeeded} × {item.bottleSizeMl}
+                        {item.unit}
                       </p>
                     ) : (
                       <p className="text-xs text-[#4b3f3a]">Total</p>

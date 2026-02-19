@@ -88,8 +88,11 @@ export function buildIngredientTotals(
 
     base.total += added;
     base.purchaseUrl = base.purchaseUrl || (item.purchaseUrl || undefined);
-    if (item.type === "liquor") {
-      base.bottleSizeMl = item.bottleSizeMl ?? DEFAULT_BOTTLE_SIZE;
+    // bottleSizeMl is treated as a generic "pack size" in the ingredient's unit (e.g. 700 ml, 1000 g, 1 pc).
+    if (item.bottleSizeMl != null) {
+      base.bottleSizeMl = item.bottleSizeMl;
+    } else if (item.type === "liquor" && base.bottleSizeMl == null) {
+      base.bottleSizeMl = DEFAULT_BOTTLE_SIZE;
     }
 
     totals.set(item.ingredientId, base);
@@ -98,20 +101,27 @@ export function buildIngredientTotals(
   return Array.from(totals.values()).map((total) => {
     const buffered = applyBuffer(total.total);
     const rounded = roundByUnitAndType(buffered, total.unit, total.type);
+
+    const packSize = total.bottleSizeMl ?? null;
+    const packsNeeded =
+      packSize && packSize > 0 ? Math.ceil(rounded / packSize) : undefined;
+
     if (total.type === "liquor") {
       const bottleSize = total.bottleSizeMl ?? DEFAULT_BOTTLE_SIZE;
+      const mlTotal = Math.ceil(buffered);
       return {
         ...total,
         unit: "ml",
-        total: Math.ceil(buffered),
+        total: mlTotal,
         bottleSizeMl: bottleSize,
-        bottlesNeeded: calculateBottleCount(Math.ceil(buffered), bottleSize),
+        bottlesNeeded: calculateBottleCount(mlTotal, bottleSize),
       };
     }
 
     return {
       ...total,
       total: rounded,
+      bottlesNeeded: packsNeeded,
     };
   });
 }

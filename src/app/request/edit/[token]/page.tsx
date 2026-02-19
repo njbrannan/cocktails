@@ -115,15 +115,23 @@ export default function RequestEditPage() {
     startX: number;
     startY: number;
     startOffset: number;
+    lastOffset: number;
     active: boolean;
     directionLocked: "x" | "y" | null;
+    rowEl: HTMLElement | null;
+    foregroundEl: HTMLElement | null;
+    revealEl: HTMLElement | null;
   }>({
     id: null,
     startX: 0,
     startY: 0,
     startOffset: 0,
+    lastOffset: 0,
     active: false,
     directionLocked: null,
+    rowEl: null,
+    foregroundEl: null,
+    revealEl: null,
   });
   const [swipeDraggingId, setSwipeDraggingId] = useState<string | null>(null);
   const [swipeOpenRecipeId, setSwipeOpenRecipeId] = useState<string | null>(
@@ -873,7 +881,45 @@ export default function RequestEditPage() {
 
                       const closeSwipe = () => {
                         setSwipeOffsetByRecipeId((prev) => ({ ...prev, [recipe.id]: 0 }));
-                        if (swipeOpenRecipeId === recipe.id) setSwipeOpenRecipeId(null);
+                        setSwipeOpenRecipeId((prev) => (prev === recipe.id ? null : prev));
+                      };
+
+                      const removeRecipeWithPop = (rowEl?: HTMLElement | null) => {
+                        const el =
+                          rowEl ??
+                          (document.querySelector(
+                            `[data-swipe-row='${recipe.id}']`,
+                          ) as HTMLElement | null);
+
+                        if (!el) {
+                          removeRecipe();
+                          closeSwipe();
+                          return;
+                        }
+
+                        const height = el.getBoundingClientRect().height;
+                        el.style.height = `${height}px`;
+                        el.style.maxHeight = `${height}px`;
+                        el.style.transition =
+                          "height 180ms cubic-bezier(0.2, 0.85, 0.2, 1), opacity 150ms ease-out, transform 180ms cubic-bezier(0.2, 0.85, 0.2, 1)";
+                        el.style.overflow = "hidden";
+                        el.style.pointerEvents = "none";
+
+                        requestAnimationFrame(() => {
+                          el.style.height = "0px";
+                          el.style.maxHeight = "0px";
+                          el.style.opacity = "0";
+                          el.style.transform = "scale(0.98)";
+                        });
+
+                        window.setTimeout(() => {
+                          // Don't cancel a new swipe that started on a different row.
+                          setSwipeDraggingId((prev) =>
+                            prev === recipe.id ? null : prev,
+                          );
+                          removeRecipe();
+                          closeSwipe();
+                        }, 190);
                       };
                       return (
                         <div
@@ -883,8 +929,15 @@ export default function RequestEditPage() {
                         >
                           {!isLocked ? (
                             <div
+                              data-swipe-reveal="1"
                               className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-600/90"
-                              style={{ width: `${deleteRevealWidth}px` }}
+                              style={{
+                                width: `${deleteRevealWidth}px`,
+                                transition:
+                                  swipeDraggingId === recipe.id
+                                    ? "none"
+                                    : "width 200ms cubic-bezier(0.2, 0.85, 0.2, 1)",
+                              }}
                               onPointerDown={(event) => {
                                 if (
                                   (event as any).button !== undefined &&
@@ -892,14 +945,29 @@ export default function RequestEditPage() {
                                 )
                                   return;
 
+                                const target = event.target as HTMLElement | null;
+                                if (target?.closest("[data-swipe-trash='1']")) return;
+
                                 // Allow dragging from anywhere in the revealed red area.
+                                const rowEl = (event.currentTarget as HTMLElement).closest(
+                                  `[data-swipe-row='${recipe.id}']`,
+                                ) as HTMLElement | null;
                                 swipeDragRef.current.id = recipe.id;
                                 swipeDragRef.current.startX = event.clientX;
                                 swipeDragRef.current.startY = event.clientY;
                                 swipeDragRef.current.startOffset =
                                   swipeOffsetByRecipeId[recipe.id] ?? 0;
+                                swipeDragRef.current.lastOffset =
+                                  swipeDragRef.current.startOffset;
                                 swipeDragRef.current.active = true;
                                 swipeDragRef.current.directionLocked = null;
+                                swipeDragRef.current.rowEl = rowEl;
+                                swipeDragRef.current.revealEl =
+                                  event.currentTarget as HTMLElement;
+                                swipeDragRef.current.foregroundEl =
+                                  (rowEl?.querySelector(
+                                    "[data-swipe-foreground='1']",
+                                  ) as HTMLElement | null) ?? null;
                                 setSwipeDraggingId(recipe.id);
                                 try {
                                   (event.currentTarget as any).setPointerCapture?.(
@@ -935,25 +1003,42 @@ export default function RequestEditPage() {
                                     swipeDragRef.current.startOffset + dx,
                                   ),
                                 );
-                                setSwipeOffsetByRecipeId((prev) => ({
-                                  ...prev,
-                                  [recipe.id]: next,
-                                }));
+                                swipeDragRef.current.lastOffset = next;
+                                swipeDragRef.current.foregroundEl?.style.setProperty(
+                                  "transform",
+                                  `translateX(${next}px)`,
+                                );
+                                const w = Math.max(
+                                  DELETE_REVEAL_PX,
+                                  Math.min(DELETE_REVEAL_PX * 2.4, -next),
+                                );
+                                swipeDragRef.current.revealEl?.style.setProperty(
+                                  "width",
+                                  `${w}px`,
+                                );
                               }}
                               onPointerUp={() => {
                                 if (isLocked) return;
                                 if (!swipeDragRef.current.active) return;
                                 if (swipeDragRef.current.id !== recipe.id) return;
                                 const wasOpen = swipeDragRef.current.startOffset < 0;
+                                const cur =
+                                  swipeDragRef.current.lastOffset ??
+                                  swipeDragRef.current.startOffset;
                                 swipeDragRef.current.active = false;
                                 swipeDragRef.current.directionLocked = null;
-                                setSwipeDraggingId(null);
-                                const cur = swipeOffsetByRecipeId[recipe.id] ?? 0;
+
                                 if (wasOpen && cur <= -FULL_SWIPE_DELETE_PX + 10) {
-                                  removeRecipe();
-                                  closeSwipe();
+                                  const rowEl = swipeDragRef.current.rowEl;
+                                  swipeDragRef.current.id = null;
+                                  swipeDragRef.current.rowEl = null;
+                                  swipeDragRef.current.foregroundEl = null;
+                                  swipeDragRef.current.revealEl = null;
+                                  removeRecipeWithPop(rowEl);
                                   return;
                                 }
+
+                                setSwipeDraggingId(null);
                                 const shouldOpen = cur <= -DELETE_REVEAL_PX / 2;
                                 const snap = shouldOpen ? -DELETE_REVEAL_PX : 0;
                                 setSwipeOffsetByRecipeId((prev) => ({
@@ -961,6 +1046,11 @@ export default function RequestEditPage() {
                                   [recipe.id]: snap,
                                 }));
                                 setSwipeOpenRecipeId(shouldOpen ? recipe.id : null);
+
+                                swipeDragRef.current.id = null;
+                                swipeDragRef.current.rowEl = null;
+                                swipeDragRef.current.foregroundEl = null;
+                                swipeDragRef.current.revealEl = null;
                               }}
                               onPointerCancel={() => {
                                 if (isLocked) return;
@@ -969,14 +1059,20 @@ export default function RequestEditPage() {
                                 swipeDragRef.current.active = false;
                                 swipeDragRef.current.directionLocked = null;
                                 setSwipeDraggingId(null);
+                                swipeDragRef.current.id = null;
+                                swipeDragRef.current.rowEl = null;
+                                swipeDragRef.current.foregroundEl = null;
+                                swipeDragRef.current.revealEl = null;
                                 closeSwipe();
                               }}
                             >
                               <button
                                 type="button"
-                                onClick={() => {
-                                  removeRecipe();
-                                  closeSwipe();
+                                onClick={(event) => {
+                                  const rowEl = (event.currentTarget as HTMLElement).closest(
+                                    `[data-swipe-row='${recipe.id}']`,
+                                  ) as HTMLElement | null;
+                                  removeRecipeWithPop(rowEl);
                                 }}
                                 data-swipe-trash="1"
                                 className="grid h-10 w-10 place-items-center rounded-2xl bg-white/15 text-white hover:bg-white/20"
@@ -1005,6 +1101,7 @@ export default function RequestEditPage() {
                           ) : null}
 
                           <div
+                            data-swipe-foreground="1"
                             className={`relative grid w-full max-w-full items-start gap-4 bg-white p-5 ${
                               ingredientsOpen
                                 ? "md:grid-cols-[240px_1fr]"
@@ -1035,13 +1132,26 @@ export default function RequestEditPage() {
                                 setSwipeOpenRecipeId(null);
                               }
 
+                              const rowEl = (event.currentTarget as HTMLElement).closest(
+                                `[data-swipe-row='${recipe.id}']`,
+                              ) as HTMLElement | null;
+
                               swipeDragRef.current.id = recipe.id;
                               swipeDragRef.current.startX = event.clientX;
                               swipeDragRef.current.startY = event.clientY;
                               swipeDragRef.current.startOffset =
                                 swipeOffsetByRecipeId[recipe.id] ?? 0;
+                              swipeDragRef.current.lastOffset =
+                                swipeDragRef.current.startOffset;
                               swipeDragRef.current.active = true;
                               swipeDragRef.current.directionLocked = null;
+                              swipeDragRef.current.rowEl = rowEl;
+                              swipeDragRef.current.foregroundEl =
+                                event.currentTarget as HTMLElement;
+                              swipeDragRef.current.revealEl =
+                                (rowEl?.querySelector(
+                                  "[data-swipe-reveal='1']",
+                                ) as HTMLElement | null) ?? null;
                               setSwipeDraggingId(recipe.id);
                               try {
                                 (event.currentTarget as any).setPointerCapture?.(
@@ -1077,25 +1187,41 @@ export default function RequestEditPage() {
                                   swipeDragRef.current.startOffset + dx,
                                 ),
                               );
-                              setSwipeOffsetByRecipeId((prev) => ({
-                                ...prev,
-                                [recipe.id]: next,
-                              }));
+                              swipeDragRef.current.lastOffset = next;
+                              swipeDragRef.current.foregroundEl?.style.setProperty(
+                                "transform",
+                                `translateX(${next}px)`,
+                              );
+                              const w = Math.max(
+                                DELETE_REVEAL_PX,
+                                Math.min(DELETE_REVEAL_PX * 2.4, -next),
+                              );
+                              swipeDragRef.current.revealEl?.style.setProperty(
+                                "width",
+                                `${w}px`,
+                              );
                             }}
                             onPointerUp={() => {
                               if (isLocked) return;
                               if (!swipeDragRef.current.active) return;
                               if (swipeDragRef.current.id !== recipe.id) return;
                               const wasOpen = swipeDragRef.current.startOffset < 0;
+                              const cur =
+                                swipeDragRef.current.lastOffset ??
+                                swipeDragRef.current.startOffset;
                               swipeDragRef.current.active = false;
                               swipeDragRef.current.directionLocked = null;
-                              setSwipeDraggingId(null);
-                              const cur = swipeOffsetByRecipeId[recipe.id] ?? 0;
                               if (wasOpen && cur <= -FULL_SWIPE_DELETE_PX + 10) {
-                                removeRecipe();
-                                closeSwipe();
+                                const rowEl = swipeDragRef.current.rowEl;
+                                swipeDragRef.current.id = null;
+                                swipeDragRef.current.rowEl = null;
+                                swipeDragRef.current.foregroundEl = null;
+                                swipeDragRef.current.revealEl = null;
+                                removeRecipeWithPop(rowEl);
                                 return;
                               }
+
+                              setSwipeDraggingId(null);
                               const shouldOpen = cur <= -DELETE_REVEAL_PX / 2;
                               const snap = shouldOpen ? -DELETE_REVEAL_PX : 0;
                               setSwipeOffsetByRecipeId((prev) => ({
@@ -1103,6 +1229,11 @@ export default function RequestEditPage() {
                                 [recipe.id]: snap,
                               }));
                               setSwipeOpenRecipeId(shouldOpen ? recipe.id : null);
+
+                              swipeDragRef.current.id = null;
+                              swipeDragRef.current.rowEl = null;
+                              swipeDragRef.current.foregroundEl = null;
+                              swipeDragRef.current.revealEl = null;
                             }}
                             onPointerCancel={() => {
                               if (isLocked) return;
@@ -1111,6 +1242,10 @@ export default function RequestEditPage() {
                               swipeDragRef.current.active = false;
                               swipeDragRef.current.directionLocked = null;
                               setSwipeDraggingId(null);
+                              swipeDragRef.current.id = null;
+                              swipeDragRef.current.rowEl = null;
+                              swipeDragRef.current.foregroundEl = null;
+                              swipeDragRef.current.revealEl = null;
                               closeSwipe();
                             }}
                             style={{

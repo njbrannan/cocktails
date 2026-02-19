@@ -66,6 +66,8 @@ type Ingredient = {
   ingredient_packs?: Array<{
     pack_size: number;
     pack_price: number;
+    purchase_url?: string | null;
+    tier?: "budget" | "premium" | null;
     is_active: boolean;
   }> | null;
 };
@@ -130,6 +132,7 @@ export default function RequestEditPage() {
   };
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [pricingTier, setPricingTier] = useState<"budget" | "premium">("budget");
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -322,10 +325,12 @@ export default function RequestEditPage() {
             price: ingredient.price ?? null,
             packOptions:
               ingredient.ingredient_packs
-                ?.filter((p) => p?.is_active)
+                ?.filter((p) => p?.is_active && (p.tier || "budget") === pricingTier)
                 .map((p) => ({
                   packSize: Number(p.pack_size) || 0,
                   packPrice: Number(p.pack_price) || 0,
+                  purchaseUrl: p.purchase_url || null,
+                  tier: (p.tier as any) || null,
                 })) ?? null,
           },
         ];
@@ -363,7 +368,7 @@ export default function RequestEditPage() {
 
   const loadMenu = async () => {
     const selectWithPacks =
-      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, is_active)))";
+      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, tier, is_active)))";
     const selectWithoutPacks =
       "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
 

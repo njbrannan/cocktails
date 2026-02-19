@@ -18,6 +18,8 @@ export type Ingredient = {
     pack_size: number;
     pack_price: number;
     is_active: boolean;
+    purchase_url?: string | null;
+    tier?: "budget" | "premium" | null;
   }> | null;
 };
 

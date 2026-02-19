@@ -3,6 +3,8 @@ create table if not exists public.ingredient_packs (
   ingredient_id uuid not null references public.ingredients(id) on delete cascade,
   pack_size numeric not null,
   pack_price numeric not null,
+  purchase_url text,
+  tier text not null default 'budget',
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -36,3 +38,5 @@ alter table public.ingredient_packs
 alter table public.ingredient_packs
   add constraint ingredient_packs_pack_price_check check (pack_price >= 0);
 
+alter table public.ingredient_packs
+  add constraint ingredient_packs_tier_check check (tier in ('budget', 'premium'));

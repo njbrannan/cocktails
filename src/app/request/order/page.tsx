@@ -45,6 +45,8 @@ type Ingredient = {
   ingredient_packs?: Array<{
     pack_size: number;
     pack_price: number;
+    purchase_url?: string | null;
+    tier?: "budget" | "premium" | null;
     is_active: boolean;
   }> | null;
 };
@@ -71,6 +73,7 @@ type StoredOrder = {
   guestCount?: number | null;
   drinksPerGuest?: number;
   occasion?: string | null;
+  pricingTier?: "budget" | "premium";
 };
 
 const STORAGE_KEY = "get-involved:order:v1";
@@ -115,6 +118,12 @@ function formatPackPlan(
     .join(" + ");
 }
 
+function resolvePurchaseUrlForItem(item: IngredientTotal) {
+  const plan = item.packPlan ?? [];
+  if (plan.length === 1 && plan[0]?.purchaseUrl) return plan[0].purchaseUrl;
+  return item.purchaseUrl;
+}
+
 export default function RequestOrderPage() {
   const router = useRouter();
   const orderBartendersRef = useRef<HTMLDivElement | null>(null);
@@ -130,6 +139,7 @@ export default function RequestOrderPage() {
   const [orderList, setOrderList] = useState<IngredientTotal[]>([]);
   const [recalcError, setRecalcError] = useState<string | null>(null);
   const [editingQuantities, setEditingQuantities] = useState(false);
+  const [pricingTier, setPricingTier] = useState<"budget" | "premium">("budget");
 
   const [eventDate, setEventDate] = useState("");
   const [eventName, setEventName] = useState("");
@@ -213,6 +223,9 @@ export default function RequestOrderPage() {
       const parsed = JSON.parse(raw) as StoredOrder;
       if (parsed?.version !== 1) return;
       setStored(parsed);
+      if (parsed?.pricingTier === "premium" || parsed?.pricingTier === "budget") {
+        setPricingTier(parsed.pricingTier);
+      }
       setServingsByRecipeId(parsed.servingsByRecipeId || {});
       setOrderList(parsed.orderList || []);
       if (!guestCountInput) {
@@ -388,7 +401,7 @@ export default function RequestOrderPage() {
       if (recipeIds.length === 0) return;
 
       const selectWithPacks =
-        "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, is_active)))";
+        "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, tier, is_active)))";
       const selectWithoutPacks =
         "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
 
@@ -418,6 +431,20 @@ export default function RequestOrderPage() {
 
     load();
   }, [stored]);
+
+  useEffect(() => {
+    if (!stored) return;
+    // Persist tier selection so refresh/back keeps it.
+    try {
+      window.sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          ...stored,
+          pricingTier,
+        }),
+      );
+    } catch {}
+  }, [stored, pricingTier]);
 
   const cocktailsSummary = useMemo(() => {
     const list = stored?.cocktails ?? [];
@@ -477,10 +504,12 @@ export default function RequestOrderPage() {
               price: ingredient.price ?? null,
               packOptions:
                 ingredient.ingredient_packs
-                  ?.filter((p) => p?.is_active)
+                  ?.filter((p) => p?.is_active && (p.tier || "budget") === pricingTier)
                   .map((p) => ({
                     packSize: Number(p.pack_size) || 0,
                     packPrice: Number(p.pack_price) || 0,
+                    purchaseUrl: p.purchase_url || null,
+                    tier: (p.tier as any) || null,
                   })) ?? null,
             },
           ];
@@ -504,12 +533,13 @@ export default function RequestOrderPage() {
           ...stored,
           orderList: totals,
           servingsByRecipeId,
+          pricingTier,
         }),
       );
     } catch {
       // Ignore storage errors.
     }
-  }, [stored, recipes, servingsByRecipeId]);
+  }, [stored, recipes, servingsByRecipeId, pricingTier]);
 
   const handleBack = () => {
     // Take them back to the drink selection step (with their previous order restored).
@@ -573,6 +603,7 @@ export default function RequestOrderPage() {
         clientEmail,
         guestCount: Number(guestCountInput),
         clientPhone: combinedPhone || null,
+        pricingTier,
         submit: true,
         cocktails: cocktailsSummary.map((c) => ({
           recipeId: c.recipeId,
@@ -1062,6 +1093,32 @@ export default function RequestOrderPage() {
               </p>
             ) : null}
           </div>
+          <div className="mt-3 flex items-center justify-start">
+            <div className="inline-flex overflow-hidden rounded-full border border-subtle bg-white/70 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+              <button
+                type="button"
+                onClick={() => setPricingTier("premium")}
+                className={`px-4 py-2 transition ${
+                  pricingTier === "premium"
+                    ? "bg-accent text-on-accent"
+                    : "hover:bg-white"
+                }`}
+              >
+                Premium
+              </button>
+              <button
+                type="button"
+                onClick={() => setPricingTier("budget")}
+                className={`px-4 py-2 transition ${
+                  pricingTier === "budget"
+                    ? "bg-accent text-on-accent"
+                    : "hover:bg-white"
+                }`}
+              >
+                Budget
+              </button>
+            </div>
+          </div>
           <ul className="mt-4 divide-y divide-[#c47b4a]/15 overflow-hidden rounded-2xl border border-subtle bg-white/70">
             {(orderList ?? []).map((item) => (
               <li
@@ -1069,9 +1126,9 @@ export default function RequestOrderPage() {
                 className="flex items-start justify-between gap-6 px-4 py-3"
               >
                 <div className="min-w-0">
-                  {item.purchaseUrl ? (
+                  {resolvePurchaseUrlForItem(item) ? (
                     <a
-                      href={item.purchaseUrl}
+                      href={resolvePurchaseUrlForItem(item)}
                       target="_blank"
                       rel="noreferrer noopener"
                       className="truncate text-sm font-semibold text-ink underline underline-offset-2 hover:opacity-80"

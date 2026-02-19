@@ -10,11 +10,14 @@ export type IngredientType =
 export type PackOption = {
   packSize: number;
   packPrice: number;
+  purchaseUrl?: string | null;
+  tier?: "budget" | "premium" | null;
 };
 
 export type PackPlanLine = {
   packSize: number;
   count: number;
+  purchaseUrl?: string;
 };
 
 export type IngredientTotal = {
@@ -62,15 +65,35 @@ function normalizePackOptions(
     const price = Number(opt.packPrice);
     if (!Number.isFinite(size) || size <= 0) continue;
     if (!Number.isFinite(price) || price < 0) continue;
-    out.push({ packSize: size, packPrice: price });
+    out.push({
+      packSize: size,
+      packPrice: price,
+      purchaseUrl: opt.purchaseUrl || null,
+      tier: (opt.tier as any) || null,
+    });
   }
-  const seen = new Set<string>();
-  return out.filter((o) => {
-    const k = `${o.packSize}:${o.packPrice}`;
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+
+  // If there are multiple entries for the same pack size (within the same tier),
+  // keep the cheapest. If tied, prefer one that has a purchase URL.
+  const bestByKey = new Map<string, PackOption>();
+  for (const opt of out) {
+    const key = `${opt.tier || ""}:${opt.packSize}`;
+    const prev = bestByKey.get(key);
+    if (!prev) {
+      bestByKey.set(key, opt);
+      continue;
+    }
+    if (opt.packPrice < prev.packPrice) {
+      bestByKey.set(key, opt);
+      continue;
+    }
+    if (opt.packPrice > prev.packPrice) continue;
+    if (!prev.purchaseUrl && opt.purchaseUrl) {
+      bestByKey.set(key, opt);
+    }
+  }
+
+  return Array.from(bestByKey.values());
 }
 
 function cheapestPackPlan(
@@ -109,6 +132,7 @@ function cheapestPackPlan(
 
   const backtrack = (amount: number) => {
     const counts = new Map<number, number>();
+    const purchaseUrlBySize = new Map<number, string | undefined>();
     let a = amount;
     let guard = 0;
     while (a > 0 && guard++ < 10000) {
@@ -117,10 +141,17 @@ function cheapestPackPlan(
       if (idx < 0 || prev < 0) break;
       const size = packs[idx]!.packSize;
       counts.set(size, (counts.get(size) || 0) + 1);
+      if (!purchaseUrlBySize.has(size)) {
+        purchaseUrlBySize.set(size, packs[idx]!.purchaseUrl || undefined);
+      }
       a = prev;
     }
     const plan: PackPlanLine[] = Array.from(counts.entries())
-      .map(([packSize, count]) => ({ packSize, count }))
+      .map(([packSize, count]) => ({
+        packSize,
+        count,
+        purchaseUrl: purchaseUrlBySize.get(packSize),
+      }))
       .sort((a, b) => b.packSize - a.packSize);
     const preferredCount = plan.find((p) => p.packSize === preferredPackSize)?.count || 0;
     const totalPacks = plan.reduce((s, p) => s + p.count, 0);

@@ -226,9 +226,13 @@ function formatOrderListHtml(
   return `<table style="width:100%;border-collapse:collapse">${rows}</table>`;
 }
 
-async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
+async function computeOrderListForEvent(
+  supabaseServer: any,
+  eventId: string,
+  pricingTier: "budget" | "premium" = "budget",
+) {
   const selectWithPacks =
-    "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, is_active))))";
+    "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, tier, is_active))))";
   const selectWithoutPacks =
     "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price)))";
 
@@ -272,7 +276,13 @@ async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
             ? ri.ingredients
             : [ri.ingredients]
           : [];
-        return ingredients.map((ingredient: any) => ({
+
+        return ingredients.map((ingredient: any) => {
+          const packs = (ingredient.ingredient_packs ?? [])
+            .filter((p: any) => p?.is_active)
+            .filter((p: any) => String(p?.tier || "budget") === pricingTier);
+
+          return {
           ingredientId: ingredient.id,
           name: ingredient.name,
           type: ingredient.type,
@@ -282,13 +292,14 @@ async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
           bottleSizeMl: ingredient.bottle_size_ml,
           purchaseUrl: ingredient.purchase_url,
           price: ingredient.price ?? null,
-          packOptions: (ingredient.ingredient_packs ?? [])
-            .filter((p: any) => p?.is_active)
-            .map((p: any) => ({
+          packOptions: packs.map((p: any) => ({
               packSize: Number(p.pack_size) || 0,
               packPrice: Number(p.pack_price) || 0,
+              purchaseUrl: p.purchase_url || null,
+              tier: (p.tier as any) || null,
             })),
-        }));
+          };
+        });
       });
     });
   });
@@ -321,6 +332,7 @@ export async function POST(request: NextRequest) {
       clientPhone,
       cocktails,
       submit,
+      pricingTier,
     }: {
       title?: string;
       eventDate?: string;
@@ -330,6 +342,7 @@ export async function POST(request: NextRequest) {
       clientPhone?: string;
       cocktails?: CocktailSelection[];
       submit?: boolean;
+      pricingTier?: "budget" | "premium";
     } = body;
 
     if (submit) {
@@ -388,6 +401,7 @@ export async function POST(request: NextRequest) {
         status: submit ? "submitted" : "draft",
         client_email: clientEmail || null,
         client_phone: clientPhone || null,
+        pricing_tier: pricingTier === "premium" ? "premium" : "budget",
       })
       .select("id, edit_token")
       .single();
@@ -468,7 +482,11 @@ export async function POST(request: NextRequest) {
 
       let orderTotals: ReturnType<typeof buildIngredientTotals> = [];
       try {
-        orderTotals = await computeOrderListForEvent(supabaseServer, data.id);
+        orderTotals = await computeOrderListForEvent(
+          supabaseServer,
+          data.id,
+          pricingTier === "premium" ? "premium" : "budget",
+        );
       } catch {
         orderTotals = [];
       }

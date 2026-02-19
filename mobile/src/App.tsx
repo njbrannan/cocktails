@@ -379,10 +379,12 @@ export default function App() {
           price: (ing as any).price ?? null,
           packOptions:
             (ing as any).ingredient_packs
-              ?.filter((p: any) => p?.is_active)
+              ?.filter((p: any) => p?.is_active && (p?.tier || "budget") === "budget")
               .map((p: any) => ({
                 packSize: Number(p.pack_size) || 0,
                 packPrice: Number(p.pack_price) || 0,
+                purchaseUrl: p.purchase_url || null,
+                tier: (p.tier as any) || null,
               })) ?? null,
         });
       }

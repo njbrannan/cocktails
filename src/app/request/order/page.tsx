@@ -46,7 +46,10 @@ type Ingredient = {
     pack_size: number;
     pack_price: number;
     purchase_url?: string | null;
-    tier?: "budget" | "premium" | null;
+    search_url?: string | null;
+    search_query?: string | null;
+    retailer?: "danmurphys" | "woolworths" | "getinvolved" | null;
+    tier?: "economy" | "business" | "first_class" | "budget" | "premium" | null;
     is_active: boolean;
   }> | null;
 };
@@ -120,7 +123,9 @@ function formatPackPlan(
 
 function resolvePurchaseUrlForItem(item: IngredientTotal) {
   const plan = item.packPlan ?? [];
-  if (plan.length === 1 && plan[0]?.purchaseUrl) return plan[0].purchaseUrl;
+  if (plan.length === 1) {
+    return plan[0]?.purchaseUrl || plan[0]?.searchUrl || item.purchaseUrl;
+  }
   return item.purchaseUrl;
 }
 
@@ -490,7 +495,7 @@ export default function RequestOrderPage() {
       if (recipeIds.length === 0) return;
 
       const selectWithPacks =
-        "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, tier, is_active)))";
+        "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, retailer, tier, is_active)))";
       const selectWithoutPacks =
         "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
 
@@ -598,6 +603,9 @@ export default function RequestOrderPage() {
                     packSize: Number(p.pack_size),
                     packPrice: Number(p.pack_price),
                     purchaseUrl: p.purchase_url || null,
+                    searchUrl: p.search_url || null,
+                    searchQuery: p.search_query || null,
+                    retailer: (p.retailer as any) || null,
                     tier: (p.tier as any) || null,
                   })) ?? null,
             },
@@ -789,21 +797,43 @@ export default function RequestOrderPage() {
   };
 
   const exportRetailer = (retailer: "danmurphys" | "woolworths" | "getinvolved") => {
-    const rows = (orderList ?? [])
-      .map((item) => {
-        const url = resolvePurchaseUrlForItem(item) || "";
-        if (retailerForUrl(url) !== retailer) return null;
-        const qty = item.packPlan?.length
-          ? formatPackPlan(item.packPlan, item.unit)
-          : item.bottlesNeeded
-            ? `${item.bottlesNeeded} × ${item.bottleSizeMl}${item.unit}`
-            : `${item.total} ${item.unit}`;
-        return { name: item.name, type: item.type, qty, total: `${item.total} ${item.unit}`, url };
-      })
-      .filter(Boolean) as Array<{ name: string; type: string; qty: string; total: string; url: string }>;
+    const rows: Array<{ name: string; type: string; qty: string; total: string; url: string }> = [];
+
+    for (const item of orderList ?? []) {
+      if (item.packPlan?.length) {
+        for (const line of item.packPlan) {
+          const url = line.purchaseUrl || line.searchUrl || "";
+          const lineRetailer = (line.retailer as any) || retailerForUrl(url);
+          if (lineRetailer !== retailer) continue;
+          if (!url) continue;
+          rows.push({
+            name: `${item.name} (${line.packSize}${item.unit})`,
+            type: item.type,
+            qty: `${line.count} × ${line.packSize}${item.unit}`,
+            total: `${item.total} ${item.unit}`,
+            url,
+          });
+        }
+        continue;
+      }
+
+      const url = resolvePurchaseUrlForItem(item) || "";
+      if (retailerForUrl(url) !== retailer) continue;
+      if (!url) continue;
+      const qty = item.bottlesNeeded
+        ? `${item.bottlesNeeded} × ${item.bottleSizeMl}${item.unit}`
+        : `${item.total} ${item.unit}`;
+      rows.push({
+        name: item.name,
+        type: item.type,
+        qty,
+        total: `${item.total} ${item.unit}`,
+        url,
+      });
+    }
 
     if (!rows.length) {
-      setError("No items found for that store yet. Add purchase links for those items first.");
+      setError("No items found for that store yet. Add pack purchase/search links for those items first.");
       return;
     }
 

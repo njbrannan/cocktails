@@ -39,7 +39,7 @@ export function formatOrderListHtml(
 
 export async function computeOrderListForEvent(supabaseServer: any, eventId: string) {
   const selectWithPacks =
-    "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, price, ingredient_packs(pack_size, pack_price, purchase_url, tier, is_active))))";
+    "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, retailer, tier, is_active))))";
   const selectWithoutPacks =
     "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, price)))";
 
@@ -98,6 +98,9 @@ export async function computeOrderListForEvent(supabaseServer: any, eventId: str
               packSize: Number(p.pack_size),
               packPrice: Number(p.pack_price),
               purchaseUrl: p.purchase_url || null,
+              searchUrl: p.search_url || null,
+              searchQuery: p.search_query || null,
+              retailer: (p.retailer as any) || null,
               tier: (p.tier as any) || null,
             })),
         }));

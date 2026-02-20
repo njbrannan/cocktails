@@ -76,7 +76,10 @@ type Ingredient = {
     pack_size: number;
     pack_price: number;
     purchase_url?: string | null;
-    tier?: "budget" | "premium" | null;
+    search_url?: string | null;
+    search_query?: string | null;
+    retailer?: "danmurphys" | "woolworths" | "getinvolved" | null;
+    tier?: "economy" | "business" | "first_class" | "budget" | "premium" | null;
     is_active: boolean;
   }> | null;
 };
@@ -341,6 +344,9 @@ export default function RequestEditPage() {
                   packSize: Number(p.pack_size),
                   packPrice: Number(p.pack_price),
                   purchaseUrl: p.purchase_url || null,
+                  searchUrl: p.search_url || null,
+                  searchQuery: p.search_query || null,
+                  retailer: (p.retailer as any) || null,
                   tier: (p.tier as any) || null,
                 })) ?? null,
           },
@@ -355,7 +361,7 @@ export default function RequestEditPage() {
       if (a.total !== b.total) return b.total - a.total;
       return a.name.localeCompare(b.name);
     });
-  }, [recipes, cocktailsSummary]);
+  }, [recipes, cocktailsSummary, pricingTier]);
 
   const loadEvent = async () => {
     setLoading(true);
@@ -379,7 +385,7 @@ export default function RequestEditPage() {
 
   const loadMenu = async () => {
     const selectWithPacks =
-      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, tier, is_active)))";
+      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, retailer, tier, is_active)))";
     const selectWithoutPacks =
       "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
 

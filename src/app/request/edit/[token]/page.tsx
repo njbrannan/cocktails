@@ -47,6 +47,21 @@ function normalizePackTier(tier: any): "economy" | "business" | "first_class" {
   return "economy";
 }
 
+function normalizePricingTier(value: any): "budget" | "house" | "top_shelf" {
+  const v = String(value || "").trim().toLowerCase();
+  if (
+    v === "top_shelf" ||
+    v === "topshelf" ||
+    v === "first_class" ||
+    v === "first-class" ||
+    v === "firstclass"
+  ) {
+    return "top_shelf";
+  }
+  if (v === "house" || v === "business") return "house";
+  return "budget";
+}
+
 type EventRecord = {
   id: string;
   title: string | null;
@@ -145,8 +160,8 @@ export default function RequestEditPage() {
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [pricingTier, setPricingTier] = useState<
-    "economy" | "business" | "first_class"
-  >("economy");
+    "budget" | "house" | "top_shelf"
+  >("budget");
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -339,7 +354,13 @@ export default function RequestEditPage() {
             price: ingredient.price ?? null,
             packOptions:
               ingredient.ingredient_packs
-                ?.filter((p) => p?.is_active && normalizePackTier(p.tier) === pricingTier)
+                ?.filter((p) => {
+                  if (!p?.is_active) return false;
+                  if (pricingTier === "budget") return true;
+                  const normalized = normalizePackTier(p.tier);
+                  if (pricingTier === "top_shelf") return normalized === "first_class";
+                  return normalized === "business";
+                })
                 .map((p) => ({
                   packSize: Number(p.pack_size),
                   packPrice: Number(p.pack_price),
@@ -607,7 +628,28 @@ export default function RequestEditPage() {
                 <span className="tabular-nums text-right">
                   {item.packPlan?.length ? (
                     <span>
-                      {formatPackPlan(item.packPlan, item.unit)}
+                      {item.packPlan
+                        .slice()
+                        .sort((a: any, b: any) => b.packSize - a.packSize)
+                        .map((p: any) => {
+                          const url = p.purchaseUrl || p.searchUrl;
+                          const label = `${p.count} × ${p.packSize}${item.unit}`;
+                          return url ? (
+                            <a
+                              key={`${p.packSize}-${p.count}`}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className="block underline underline-offset-2 hover:opacity-80"
+                            >
+                              {label}
+                            </a>
+                          ) : (
+                            <span key={`${p.packSize}-${p.count}`} className="block">
+                              {label}
+                            </span>
+                          );
+                        })}
                       <span className="block text-[11px] text-black/60">
                         Total: {item.total} {item.unit}
                       </span>
@@ -1620,9 +1662,30 @@ export default function RequestEditPage() {
                       <div className="text-right">
                         {item.packPlan?.length ? (
                           <div className="text-right tabular-nums">
-                            <p className="text-sm font-semibold text-ink">
-                              {formatPackPlan(item.packPlan, item.unit)}
-                            </p>
+                            <div className="text-sm font-semibold text-ink">
+                              {item.packPlan
+                                .slice()
+                                .sort((a, b) => b.packSize - a.packSize)
+                                .map((p: any) => {
+                                  const url = p.purchaseUrl || p.searchUrl;
+                                  const label = `${p.count} × ${p.packSize}${item.unit}`;
+                                  return url ? (
+                                    <a
+                                      key={`${p.packSize}-${p.count}`}
+                                      href={url}
+                                      target="_blank"
+                                      rel="noreferrer noopener"
+                                      className="block underline underline-offset-2 hover:opacity-80"
+                                    >
+                                      {label}
+                                    </a>
+                                  ) : (
+                                    <span key={`${p.packSize}-${p.count}`} className="block">
+                                      {label}
+                                    </span>
+                                  );
+                                })}
+                            </div>
                             <p className="mt-1 text-xs text-ink-muted">
                               {item.total} {item.unit}
                             </p>

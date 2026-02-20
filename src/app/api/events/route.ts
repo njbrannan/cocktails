@@ -229,7 +229,7 @@ function formatOrderListHtml(
 async function computeOrderListForEvent(
   supabaseServer: any,
   eventId: string,
-  pricingTier: "economy" | "business" | "first_class" = "economy",
+  pricingTier: "budget" | "house" | "top_shelf" | "economy" | "business" | "first_class" = "budget",
 ) {
   const selectWithPacks =
     "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, retailer, tier, is_active))))";
@@ -281,9 +281,19 @@ async function computeOrderListForEvent(
           const packs = (ingredient.ingredient_packs ?? [])
             .filter((p: any) => p?.is_active)
             .filter((p: any) => {
+              const pt = String(pricingTier || "").toLowerCase();
+              // "Budget" means pick the cheapest combination across all tiers.
+              if (pt === "budget") return true;
+              // Normalize legacy values (economy/business/first_class) and UI labels (house/top_shelf).
+              const target =
+                pt === "top_shelf"
+                  ? "first_class"
+                  : pt === "house"
+                    ? "business"
+                    : pt;
               const t = String(p?.tier || "").toLowerCase();
-              if (pricingTier === "first_class") return t === "first_class" || t === "premium";
-              if (pricingTier === "business") return t === "business";
+              if (target === "first_class") return t === "first_class" || t === "premium";
+              if (target === "business") return t === "business";
               return t === "economy" || t === "budget" || t === "";
             });
 
@@ -350,7 +360,7 @@ export async function POST(request: NextRequest) {
       clientPhone?: string;
       cocktails?: CocktailSelection[];
       submit?: boolean;
-      pricingTier?: "economy" | "business" | "first_class";
+      pricingTier?: "budget" | "house" | "top_shelf" | "economy" | "business" | "first_class";
     } = body;
 
     if (submit) {
@@ -409,11 +419,15 @@ export async function POST(request: NextRequest) {
         status: submit ? "submitted" : "draft",
         client_email: clientEmail || null,
         client_phone: clientPhone || null,
-          pricing_tier:
-            pricingTier === "first_class"
-              ? "first_class"
-              : pricingTier === "business"
-                ? "business"
+        pricing_tier:
+          String(pricingTier || "").toLowerCase() === "top_shelf" ||
+          String(pricingTier || "").toLowerCase() === "first_class"
+            ? "first_class"
+            : String(pricingTier || "").toLowerCase() === "house" ||
+                String(pricingTier || "").toLowerCase() === "business"
+              ? "business"
+              : String(pricingTier || "").toLowerCase() === "budget"
+                ? "budget"
                 : "economy",
       })
       .select("id, edit_token")

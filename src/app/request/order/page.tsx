@@ -76,7 +76,7 @@ type StoredOrder = {
   guestCount?: number | null;
   drinksPerGuest?: number;
   occasion?: string | null;
-  pricingTier?: "economy" | "business" | "first_class";
+  pricingTier?: "budget" | "house" | "top_shelf" | "economy" | "business" | "first_class";
 };
 
 const STORAGE_KEY = "get-involved:order:v1";
@@ -123,6 +123,7 @@ function formatPackPlan(
 
 function resolvePurchaseUrlForItem(item: IngredientTotal) {
   const plan = item.packPlan ?? [];
+  if (plan.length > 1) return undefined;
   if (plan.length === 1) {
     return plan[0]?.purchaseUrl || plan[0]?.searchUrl || item.purchaseUrl;
   }
@@ -136,6 +137,16 @@ function normalizePackTier(tier: any): "economy" | "business" | "first_class" {
     return "first_class";
   if (t === "economy" || t === "budget") return "economy";
   return "economy";
+}
+
+function normalizePricingTier(value: any): "budget" | "house" | "top_shelf" {
+  const v = String(value || "").trim().toLowerCase();
+  if (v === "top_shelf" || v === "topshelf" || v === "first_class" || v === "first-class" || v === "firstclass") {
+    return "top_shelf";
+  }
+  if (v === "house" || v === "business") return "house";
+  // Default: cheapest. Also treat legacy "economy/budget" as Budget.
+  return "budget";
 }
 
 function retailerForUrl(url: string) {
@@ -228,8 +239,8 @@ export default function RequestOrderPage() {
   const [recalcError, setRecalcError] = useState<string | null>(null);
   const [editingQuantities, setEditingQuantities] = useState(false);
   const [pricingTier, setPricingTier] = useState<
-    "economy" | "business" | "first_class"
-  >("economy");
+    "budget" | "house" | "top_shelf"
+  >("budget");
 
   const [eventDate, setEventDate] = useState("");
   const [eventName, setEventName] = useState("");
@@ -313,13 +324,7 @@ export default function RequestOrderPage() {
       const parsed = JSON.parse(raw) as StoredOrder;
       if (parsed?.version !== 1) return;
       setStored(parsed);
-      if (
-        parsed?.pricingTier === "economy" ||
-        parsed?.pricingTier === "business" ||
-        parsed?.pricingTier === "first_class"
-      ) {
-        setPricingTier(parsed.pricingTier);
-      }
+      setPricingTier(normalizePricingTier(parsed?.pricingTier));
       setServingsByRecipeId(parsed.servingsByRecipeId || {});
       setOrderList(parsed.orderList || []);
       if (!guestCountInput) {
@@ -598,7 +603,14 @@ export default function RequestOrderPage() {
               price: ingredient.price ?? null,
               packOptions:
                 ingredient.ingredient_packs
-                  ?.filter((p) => p?.is_active && normalizePackTier(p.tier) === pricingTier)
+                  ?.filter((p) => {
+                    if (!p?.is_active) return false;
+                    if (pricingTier === "budget") return true; // allow any tier, pick cheapest overall
+                    const normalized = normalizePackTier(p.tier);
+                    if (pricingTier === "top_shelf") return normalized === "first_class";
+                    // house
+                    return normalized === "business";
+                  })
                   .map((p) => ({
                     packSize: Number(p.pack_size),
                     packPrice: Number(p.pack_price),
@@ -1260,36 +1272,36 @@ export default function RequestOrderPage() {
             <div className="inline-flex overflow-hidden rounded-full border border-subtle bg-white/70 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
               <button
                 type="button"
-                onClick={() => setPricingTier("first_class")}
+                onClick={() => setPricingTier("top_shelf")}
                 className={`px-4 py-2 transition ${
-                  pricingTier === "first_class"
+                  pricingTier === "top_shelf"
                     ? "bg-accent text-on-accent"
                     : "hover:bg-white"
                 }`}
               >
-                First class
+                Top Shelf
               </button>
               <button
                 type="button"
-                onClick={() => setPricingTier("business")}
+                onClick={() => setPricingTier("house")}
                 className={`border-x border-subtle px-4 py-2 transition ${
-                  pricingTier === "business"
+                  pricingTier === "house"
                     ? "bg-accent text-on-accent"
                     : "hover:bg-white"
                 }`}
               >
-                Business
+                House
               </button>
               <button
                 type="button"
-                onClick={() => setPricingTier("economy")}
+                onClick={() => setPricingTier("budget")}
                 className={`px-4 py-2 transition ${
-                  pricingTier === "economy"
+                  pricingTier === "budget"
                     ? "bg-accent text-on-accent"
                     : "hover:bg-white"
                 }`}
               >
-                Economy
+                Budget
               </button>
             </div>
           </div>
@@ -1323,9 +1335,30 @@ export default function RequestOrderPage() {
                 <div className="shrink-0 text-right tabular-nums">
                   {item.packPlan?.length ? (
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-ink">
-                        {formatPackPlan(item.packPlan, item.unit)}
-                      </p>
+                      <div className="text-sm font-semibold text-ink">
+                        {item.packPlan
+                          .slice()
+                          .sort((a, b) => b.packSize - a.packSize)
+                          .map((p) => {
+                            const url = p.purchaseUrl || p.searchUrl;
+                            const label = `${p.count} × ${p.packSize}${item.unit}`;
+                            return url ? (
+                              <a
+                                key={`${p.packSize}-${p.count}`}
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                className="block underline underline-offset-2 hover:opacity-80"
+                              >
+                                {label}
+                              </a>
+                            ) : (
+                              <span key={`${p.packSize}-${p.count}`} className="block">
+                                {label}
+                              </span>
+                            );
+                          })}
+                      </div>
                       <p className="mt-1 text-[12px] text-ink-muted">
                         {item.total} {item.unit}
                       </p>

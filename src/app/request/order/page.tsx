@@ -133,6 +133,80 @@ function normalizePackTier(tier: any): "economy" | "business" | "first_class" {
   return "economy";
 }
 
+function retailerForUrl(url: string) {
+  const u = String(url || "").toLowerCase();
+  if (!u) return null;
+  if (u.includes("danmurphys.com.au")) return "danmurphys";
+  if (u.includes("woolworths.com.au")) return "woolworths";
+  if (u.includes("getinvolved.com.au")) return "getinvolved";
+  return null;
+}
+
+function downloadTextFile(filename: string, content: string, mime = "text/plain") {
+  const blob = new Blob([content], { type: `${mime};charset=utf-8` });
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(href), 1000);
+}
+
+function buildRetailerExportHtml(title: string, rows: Array<{ name: string; qty: string; url: string }>) {
+  const safe = (s: string) =>
+    String(s || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
+  const list = rows
+    .map(
+      (r) => `<li style="padding:10px 0;border-bottom:1px solid #eee">
+  <div style="display:flex;gap:16px;justify-content:space-between;align-items:flex-start">
+    <div style="min-width:0">
+      <div style="font-weight:600">${safe(r.name)}</div>
+      <div style="color:#555;font-size:12px;margin-top:4px">${safe(r.url)}</div>
+    </div>
+    <div style="white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600">${safe(r.qty)}</div>
+  </div>
+</li>`,
+    )
+    .join("");
+
+  const urlsJson = safe(JSON.stringify(rows.map((r) => r.url)));
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${safe(title)}</title>
+</head>
+<body style="margin:0;padding:24px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.4;background:#fafafa;color:#111">
+  <div style="max-width:900px;margin:0 auto;background:#fff;border:1px solid #eee;border-radius:16px;padding:20px 20px 10px 20px">
+    <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline;flex-wrap:wrap">
+      <h1 style="margin:0;font-size:18px">${safe(title)}</h1>
+      <button id="openAll" style="border:0;border-radius:999px;padding:10px 14px;background:#111;color:#fff;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;font-size:11px;cursor:pointer">
+        Open Links
+      </button>
+    </div>
+    <p style="margin:10px 0 16px 0;color:#555;font-size:13px">This opens product links in new tabs so you can add them to your cart.</p>
+    <ul style="list-style:none;padding:0;margin:0">${list}</ul>
+  </div>
+  <script>
+    const urls = JSON.parse("${urlsJson}");
+    document.getElementById("openAll").addEventListener("click", () => {
+      for (const url of urls) window.open(url, "_blank", "noopener,noreferrer");
+    });
+  </script>
+</body>
+</html>`;
+}
+
 export default function RequestOrderPage() {
   const router = useRouter();
   const orderBartendersRef = useRef<HTMLDivElement | null>(null);
@@ -714,6 +788,50 @@ export default function RequestOrderPage() {
     }
   };
 
+  const exportRetailer = (retailer: "danmurphys" | "woolworths" | "getinvolved") => {
+    const rows = (orderList ?? [])
+      .map((item) => {
+        const url = resolvePurchaseUrlForItem(item) || "";
+        if (retailerForUrl(url) !== retailer) return null;
+        const qty = item.packPlan?.length
+          ? formatPackPlan(item.packPlan, item.unit)
+          : item.bottlesNeeded
+            ? `${item.bottlesNeeded} × ${item.bottleSizeMl}${item.unit}`
+            : `${item.total} ${item.unit}`;
+        return { name: item.name, type: item.type, qty, total: `${item.total} ${item.unit}`, url };
+      })
+      .filter(Boolean) as Array<{ name: string; type: string; qty: string; total: string; url: string }>;
+
+    if (!rows.length) {
+      setError("No items found for that store yet. Add purchase links for those items first.");
+      return;
+    }
+
+    const header = ["name", "type", "qty_to_buy", "total_needed", "url"].join(",");
+    const csv = [
+      header,
+      ...rows.map((r) =>
+        [r.name, r.type, r.qty, r.total, r.url]
+          .map((v) => `"${String(v).replaceAll('"', '""')}"`)
+          .join(","),
+      ),
+    ].join("\n");
+
+    const storeLabel =
+      retailer === "danmurphys"
+        ? "dan-murphys"
+        : retailer === "woolworths"
+          ? "woolworths"
+          : "getinvolved";
+    downloadTextFile(`shopping-list-${storeLabel}.csv`, csv, "text/csv");
+
+    const html = buildRetailerExportHtml(
+      `Shopping list — ${storeLabel.replaceAll("-", " ")}`,
+      rows.map((r) => ({ name: r.name, qty: r.qty, url: r.url })),
+    );
+    window.open(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`, "_blank", "noopener,noreferrer");
+  };
+
   const sendDraft = async (draft: OfflineDraft) => {
     if (!draft?.payload) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -1201,6 +1319,30 @@ export default function RequestOrderPage() {
               </li>
             ))}
           </ul>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => exportRetailer("danmurphys")}
+              className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
+            >
+              Dan Murphy's
+            </button>
+            <button
+              type="button"
+              onClick={() => exportRetailer("woolworths")}
+              className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
+            >
+              Woolworths
+            </button>
+            <button
+              type="button"
+              onClick={() => exportRetailer("getinvolved")}
+              className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
+            >
+              Get Involved
+            </button>
+          </div>
 
           <div
             ref={orderBartendersRef}

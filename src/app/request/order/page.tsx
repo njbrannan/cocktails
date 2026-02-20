@@ -73,7 +73,7 @@ type StoredOrder = {
   guestCount?: number | null;
   drinksPerGuest?: number;
   occasion?: string | null;
-  pricingTier?: "budget" | "premium";
+  pricingTier?: "economy" | "business" | "first_class";
 };
 
 const STORAGE_KEY = "get-involved:order:v1";
@@ -124,6 +124,15 @@ function resolvePurchaseUrlForItem(item: IngredientTotal) {
   return item.purchaseUrl;
 }
 
+function normalizePackTier(tier: any): "economy" | "business" | "first_class" {
+  const t = String(tier || "").trim().toLowerCase();
+  if (t === "business") return "business";
+  if (t === "first_class" || t === "first-class" || t === "firstclass" || t === "premium")
+    return "first_class";
+  if (t === "economy" || t === "budget") return "economy";
+  return "economy";
+}
+
 export default function RequestOrderPage() {
   const router = useRouter();
   const orderBartendersRef = useRef<HTMLDivElement | null>(null);
@@ -139,7 +148,9 @@ export default function RequestOrderPage() {
   const [orderList, setOrderList] = useState<IngredientTotal[]>([]);
   const [recalcError, setRecalcError] = useState<string | null>(null);
   const [editingQuantities, setEditingQuantities] = useState(false);
-  const [pricingTier, setPricingTier] = useState<"budget" | "premium">("budget");
+  const [pricingTier, setPricingTier] = useState<
+    "economy" | "business" | "first_class"
+  >("economy");
 
   const [eventDate, setEventDate] = useState("");
   const [eventName, setEventName] = useState("");
@@ -223,7 +234,11 @@ export default function RequestOrderPage() {
       const parsed = JSON.parse(raw) as StoredOrder;
       if (parsed?.version !== 1) return;
       setStored(parsed);
-      if (parsed?.pricingTier === "premium" || parsed?.pricingTier === "budget") {
+      if (
+        parsed?.pricingTier === "economy" ||
+        parsed?.pricingTier === "business" ||
+        parsed?.pricingTier === "first_class"
+      ) {
         setPricingTier(parsed.pricingTier);
       }
       setServingsByRecipeId(parsed.servingsByRecipeId || {});
@@ -504,7 +519,7 @@ export default function RequestOrderPage() {
               price: ingredient.price ?? null,
               packOptions:
                 ingredient.ingredient_packs
-                  ?.filter((p) => p?.is_active && (p.tier || "budget") === pricingTier)
+                  ?.filter((p) => p?.is_active && normalizePackTier(p.tier) === pricingTier)
                   .map((p) => ({
                     packSize: Number(p.pack_size),
                     packPrice: Number(p.pack_price),
@@ -1097,9 +1112,9 @@ export default function RequestOrderPage() {
             <div className="inline-flex overflow-hidden rounded-full border border-subtle bg-white/70 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
               <button
                 type="button"
-                onClick={() => setPricingTier("premium")}
+                onClick={() => setPricingTier("first_class")}
                 className={`px-4 py-2 transition ${
-                  pricingTier === "premium"
+                  pricingTier === "first_class"
                     ? "bg-accent text-on-accent"
                     : "hover:bg-white"
                 }`}
@@ -1108,14 +1123,25 @@ export default function RequestOrderPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setPricingTier("budget")}
-                className={`px-4 py-2 transition ${
-                  pricingTier === "budget"
+                onClick={() => setPricingTier("business")}
+                className={`border-x border-subtle px-4 py-2 transition ${
+                  pricingTier === "business"
                     ? "bg-accent text-on-accent"
                     : "hover:bg-white"
                 }`}
               >
-                Premium economy
+                Business
+              </button>
+              <button
+                type="button"
+                onClick={() => setPricingTier("economy")}
+                className={`px-4 py-2 transition ${
+                  pricingTier === "economy"
+                    ? "bg-accent text-on-accent"
+                    : "hover:bg-white"
+                }`}
+              >
+                Economy
               </button>
             </div>
           </div>

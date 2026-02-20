@@ -38,6 +38,15 @@ function formatPackPlan(
     .join(" + ");
 }
 
+function normalizePackTier(tier: any): "economy" | "business" | "first_class" {
+  const t = String(tier || "").trim().toLowerCase();
+  if (t === "business") return "business";
+  if (t === "first_class" || t === "first-class" || t === "firstclass" || t === "premium")
+    return "first_class";
+  if (t === "economy" || t === "budget") return "economy";
+  return "economy";
+}
+
 type EventRecord = {
   id: string;
   title: string | null;
@@ -132,7 +141,9 @@ export default function RequestEditPage() {
   };
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [pricingTier, setPricingTier] = useState<"budget" | "premium">("budget");
+  const [pricingTier, setPricingTier] = useState<
+    "economy" | "business" | "first_class"
+  >("economy");
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -325,7 +336,7 @@ export default function RequestEditPage() {
             price: ingredient.price ?? null,
             packOptions:
               ingredient.ingredient_packs
-                ?.filter((p) => p?.is_active && (p.tier || "budget") === pricingTier)
+                ?.filter((p) => p?.is_active && normalizePackTier(p.tier) === pricingTier)
                 .map((p) => ({
                   packSize: Number(p.pack_size),
                   packPrice: Number(p.pack_price),

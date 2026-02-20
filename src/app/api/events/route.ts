@@ -229,7 +229,7 @@ function formatOrderListHtml(
 async function computeOrderListForEvent(
   supabaseServer: any,
   eventId: string,
-  pricingTier: "budget" | "premium" = "budget",
+  pricingTier: "economy" | "business" | "first_class" = "economy",
 ) {
   const selectWithPacks =
     "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, tier, is_active))))";
@@ -280,7 +280,12 @@ async function computeOrderListForEvent(
         return ingredients.map((ingredient: any) => {
           const packs = (ingredient.ingredient_packs ?? [])
             .filter((p: any) => p?.is_active)
-            .filter((p: any) => String(p?.tier || "budget") === pricingTier);
+            .filter((p: any) => {
+              const t = String(p?.tier || "").toLowerCase();
+              if (pricingTier === "first_class") return t === "first_class" || t === "premium";
+              if (pricingTier === "business") return t === "business";
+              return t === "economy" || t === "budget" || t === "";
+            });
 
           return {
           ingredientId: ingredient.id,
@@ -342,7 +347,7 @@ export async function POST(request: NextRequest) {
       clientPhone?: string;
       cocktails?: CocktailSelection[];
       submit?: boolean;
-      pricingTier?: "budget" | "premium";
+      pricingTier?: "economy" | "business" | "first_class";
     } = body;
 
     if (submit) {
@@ -401,7 +406,12 @@ export async function POST(request: NextRequest) {
         status: submit ? "submitted" : "draft",
         client_email: clientEmail || null,
         client_phone: clientPhone || null,
-        pricing_tier: pricingTier === "premium" ? "premium" : "budget",
+          pricing_tier:
+            pricingTier === "first_class"
+              ? "first_class"
+              : pricingTier === "business"
+                ? "business"
+                : "economy",
       })
       .select("id, edit_token")
       .single();
@@ -482,11 +492,7 @@ export async function POST(request: NextRequest) {
 
       let orderTotals: ReturnType<typeof buildIngredientTotals> = [];
       try {
-        orderTotals = await computeOrderListForEvent(
-          supabaseServer,
-          data.id,
-          pricingTier === "premium" ? "premium" : "budget",
-        );
+        orderTotals = await computeOrderListForEvent(supabaseServer, data.id, pricingTier);
       } catch {
         orderTotals = [];
       }

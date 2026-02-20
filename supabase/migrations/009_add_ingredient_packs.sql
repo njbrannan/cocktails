@@ -39,4 +39,4 @@ alter table public.ingredient_packs
   add constraint ingredient_packs_pack_price_check check (pack_price >= 0);
 
 alter table public.ingredient_packs
-  add constraint ingredient_packs_tier_check check (tier in ('budget', 'premium'));
+  add constraint ingredient_packs_tier_check check (tier in ('economy', 'business', 'first_class'));

@@ -11,7 +11,7 @@ export type PackOption = {
   packSize: number;
   packPrice: number;
   purchaseUrl?: string | null;
-  tier?: "budget" | "premium" | null;
+  tier?: "economy" | "business" | "first_class" | null;
 };
 
 export type PackPlanLine = {

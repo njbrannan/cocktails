@@ -223,6 +223,27 @@ function buildRetailerExportHtml(title: string, rows: Array<{ name: string; qty:
 </html>`;
 }
 
+function base64UrlEncodeUtf8(input: string) {
+  // Encode compactly for query strings.
+  const bytes = new TextEncoder().encode(input);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  const base64 = btoa(binary);
+  return base64.replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+function buildGetInvolvedCartImportUrl(
+  rows: Array<{ url: string; count: number }>,
+  origin = "https://www.getinvolved.com.au",
+) {
+  // Keep payload intentionally small.
+  const payload = rows
+    .filter((r) => r && r.url && r.count > 0)
+    .map((r) => ({ url: r.url, count: r.count }));
+  const encoded = base64UrlEncodeUtf8(JSON.stringify({ v: 1, items: payload }));
+  return `${origin.replace(/\/$/, "")}/cart-import?items=${encoded}`;
+}
+
 export default function RequestOrderPage() {
   const router = useRouter();
   const orderBartendersRef = useRef<HTMLDivElement | null>(null);
@@ -810,6 +831,7 @@ export default function RequestOrderPage() {
 
   const exportRetailer = (retailer: "danmurphys" | "woolworths" | "getinvolved") => {
     const rows: Array<{ name: string; type: string; qty: string; total: string; url: string }> = [];
+    const getInvolvedCartItems: Array<{ url: string; count: number }> = [];
 
     for (const item of orderList ?? []) {
       if (item.packPlan?.length) {
@@ -825,6 +847,9 @@ export default function RequestOrderPage() {
             total: `${item.total} ${item.unit}`,
             url,
           });
+          if (retailer === "getinvolved") {
+            getInvolvedCartItems.push({ url, count: line.count });
+          }
         }
         continue;
       }
@@ -842,6 +867,9 @@ export default function RequestOrderPage() {
         total: `${item.total} ${item.unit}`,
         url,
       });
+      if (retailer === "getinvolved") {
+        getInvolvedCartItems.push({ url, count: item.bottlesNeeded || 1 });
+      }
     }
 
     if (!rows.length) {
@@ -866,6 +894,15 @@ export default function RequestOrderPage() {
           ? "woolworths"
           : "getinvolved";
     downloadTextFile(`shopping-list-${storeLabel}.csv`, csv, "text/csv");
+
+    // For Get Involved items (ice + glassware), we can optionally deep-link to a
+    // Squarespace page that adds these products to cart in the *customer's* browser session.
+    // This requires a small JS snippet on getinvolved.com.au to process the query string.
+    if (retailer === "getinvolved" && getInvolvedCartItems.length) {
+      const importUrl = buildGetInvolvedCartImportUrl(getInvolvedCartItems);
+      window.open(importUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
 
     const html = buildRetailerExportHtml(
       `Shopping list — ${storeLabel.replaceAll("-", " ")}`,

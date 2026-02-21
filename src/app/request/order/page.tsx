@@ -877,23 +877,12 @@ export default function RequestOrderPage() {
       return;
     }
 
-    const header = ["name", "type", "qty_to_buy", "total_needed", "url"].join(",");
-    const csv = [
-      header,
-      ...rows.map((r) =>
-        [r.name, r.type, r.qty, r.total, r.url]
-          .map((v) => `"${String(v).replaceAll('"', '""')}"`)
-          .join(","),
-      ),
-    ].join("\n");
-
     const storeLabel =
       retailer === "danmurphys"
         ? "dan-murphys"
         : retailer === "woolworths"
           ? "woolworths"
           : "getinvolved";
-    downloadTextFile(`shopping-list-${storeLabel}.csv`, csv, "text/csv");
 
     // For Get Involved items (ice + glassware), we can optionally deep-link to a
     // Squarespace page that adds these products to cart in the *customer's* browser session.

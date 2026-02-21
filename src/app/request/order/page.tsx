@@ -144,7 +144,7 @@ function normalizePricingTier(value: any): "budget" | "house" | "top_shelf" {
   if (v === "top_shelf" || v === "topshelf" || v === "first_class" || v === "first-class" || v === "firstclass") {
     return "top_shelf";
   }
-  if (v === "house" || v === "business") return "house";
+  if (v === "house" || v === "business" || v === "economy") return "house";
   // Default: cheapest. Also treat legacy "economy/budget" as Budget.
   return "budget";
 }
@@ -608,8 +608,8 @@ export default function RequestOrderPage() {
                     if (pricingTier === "budget") return true; // allow any tier, pick cheapest overall
                     const normalized = normalizePackTier(p.tier);
                     if (pricingTier === "top_shelf") return normalized === "first_class";
-                    // house
-                    return normalized === "business";
+                    // house (budget/economy-only)
+                    return normalized === "economy";
                   })
                   .map((p) => ({
                     packSize: Number(p.pack_size),
@@ -1301,7 +1301,7 @@ export default function RequestOrderPage() {
                     : "hover:bg-white"
                 }`}
               >
-                Budget
+                Cheap
               </button>
             </div>
           </div>

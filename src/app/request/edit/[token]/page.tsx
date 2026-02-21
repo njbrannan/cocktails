@@ -58,7 +58,7 @@ function normalizePricingTier(value: any): "budget" | "house" | "top_shelf" {
   ) {
     return "top_shelf";
   }
-  if (v === "house" || v === "business") return "house";
+  if (v === "house" || v === "business" || v === "economy") return "house";
   return "budget";
 }
 
@@ -359,7 +359,7 @@ export default function RequestEditPage() {
                   if (pricingTier === "budget") return true;
                   const normalized = normalizePackTier(p.tier);
                   if (pricingTier === "top_shelf") return normalized === "first_class";
-                  return normalized === "business";
+                  return normalized === "economy";
                 })
                 .map((p) => ({
                   packSize: Number(p.pack_size),

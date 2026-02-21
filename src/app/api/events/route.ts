@@ -289,7 +289,7 @@ async function computeOrderListForEvent(
                 pt === "top_shelf"
                   ? "first_class"
                   : pt === "house"
-                    ? "business"
+                    ? "economy"
                     : pt;
               const t = String(p?.tier || "").toLowerCase();
               if (target === "first_class") return t === "first_class" || t === "premium";
@@ -424,8 +424,8 @@ export async function POST(request: NextRequest) {
           String(pricingTier || "").toLowerCase() === "first_class"
             ? "first_class"
             : String(pricingTier || "").toLowerCase() === "house" ||
-                String(pricingTier || "").toLowerCase() === "business"
-              ? "business"
+                String(pricingTier || "").toLowerCase() === "economy"
+              ? "economy"
               : String(pricingTier || "").toLowerCase() === "budget"
                 ? "budget"
                 : "economy",

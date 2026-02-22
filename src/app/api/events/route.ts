@@ -232,7 +232,7 @@ async function computeOrderListForEvent(
   pricingTier: "budget" | "house" | "top_shelf" | "economy" | "business" | "first_class" = "budget",
 ) {
   const selectWithPacks =
-    "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, retailer, tier, is_active))))";
+    "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active))))";
   const selectWithoutPacks =
     "servings, recipes(name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price)))";
 
@@ -313,6 +313,7 @@ async function computeOrderListForEvent(
               purchaseUrl: p.purchase_url || null,
               searchUrl: p.search_url || null,
               searchQuery: p.search_query || null,
+              variantSku: p.variant_sku || null,
               retailer: (p.retailer as any) || null,
               tier: (p.tier as any) || null,
             })),

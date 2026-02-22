@@ -48,6 +48,7 @@ type Ingredient = {
     purchase_url?: string | null;
     search_url?: string | null;
     search_query?: string | null;
+    variant_sku?: string | null;
     retailer?: "danmurphys" | "woolworths" | "getinvolved" | null;
     tier?: "economy" | "business" | "first_class" | "budget" | "premium" | null;
     is_active: boolean;
@@ -233,13 +234,13 @@ function base64UrlEncodeUtf8(input: string) {
 }
 
 function buildGetInvolvedCartImportUrl(
-  rows: Array<{ url: string; count: number }>,
+  rows: Array<{ url: string; count: number; sku?: string | null }>,
   origin = "https://www.getinvolved.com.au",
 ) {
   // Keep payload intentionally small.
   const payload = rows
     .filter((r) => r && r.url && r.count > 0)
-    .map((r) => ({ url: r.url, count: r.count }));
+    .map((r) => ({ url: r.url, count: r.count, sku: r.sku || null }));
   const encoded = base64UrlEncodeUtf8(JSON.stringify({ v: 1, items: payload }));
   return `${origin.replace(/\/$/, "")}/cart-import?items=${encoded}`;
 }
@@ -521,7 +522,7 @@ export default function RequestOrderPage() {
       if (recipeIds.length === 0) return;
 
       const selectWithPacks =
-        "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, retailer, tier, is_active)))";
+        "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)))";
       const selectWithoutPacks =
         "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
 
@@ -638,6 +639,7 @@ export default function RequestOrderPage() {
                     purchaseUrl: p.purchase_url || null,
                     searchUrl: p.search_url || null,
                     searchQuery: p.search_query || null,
+                    variantSku: p.variant_sku || null,
                     retailer: (p.retailer as any) || null,
                     tier: (p.tier as any) || null,
                   })) ?? null,
@@ -831,7 +833,7 @@ export default function RequestOrderPage() {
 
   const exportRetailer = (retailer: "danmurphys" | "woolworths" | "getinvolved") => {
     const rows: Array<{ name: string; type: string; qty: string; total: string; url: string }> = [];
-    const getInvolvedCartItems: Array<{ url: string; count: number }> = [];
+    const getInvolvedCartItems: Array<{ url: string; count: number; sku?: string | null }> = [];
 
     for (const item of orderList ?? []) {
       if (item.packPlan?.length) {
@@ -848,7 +850,7 @@ export default function RequestOrderPage() {
             url,
           });
           if (retailer === "getinvolved") {
-            getInvolvedCartItems.push({ url, count: line.count });
+            getInvolvedCartItems.push({ url, count: line.count, sku: (line as any).variantSku || null });
           }
         }
         continue;
@@ -868,7 +870,7 @@ export default function RequestOrderPage() {
         url,
       });
       if (retailer === "getinvolved") {
-        getInvolvedCartItems.push({ url, count: item.bottlesNeeded || 1 });
+        getInvolvedCartItems.push({ url, count: item.bottlesNeeded || 1, sku: null });
       }
     }
 

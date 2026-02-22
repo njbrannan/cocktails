@@ -56,6 +56,7 @@ type Ingredient = {
     purchase_url?: string | null;
     search_url?: string | null;
     search_query?: string | null;
+    variant_sku?: string | null;
     retailer?: "danmurphys" | "woolworths" | "getinvolved" | null;
     tier?: "economy" | "business" | "first_class" | "budget" | "premium" | null;
     is_active: boolean;
@@ -317,7 +318,7 @@ export default function RequestPage() {
     setError(null);
     setMenuLoading(true);
     const selectWithPacks =
-      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, retailer, tier, is_active)))";
+      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)))";
     const selectWithoutPacks =
       "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
 
@@ -493,16 +494,17 @@ export default function RequestPage() {
             price: ingredient.price ?? null,
             packOptions:
               ingredient.ingredient_packs
-                ?.filter((p) => p?.is_active)
-                .map((p) => ({
-                  packSize: Number(p.pack_size),
-                  packPrice: Number(p.pack_price),
-                  purchaseUrl: p.purchase_url || null,
-                  searchUrl: p.search_url || null,
-                  searchQuery: p.search_query || null,
-                  retailer: (p.retailer as any) || null,
-                  tier: (p.tier as any) || null,
-                })) ?? null,
+                  ?.filter((p) => p?.is_active)
+                  .map((p) => ({
+                    packSize: Number(p.pack_size),
+                    packPrice: Number(p.pack_price),
+                    purchaseUrl: p.purchase_url || null,
+                    searchUrl: p.search_url || null,
+                    searchQuery: p.search_query || null,
+                    variantSku: p.variant_sku || null,
+                    retailer: (p.retailer as any) || null,
+                    tier: (p.tier as any) || null,
+                  })) ?? null,
           },
         ];
       }),

@@ -13,6 +13,7 @@ export type PackOption = {
   purchaseUrl?: string | null;
   searchUrl?: string | null;
   searchQuery?: string | null;
+  variantSku?: string | null;
   retailer?: "danmurphys" | "woolworths" | "getinvolved" | null;
   tier?: "economy" | "business" | "first_class" | null;
 };
@@ -22,6 +23,7 @@ export type PackPlanLine = {
   count: number;
   purchaseUrl?: string;
   searchUrl?: string;
+  variantSku?: string;
   retailer?: "danmurphys" | "woolworths" | "getinvolved";
 };
 
@@ -76,6 +78,7 @@ function normalizePackOptions(
       purchaseUrl: opt.purchaseUrl || null,
       searchUrl: opt.searchUrl || null,
       searchQuery: opt.searchQuery || null,
+      variantSku: opt.variantSku || null,
       retailer: (opt.retailer as any) || null,
       tier: (opt.tier as any) || null,
     });
@@ -101,6 +104,10 @@ function normalizePackOptions(
       continue;
     }
     if (!prev.searchUrl && opt.searchUrl) {
+      bestByKey.set(key, opt);
+      continue;
+    }
+    if (!prev.variantSku && opt.variantSku) {
       bestByKey.set(key, opt);
     }
   }
@@ -146,6 +153,7 @@ function cheapestPackPlan(
     const counts = new Map<number, number>();
     const purchaseUrlBySize = new Map<number, string | undefined>();
     const searchUrlBySize = new Map<number, string | undefined>();
+    const variantSkuBySize = new Map<number, string | undefined>();
     const retailerBySize = new Map<number, PackOption["retailer"]>();
     let a = amount;
     let guard = 0;
@@ -161,6 +169,9 @@ function cheapestPackPlan(
       if (!searchUrlBySize.has(size)) {
         searchUrlBySize.set(size, packs[idx]!.searchUrl || undefined);
       }
+      if (!variantSkuBySize.has(size)) {
+        variantSkuBySize.set(size, packs[idx]!.variantSku || undefined);
+      }
       if (!retailerBySize.has(size)) {
         retailerBySize.set(size, packs[idx]!.retailer || null);
       }
@@ -172,6 +183,7 @@ function cheapestPackPlan(
         count,
         purchaseUrl: purchaseUrlBySize.get(packSize),
         searchUrl: searchUrlBySize.get(packSize),
+        variantSku: variantSkuBySize.get(packSize),
         retailer: retailerBySize.get(packSize) || undefined,
       }))
       .sort((a, b) => b.packSize - a.packSize);

@@ -1414,26 +1414,30 @@ export default function RequestOrderPage() {
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <button
               type="button"
-              onClick={() => exportRetailer("danmurphys")}
+              onClick={() =>
+                window.open(
+                  "https://www.danmurphys.com.au",
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
               className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
             >
               Dan Murphy's
             </button>
             <button
               type="button"
-              onClick={() => exportRetailer("woolworths")}
-              className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
-            >
-              Woolworths
-            </button>
-            <button
-              type="button"
               onClick={() => exportRetailer("getinvolved")}
               className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
             >
-              Get Involved
+              Get Involved!
             </button>
           </div>
+          <p className="mt-3 text-[12px] leading-relaxed text-ink-muted">
+            Alcohol must be bought and supplied by the client. Involved Events are
+            a service provider only &mdash; ultimately the type and volume of
+            alcohol supplied remains the client&apos;s choice and responsibility.
+          </p>
 
           <div
             ref={orderBartendersRef}

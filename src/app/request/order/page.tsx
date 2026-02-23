@@ -1531,7 +1531,7 @@ export default function RequestOrderPage() {
               onClick={() => exportRetailer("getinvolved")}
               className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
             >
-              Get Involved!
+              Get Involved! 🛒
             </button>
           </div>
           <p className="mt-3 text-[12px] leading-relaxed text-ink-muted">

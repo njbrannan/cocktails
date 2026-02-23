@@ -105,6 +105,25 @@ const typePriority: Record<string, number> = {
   glassware: 6,
 };
 
+function CartIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      stroke="white"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="9" cy="20" r="1" />
+      <circle cx="17" cy="20" r="1" />
+      <path d="M3 4h2l2.2 10.4a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L23 7H6" />
+    </svg>
+  );
+}
+
 function todayIsoDate() {
   // Date-only string used by <input type="date" /> for min=...
   return new Date().toISOString().slice(0, 10);
@@ -1512,26 +1531,16 @@ export default function RequestOrderPage() {
             ))}
           </ul>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <button
-              type="button"
-              onClick={() =>
-                window.open(
-                  "https://www.danmurphys.com.au",
-                  "_blank",
-                  "noopener,noreferrer",
-                )
-              }
-              className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
-            >
-              Dan Murphy's
-            </button>
+          <div className="mt-4">
             <button
               type="button"
               onClick={() => exportRetailer("getinvolved")}
               className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
             >
-              Get Involved! 🛒
+              <span className="inline-flex items-center justify-center gap-2">
+                Get Involved!
+                <CartIcon className="h-4 w-4" />
+              </span>
             </button>
           </div>
           <p className="mt-3 text-[12px] leading-relaxed text-ink-muted">
@@ -1539,6 +1548,15 @@ export default function RequestOrderPage() {
             a service provider only &mdash; ultimately the type and volume of
             alcohol supplied remains the client&apos;s choice and responsibility.
           </p>
+          <button
+            type="button"
+            onClick={() =>
+              window.open("https://www.danmurphys.com.au", "_blank", "noopener,noreferrer")
+            }
+            className="gi-btn-secondary mt-3 w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
+          >
+            Dan Murphy&apos;s
+          </button>
 
           <div
             ref={orderBartendersRef}

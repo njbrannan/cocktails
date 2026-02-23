@@ -241,6 +241,53 @@ function cheapestPackPlan(
   return { plan: best.plan, totalCost: best.cost, coveredAmount: best.amount };
 }
 
+function glasswarePackPlan(
+  requiredAmount: number,
+  packOptions: PackOption[],
+): { plan: PackPlanLine[]; totalCost: number; coveredAmount: number } | null {
+  const required = Math.max(0, Math.ceil(requiredAmount));
+  const packs = normalizePackOptions(packOptions);
+  if (required <= 0 || packs.length === 0) return null;
+
+  // For glassware, prioritize simplicity: if an exact-size pack exists, prefer it
+  // even if a split pack combination would be slightly cheaper.
+  const candidates = packs
+    .filter((p) => p.packSize > 0)
+    .map((p) => {
+      const count = Math.ceil(required / p.packSize);
+      const covered = count * p.packSize;
+      return {
+        plan: [
+          {
+            packSize: p.packSize,
+            count,
+            purchaseUrl: p.purchaseUrl || undefined,
+            searchUrl: p.searchUrl || undefined,
+            variantSku: p.variantSku || undefined,
+            retailer: p.retailer || undefined,
+          },
+        ],
+        totalCost: count * p.packPrice,
+        coveredAmount: covered,
+        waste: covered - required,
+        totalPacks: count,
+      };
+    });
+
+  candidates.sort((a, b) => {
+    // 1) Less waste first (exact match wins)
+    if (a.waste !== b.waste) return a.waste - b.waste;
+    // 2) Fewer packs next (prefer 1 × 72 over 2 × 36 when both match exactly)
+    if (a.totalPacks !== b.totalPacks) return a.totalPacks - b.totalPacks;
+    // 3) Then cheaper cost
+    if (a.totalCost !== b.totalCost) return a.totalCost - b.totalCost;
+    // 4) Then prefer larger pack size (simpler)
+    return b.plan[0]!.packSize - a.plan[0]!.packSize;
+  });
+
+  return candidates[0] ?? null;
+}
+
 function roundByUnitAndType(amountWithBuffer: number, unit: string, type: IngredientType) {
   const u = normalizeUnit(unit);
 
@@ -369,7 +416,9 @@ export function buildIngredientTotals(
 
     const nonLiquorPlan =
       dynamicPackOptions.length > 0
-        ? cheapestPackPlan(rounded, dynamicPackOptions, 700)
+        ? total.type === "glassware"
+          ? glasswarePackPlan(rounded, dynamicPackOptions)
+          : cheapestPackPlan(rounded, dynamicPackOptions, 700)
         : null;
 
     if (nonLiquorPlan) {

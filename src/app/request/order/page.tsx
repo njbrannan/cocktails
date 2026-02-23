@@ -1388,15 +1388,11 @@ export default function RequestOrderPage() {
                           })}
                       </div>
                       <p className="mt-1 text-[12px] text-ink-muted">
-                        {item.total} {item.unit}
+                        {(item.type === "glassware" && item.exactTotal
+                          ? item.exactTotal
+                          : item.total)}{" "}
+                        {item.unit}
                       </p>
-                      {item.type === "glassware" &&
-                      item.exactTotal &&
-                      item.exactTotal !== item.total ? (
-                        <p className="mt-1 text-[12px] text-ink-muted">
-                          Exact needed: {item.exactTotal} {item.unit}
-                        </p>
-                      ) : null}
                     </div>
                   ) : item.bottlesNeeded ? (
                     <div className="text-right">
@@ -1405,15 +1401,11 @@ export default function RequestOrderPage() {
                         {item.unit}
                       </p>
                       <p className="mt-1 text-[12px] text-ink-muted">
-                        {item.total} {item.unit}
+                        {(item.type === "glassware" && item.exactTotal
+                          ? item.exactTotal
+                          : item.total)}{" "}
+                        {item.unit}
                       </p>
-                      {item.type === "glassware" &&
-                      item.exactTotal &&
-                      item.exactTotal !== item.total ? (
-                        <p className="mt-1 text-[12px] text-ink-muted">
-                          Exact needed: {item.exactTotal} {item.unit}
-                        </p>
-                      ) : null}
                     </div>
                   ) : (
                     <p className="text-sm font-semibold text-ink">

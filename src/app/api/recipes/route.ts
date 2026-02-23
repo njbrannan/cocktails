@@ -10,24 +10,33 @@ export async function GET() {
   try {
     const supabaseServer = getSupabaseServerClient();
     const selectWithPacks =
-      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)))";
+      "id, name, description, image_url, recipe_packs(pack_size, pack_price, purchase_url, variant_sku, tier, is_active), recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)))";
     const selectWithoutPacks =
       "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
 
-    let { data, error } = await supabaseServer
-      .from("recipes")
-      .select(selectWithPacks)
-      .eq("is_active", true);
+    let data: any = null;
+    let error: any = null;
+    {
+      const resp = await supabaseServer
+        .from("recipes")
+        .select(selectWithPacks)
+        .eq("is_active", true);
+      data = resp.data;
+      error = resp.error;
+    }
 
     if (
       error &&
       (String((error as any).code || "") === "42703" ||
-        String(error.message || "").toLowerCase().includes("ingredient_packs"))
+        String(error.message || "").toLowerCase().includes("ingredient_packs") ||
+        String(error.message || "").toLowerCase().includes("recipe_packs"))
     ) {
-      ({ data, error } = await supabaseServer
+      const resp = await supabaseServer
         .from("recipes")
         .select(selectWithoutPacks)
-        .eq("is_active", true));
+        .eq("is_active", true);
+      data = resp.data;
+      error = resp.error;
     }
 
     if (error) {

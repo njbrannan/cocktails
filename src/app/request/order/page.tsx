@@ -1,6 +1,11 @@
 "use client";
 
-import { buildIngredientTotals, type IngredientTotal } from "@/lib/inventoryMath";
+import {
+  buildCheapestPackPlan,
+  buildIngredientTotals,
+  type IngredientTotal,
+  type PackOption,
+} from "@/lib/inventoryMath";
 import {
   COCKTAIL_PLACEHOLDER_IMAGE,
   normalizeCocktailDisplayName,
@@ -63,6 +68,14 @@ type RecipeIngredient = {
 type Recipe = {
   id: string;
   name: string;
+  recipe_packs?: Array<{
+    pack_size: number;
+    pack_price: number;
+    purchase_url?: string | null;
+    variant_sku?: string | null;
+    tier?: "economy" | "business" | "first_class" | "budget" | "premium" | null;
+    is_active: boolean;
+  }> | null;
   recipe_ingredients: RecipeIngredient[];
 };
 
@@ -243,6 +256,70 @@ function buildGetInvolvedCartImportUrl(
     .map((r) => ({ url: r.url, count: r.count, sku: r.sku || null }));
   const encoded = base64UrlEncodeUtf8(JSON.stringify({ v: 1, items: payload }));
   return `${origin.replace(/\/$/, "")}/cart-import?items=${encoded}`;
+}
+
+type PackTier = "economy" | "business" | "first_class";
+
+function allowedPackTiersForPricingTier(
+  pricingTier: "budget" | "house" | "top_shelf",
+): PackTier[] | null {
+  // Mapping:
+  // - Top Shelf => first_class only
+  // - House => economy only
+  // - Budget => allow all tiers and choose the cheapest combination
+  if (pricingTier === "top_shelf") return ["first_class"];
+  if (pricingTier === "house") return ["economy"];
+  return null;
+}
+
+function buildGetInvolvedCocktailKitCartItems(opts: {
+  recipes: Recipe[];
+  servingsByRecipeId: Record<string, string>;
+  pricingTier: "budget" | "house" | "top_shelf";
+}) {
+  const allowedTiers = allowedPackTiersForPricingTier(opts.pricingTier);
+  const out: Array<{ url: string; count: number; sku?: string | null }> = [];
+
+  for (const recipe of opts.recipes) {
+    const servingsRaw = opts.servingsByRecipeId[recipe.id] ?? "0";
+    const servings = Number(servingsRaw || "0") || 0;
+    if (servings <= 0) continue;
+
+    const packs = (recipe.recipe_packs ?? [])
+      .filter((p) => p && p.is_active !== false)
+      .filter((p) => {
+        const t = (p.tier as any) || null;
+        if (!allowedTiers) return true;
+        return allowedTiers.includes(t);
+      });
+
+    if (!packs.length) continue;
+
+    // Match the planner's 10% buffer for cocktail kits as well.
+    const required = Math.ceil(servings * 1.1);
+
+    const packOptions: PackOption[] = packs.map((p) => ({
+      packSize: Number(p.pack_size),
+      packPrice: Number(p.pack_price),
+      purchaseUrl: p.purchase_url || null,
+      searchUrl: null,
+      searchQuery: null,
+      variantSku: p.variant_sku || null,
+      retailer: "getinvolved",
+      tier: (p.tier as any) || null,
+    }));
+
+    const plan = buildCheapestPackPlan(required, packOptions, null);
+    if (!plan?.plan?.length) continue;
+
+    for (const line of plan.plan) {
+      const url = line.purchaseUrl || "";
+      if (!url || line.count <= 0) continue;
+      out.push({ url, count: line.count, sku: line.variantSku || null });
+    }
+  }
+
+  return out;
 }
 
 export default function RequestOrderPage() {
@@ -522,24 +599,33 @@ export default function RequestOrderPage() {
       if (recipeIds.length === 0) return;
 
       const selectWithPacks =
-        "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)))";
+        "id, name, recipe_packs(pack_size, pack_price, purchase_url, variant_sku, tier, is_active), recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)))";
       const selectWithoutPacks =
         "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
 
-      let { data, error } = await supabase
-        .from("recipes")
-        .select(selectWithPacks)
-        .in("id", recipeIds);
+      let data: any = null;
+      let error: any = null;
+      {
+        const resp = await supabase
+          .from("recipes")
+          .select(selectWithPacks)
+          .in("id", recipeIds);
+        data = resp.data;
+        error = resp.error;
+      }
 
       if (
         error &&
         (String((error as any).code || "") === "42703" ||
-          String(error.message || "").toLowerCase().includes("ingredient_packs"))
+          String(error.message || "").toLowerCase().includes("ingredient_packs") ||
+          String(error.message || "").toLowerCase().includes("recipe_packs"))
       ) {
-        ({ data, error } = await supabase
+        const resp = await supabase
           .from("recipes")
           .select(selectWithoutPacks)
-          .in("id", recipeIds));
+          .in("id", recipeIds);
+        data = resp.data;
+        error = resp.error;
       }
 
       if (error) {
@@ -874,7 +960,16 @@ export default function RequestOrderPage() {
       }
     }
 
-    if (!rows.length) {
+    if (retailer === "getinvolved") {
+      const kitItems = buildGetInvolvedCocktailKitCartItems({
+        recipes,
+        servingsByRecipeId,
+        pricingTier,
+      });
+      if (kitItems.length) getInvolvedCartItems.push(...kitItems);
+    }
+
+    if (!rows.length && !(retailer === "getinvolved" && getInvolvedCartItems.length)) {
       setError("No items found for that store yet. Add pack purchase/search links for those items first.");
       return;
     }

@@ -121,7 +121,7 @@ function normalizePackOptions(
 function cheapestPackPlan(
   requiredAmount: number,
   packOptions: PackOption[],
-  preferredPackSize = 700,
+  preferredPackSize?: number | null,
 ): { plan: PackPlanLine[]; totalCost: number; coveredAmount: number } | null {
   const required = Math.max(0, Math.ceil(requiredAmount));
   const packs = normalizePackOptions(packOptions);
@@ -190,7 +190,10 @@ function cheapestPackPlan(
         retailer: retailerBySize.get(packSize) || undefined,
       }))
       .sort((a, b) => b.packSize - a.packSize);
-    const preferredCount = plan.find((p) => p.packSize === preferredPackSize)?.count || 0;
+    const preferredCount =
+      preferredPackSize && preferredPackSize > 0
+        ? plan.find((p) => p.packSize === preferredPackSize)?.count || 0
+        : 0;
     const totalPacks = plan.reduce((s, p) => s + p.count, 0);
     return { plan, preferredCount, totalPacks };
   };
@@ -217,12 +220,14 @@ function cheapestPackPlan(
     }
     if (cost > best.cost) continue;
 
-    // Tie: prefer more 700ml packs if cost is the same.
-    if (preferredCount > best.preferredCount) {
-      best = { amount, cost, plan, preferredCount, totalPacks };
-      continue;
+    // Tie: optionally prefer a specific pack size (e.g. 700ml liquor bottles).
+    if (preferredPackSize && preferredPackSize > 0) {
+      if (preferredCount > best.preferredCount) {
+        best = { amount, cost, plan, preferredCount, totalPacks };
+        continue;
+      }
+      if (preferredCount < best.preferredCount) continue;
     }
-    if (preferredCount < best.preferredCount) continue;
 
     // Then prefer less waste.
     if (amount < best.amount) {
@@ -239,6 +244,14 @@ function cheapestPackPlan(
 
   if (!best) return null;
   return { plan: best.plan, totalCost: best.cost, coveredAmount: best.amount };
+}
+
+export function buildCheapestPackPlan(
+  requiredAmount: number,
+  packOptions: PackOption[],
+  preferredPackSize?: number | null,
+) {
+  return cheapestPackPlan(requiredAmount, packOptions, preferredPackSize);
 }
 
 function glasswarePackPlan(

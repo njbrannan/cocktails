@@ -32,6 +32,9 @@ export type IngredientTotal = {
   name: string;
   type: IngredientType;
   total: number;
+  // For some items (notably glassware), we round totals up to practical order quantities.
+  // `exactTotal` captures the buffered-but-unrounded amount so we can display both.
+  exactTotal?: number;
   unit: string;
   bottleSizeMl?: number;
   bottlesNeeded?: number;
@@ -314,6 +317,7 @@ export function buildIngredientTotals(
 
   return Array.from(totals.values()).map((total) => {
     const buffered = applyBuffer(total.total);
+    const exactTotal = Math.ceil(buffered);
     const rounded = roundByUnitAndType(buffered, total.unit, total.type);
 
     const dynamicPackOptions = packOptionsByIngredientId.get(total.ingredientId) ?? [];
@@ -372,6 +376,7 @@ export function buildIngredientTotals(
       const single = nonLiquorPlan.plan.length === 1 ? nonLiquorPlan.plan[0] : null;
       return {
         ...total,
+        exactTotal: total.type === "glassware" ? exactTotal : undefined,
         total: rounded,
         bottleSizeMl: single?.packSize ?? total.bottleSizeMl ?? undefined,
         bottlesNeeded: single?.count,
@@ -382,6 +387,7 @@ export function buildIngredientTotals(
 
     return {
       ...total,
+      exactTotal: total.type === "glassware" ? exactTotal : undefined,
       total: rounded,
       bottlesNeeded: packsNeeded,
       totalCost,

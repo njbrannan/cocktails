@@ -1691,6 +1691,13 @@ export default function RequestEditPage() {
                             <p className="mt-1 text-xs text-ink-muted">
                               {item.total} {item.unit}
                             </p>
+                            {item.type === "glassware" &&
+                            item.exactTotal &&
+                            item.exactTotal !== item.total ? (
+                              <p className="mt-1 text-xs text-ink-muted">
+                                Exact needed: {item.exactTotal} {item.unit}
+                              </p>
+                            ) : null}
                           </div>
                         ) : item.bottlesNeeded ? (
                           <div className="text-right tabular-nums">
@@ -1701,6 +1708,13 @@ export default function RequestEditPage() {
                             <p className="mt-1 text-xs text-ink-muted">
                               {item.total} {item.unit}
                             </p>
+                            {item.type === "glassware" &&
+                            item.exactTotal &&
+                            item.exactTotal !== item.total ? (
+                              <p className="mt-1 text-xs text-ink-muted">
+                                Exact needed: {item.exactTotal} {item.unit}
+                              </p>
+                            ) : null}
                           </div>
                         ) : (
                           <p className="text-sm font-semibold text-ink tabular-nums">

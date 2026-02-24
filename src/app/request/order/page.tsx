@@ -435,7 +435,12 @@ function buildGetInvolvedCocktailKitCartItems(opts: {
   pricingTier: "budget" | "house" | "top_shelf";
 }) {
   const allowedTiers = allowedPackTiersForPricingTier(opts.pricingTier);
-  const out: Array<{ url: string; count: number; sku?: string | null }> = [];
+  const out: Array<{
+    url: string;
+    count: number;
+    sku?: string | null;
+    desiredValue?: string | null;
+  }> = [];
 
   for (const recipe of opts.recipes) {
     const servingsRaw = opts.servingsByRecipeId[recipe.id] ?? "0";
@@ -445,7 +450,7 @@ function buildGetInvolvedCocktailKitCartItems(opts: {
     const packs = (recipe.recipe_packs ?? [])
       .filter((p) => p && p.is_active !== false)
       .filter((p) => {
-        const t = (p.tier as any) || null;
+        const t = normalizePackTier(p.tier);
         if (!allowedTiers) return true;
         return allowedTiers.includes(t);
       });
@@ -472,7 +477,12 @@ function buildGetInvolvedCocktailKitCartItems(opts: {
     for (const line of plan.plan) {
       const url = line.purchaseUrl || "";
       if (!url || line.count <= 0) continue;
-      out.push({ url, count: line.count, sku: line.variantSku || null });
+      out.push({
+        url,
+        count: line.count,
+        sku: line.variantSku || null,
+        desiredValue: String(line.packSize),
+      });
     }
   }
 
@@ -539,6 +549,7 @@ export default function RequestOrderPage() {
   const [phoneLocal, setPhoneLocal] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [exportingToCart, setExportingToCart] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [guestCountError, setGuestCountError] = useState<string | null>(null);
@@ -1107,9 +1118,18 @@ export default function RequestOrderPage() {
     }
   };
 
-  const exportRetailer = (retailer: "danmurphys" | "woolworths" | "getinvolved") => {
+  type GetInvolvedCartItem = {
+    url: string;
+    count: number;
+    sku?: string | null;
+    desiredValue?: string | null;
+  };
+
+  const exportRetailer = async (
+    retailer: "danmurphys" | "woolworths" | "getinvolved",
+  ) => {
     const rows: Array<{ name: string; type: string; qty: string; total: string; url: string }> = [];
-    const getInvolvedCartItems: Array<{ url: string; count: number; sku?: string | null }> = [];
+    const getInvolvedCartItems: GetInvolvedCartItem[] = [];
 
     for (const item of orderList ?? []) {
       if (item.packPlan?.length) {
@@ -1127,7 +1147,12 @@ export default function RequestOrderPage() {
             url,
           });
           if (retailer === "getinvolved") {
-            getInvolvedCartItems.push({ url, count: line.count, sku: line.variantSku || null });
+            getInvolvedCartItems.push({
+              url,
+              count: line.count,
+              sku: line.variantSku || null,
+              desiredValue: String(line.packSize),
+            });
           }
         }
         continue;
@@ -1147,7 +1172,12 @@ export default function RequestOrderPage() {
         url,
       });
       if (retailer === "getinvolved") {
-        getInvolvedCartItems.push({ url, count: item.bottlesNeeded || 1, sku: null });
+        getInvolvedCartItems.push({
+          url,
+          count: item.bottlesNeeded || 1,
+          sku: null,
+          desiredValue: null,
+        });
       }
     }
 
@@ -1173,6 +1203,7 @@ export default function RequestOrderPage() {
           url: GI_BARTENDER_PRODUCT_URL,
           count: bartenders,
           sku: variantSku,
+          desiredValue: bartenderHours,
         });
       }
     }
@@ -1193,8 +1224,65 @@ export default function RequestOrderPage() {
     // Squarespace page that adds these products to cart in the *customer's* browser session.
     // This requires a small JS snippet on getinvolved.com.au to process the query string.
     if (retailer === "getinvolved" && getInvolvedCartItems.length) {
-      const importUrl = buildGetInvolvedCartImportUrl(getInvolvedCartItems);
-      window.open(importUrl, "_blank", "noopener,noreferrer");
+      setError(null);
+      setSuccess(null);
+      setExportingToCart(true);
+
+      try {
+        // Resolve/validate SKUs server-side so we don't abort cart-import due to a bad SKU.
+        const response = await fetch("/api/getinvolved/variant-skus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: getInvolvedCartItems.map((it) => ({
+              url: it.url,
+              desiredValue: it.desiredValue || null,
+              providedSku: it.sku || null,
+            })),
+          }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+          setError(
+            data?.error ||
+              `Couldn’t prepare cart export (HTTP ${response.status}).`,
+          );
+          return;
+        }
+
+        const resolved: Array<{ url: string; count: number; sku?: string | null }> =
+          getInvolvedCartItems.map((it, idx) => ({
+            url: it.url,
+            count: it.count,
+            sku: data?.items?.[idx]?.sku ?? null,
+          }));
+
+        // Merge duplicates to reduce add-to-cart requests and lower the chance of 429 rate limits.
+        const mergedMap = new Map<string, { url: string; count: number; sku?: string | null }>();
+        for (const it of resolved) {
+          if (!it.url || it.count <= 0) continue;
+          const key = `${it.url}||${it.sku || ""}`;
+          const existing = mergedMap.get(key);
+          if (existing) existing.count += it.count;
+          else mergedMap.set(key, { ...it });
+        }
+        const merged = Array.from(mergedMap.values());
+
+        const totalItems = merged.reduce((sum, it) => sum + (Number(it.count) || 0), 0);
+        if (totalItems > 500) {
+          setError(
+            `This order is too large to auto-fill into the Get Involved cart (Squarespace cart limit is 500 total items). Reduce quantities or offer larger pack sizes for kits/glassware.`,
+          );
+          return;
+        }
+
+        const importUrl = buildGetInvolvedCartImportUrl(merged);
+        window.open(importUrl, "_blank", "noopener,noreferrer");
+      } catch (err: any) {
+        setError(err?.message || "Couldn’t prepare cart export.");
+      } finally {
+        setExportingToCart(false);
+      }
       return;
     }
 
@@ -1733,10 +1821,11 @@ export default function RequestOrderPage() {
             <button
               type="button"
               onClick={() => exportRetailer("getinvolved")}
-              className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
+              disabled={exportingToCart}
+              className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5 disabled:opacity-60"
             >
               <span className="inline-flex items-center justify-center gap-2">
-                Get Involved!
+                {exportingToCart ? "Adding to cart..." : "Get Involved!"}
                 <CartIcon className="h-4 w-4" />
               </span>
             </button>

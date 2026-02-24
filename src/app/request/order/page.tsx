@@ -273,8 +273,8 @@ function normalizePricingTier(value: any): "budget" | "house" | "top_shelf" {
     return "top_shelf";
   }
   if (v === "house" || v === "business" || v === "economy") return "house";
-  // Default: cheapest. Also treat legacy "economy/budget" as Budget.
-  return "budget";
+  // Default to Premium (most common).
+  return "house";
 }
 
 function retailerForUrl(url: string) {
@@ -474,7 +474,7 @@ export default function RequestOrderPage() {
   const [editingQuantities, setEditingQuantities] = useState(false);
   const [pricingTier, setPricingTier] = useState<
     "budget" | "house" | "top_shelf"
-  >("budget");
+  >("house");
 
   const [eventDate, setEventDate] = useState("");
   const [eventName, setEventName] = useState("");
@@ -848,7 +848,6 @@ export default function RequestOrderPage() {
                 ingredient.ingredient_packs
                   ?.filter((p) => {
                     if (!p?.is_active) return false;
-                    if (pricingTier === "budget") return true; // allow any tier, pick cheapest overall
                     const normalized = normalizePackTier(p.tier);
                     if (pricingTier === "top_shelf") return normalized === "first_class";
                     // house (budget/economy-only)
@@ -1546,36 +1545,25 @@ export default function RequestOrderPage() {
             <div className="inline-flex overflow-hidden rounded-full border border-subtle bg-white/70 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
               <button
                 type="button"
-                onClick={() => setPricingTier("top_shelf")}
+                onClick={() => setPricingTier("house")}
                 className={`px-4 py-2 transition ${
+                  pricingTier === "house"
+                    ? "bg-accent text-on-accent"
+                    : "hover:bg-white"
+                }`}
+              >
+                Premium
+              </button>
+              <button
+                type="button"
+                onClick={() => setPricingTier("top_shelf")}
+                className={`border-l border-subtle px-4 py-2 transition ${
                   pricingTier === "top_shelf"
                     ? "bg-accent text-on-accent"
                     : "hover:bg-white"
                 }`}
               >
                 Top Shelf
-              </button>
-              <button
-                type="button"
-                onClick={() => setPricingTier("house")}
-                className={`border-x border-subtle px-4 py-2 transition ${
-                  pricingTier === "house"
-                    ? "bg-accent text-on-accent"
-                    : "hover:bg-white"
-                }`}
-              >
-                House
-              </button>
-              <button
-                type="button"
-                onClick={() => setPricingTier("budget")}
-                className={`px-4 py-2 transition ${
-                  pricingTier === "budget"
-                    ? "bg-accent text-on-accent"
-                    : "hover:bg-white"
-                }`}
-              >
-                Cheap
               </button>
             </div>
           </div>
@@ -1717,7 +1705,7 @@ export default function RequestOrderPage() {
             className="mt-8 rounded-[28px] border border-subtle bg-white/70 p-6"
           >
             <h3 className="font-display text-xl text-ink">
-              Book Bartenders for your Event
+              Bespoke Requests
             </h3>
             <p className="mt-2 text-sm text-muted">
               {success
@@ -1880,7 +1868,7 @@ export default function RequestOrderPage() {
               disabled={loading}
               className="gi-btn-primary mt-4 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5 disabled:opacity-60"
             >
-              {loading ? "Sending request..." : "Book Bartenders"}
+              {loading ? "Submitting..." : "Submit request"}
             </button>
           </div>
 

@@ -1509,7 +1509,7 @@ export default function RequestOrderPage() {
         <div className="glass-panel rounded-[28px] px-8 py-6">
           <h2 className="font-display text-2xl text-accent">Order List</h2>
 
-          <div className="mt-10 flex items-baseline justify-between gap-3">
+          <div className="mt-4 flex items-baseline justify-between gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">
               Shopping list
             </h3>
@@ -1638,6 +1638,7 @@ export default function RequestOrderPage() {
                     value={bartenderHours}
                     onChange={(event) => setBartenderHours(event.target.value)}
                     className={`${fieldClass} border-soft text-center`}
+                    style={{ textAlignLast: "center" }}
                   >
                     {Object.keys(bartenderSkuMap)
                       .slice()
@@ -1836,7 +1837,7 @@ export default function RequestOrderPage() {
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="What’s the special occasion? Event schedule? Special/signature cocktail requests? Allergies, dietary requirements, venue details..."
+                  placeholder="Dietary requirements, custom creations, special requests, etc..."
                   // iOS Safari zooms when inputs are < 16px font-size.
                   className="mt-2 min-h-[120px] w-full max-w-full rounded-2xl border border-soft bg-white/80 px-4 py-3 text-[16px] tracking-normal text-ink"
                 />

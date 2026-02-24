@@ -99,10 +99,33 @@ const STORAGE_KEY = "get-involved:order:v1";
 // Example:
 // NEXT_PUBLIC_GI_BARTENDER_PRODUCT_URL="https://www.getinvolved.com.au/services/p/bartender"
 // NEXT_PUBLIC_GI_BARTENDER_VARIANT_SKU="SQxxxx" (only if the product has variants)
+// NEXT_PUBLIC_GI_BARTENDER_VARIANT_SKUS='{"4":"SQ...","5":"SQ..."}' (map hours -> sku)
+// NEXT_PUBLIC_GI_BARTENDER_DEFAULT_HOURS="4"
 const GI_BARTENDER_PRODUCT_URL =
   process.env.NEXT_PUBLIC_GI_BARTENDER_PRODUCT_URL || "";
 const GI_BARTENDER_VARIANT_SKU =
   process.env.NEXT_PUBLIC_GI_BARTENDER_VARIANT_SKU || "";
+const GI_BARTENDER_VARIANT_SKUS_RAW =
+  process.env.NEXT_PUBLIC_GI_BARTENDER_VARIANT_SKUS || "";
+const GI_BARTENDER_DEFAULT_HOURS =
+  process.env.NEXT_PUBLIC_GI_BARTENDER_DEFAULT_HOURS || "4";
+
+function parseBartenderSkuMap(raw: string): Record<string, string> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed as any)) {
+      const key = String(k).trim();
+      const val = String(v || "").trim();
+      if (key && val) out[key] = val;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
 
 const typePriority: Record<string, number> = {
   liquor: 0,
@@ -371,6 +394,13 @@ export default function RequestOrderPage() {
   const [stored, setStored] = useState<StoredOrder | null>(null);
   const [drafts, setDrafts] = useState<OfflineDraft[]>([]);
   const [sendingDraftId, setSendingDraftId] = useState<string | null>(null);
+  const bartenderSkuMap = useMemo(
+    () => parseBartenderSkuMap(GI_BARTENDER_VARIANT_SKUS_RAW),
+    [],
+  );
+  const [bartenderHours, setBartenderHours] = useState<string>(
+    GI_BARTENDER_DEFAULT_HOURS,
+  );
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [servingsByRecipeId, setServingsByRecipeId] = useState<
@@ -1015,10 +1045,15 @@ export default function RequestOrderPage() {
       const cocktailCount = cocktailsSummary.length;
       const bartenders = recommendedBartenders(totalDrinks, cocktailCount);
       if (bartenders > 0 && GI_BARTENDER_PRODUCT_URL) {
+        const variantSku =
+          bartenderSkuMap[bartenderHours] ||
+          bartenderSkuMap[String(Number(bartenderHours) || "")] ||
+          GI_BARTENDER_VARIANT_SKU ||
+          null;
         getInvolvedCartItems.push({
           url: GI_BARTENDER_PRODUCT_URL,
           count: bartenders,
-          sku: GI_BARTENDER_VARIANT_SKU || null,
+          sku: variantSku,
         });
       }
     }
@@ -1605,6 +1640,28 @@ export default function RequestOrderPage() {
                 ? "Booking request submitted, we will be in contact shortly."
                 : "Send this order list to Get Involved and we’ll follow up."}
             </p>
+
+            {GI_BARTENDER_PRODUCT_URL && Object.keys(bartenderSkuMap).length ? (
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                  Hours per bartender
+                  <select
+                    value={bartenderHours}
+                    onChange={(event) => setBartenderHours(event.target.value)}
+                    className={`mt-2 ${fieldClass} border-soft`}
+                  >
+                    {Object.keys(bartenderSkuMap)
+                      .slice()
+                      .sort((a, b) => Number(a) - Number(b))
+                      .map((h) => (
+                        <option key={h} value={h}>
+                          {h} hours
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              </div>
+            ) : null}
 
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">

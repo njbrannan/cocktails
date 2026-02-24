@@ -95,14 +95,26 @@ type StoredOrder = {
 
 const STORAGE_KEY = "get-involved:order:v1";
 
+const DEFAULT_GI_BARTENDER_PRODUCT_URL =
+  "https://www.getinvolved.com.au/store/p/hire-a-mixologist";
+const DEFAULT_GI_BARTENDER_VARIANT_SKUS: Record<string, string> = {
+  "4": "SQ6281902",
+  "5": "SQ8139792",
+  "6": "SQ3340008",
+  "7": "SQ6433893",
+  "8": "SQ9500617",
+};
+
 // Optional: when set, the "Get Involved!" export can also add recommended bartenders to cart.
 // Example:
 // NEXT_PUBLIC_GI_BARTENDER_PRODUCT_URL="https://www.getinvolved.com.au/services/p/bartender"
 // NEXT_PUBLIC_GI_BARTENDER_VARIANT_SKU="SQxxxx" (only if the product has variants)
 // NEXT_PUBLIC_GI_BARTENDER_VARIANT_SKUS='{"4":"SQ...","5":"SQ..."}' (map hours -> sku)
 // NEXT_PUBLIC_GI_BARTENDER_DEFAULT_HOURS="4"
-const GI_BARTENDER_PRODUCT_URL =
+const GI_BARTENDER_PRODUCT_URL_RAW =
   process.env.NEXT_PUBLIC_GI_BARTENDER_PRODUCT_URL || "";
+const GI_BARTENDER_PRODUCT_URL =
+  GI_BARTENDER_PRODUCT_URL_RAW.trim() || DEFAULT_GI_BARTENDER_PRODUCT_URL;
 const GI_BARTENDER_VARIANT_SKU =
   process.env.NEXT_PUBLIC_GI_BARTENDER_VARIANT_SKU || "";
 const GI_BARTENDER_VARIANT_SKUS_RAW =
@@ -111,20 +123,56 @@ const GI_BARTENDER_DEFAULT_HOURS =
   process.env.NEXT_PUBLIC_GI_BARTENDER_DEFAULT_HOURS || "4";
 
 function parseBartenderSkuMap(raw: string): Record<string, string> {
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return {};
+  const trimmed = String(raw || "").trim();
+  if (!trimmed) return {};
+
+  const normalize = (obj: any) => {
+    if (!obj || typeof obj !== "object") return {};
     const out: Record<string, string> = {};
-    for (const [k, v] of Object.entries(parsed as any)) {
+    for (const [k, v] of Object.entries(obj)) {
       const key = String(k).trim();
       const val = String(v || "").trim();
       if (key && val) out[key] = val;
     }
     return out;
-  } catch {
-    return {};
+  };
+
+  const tryJson = (value: string) => {
+    try {
+      return normalize(JSON.parse(value));
+    } catch {
+      return null;
+    }
+  };
+
+  // 1) Strict JSON
+  const strict = tryJson(trimmed);
+  if (strict && Object.keys(strict).length) return strict;
+
+  // 2) Wrapped in quotes (common copy/paste)
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    const unwrapped = tryJson(trimmed.slice(1, -1).trim());
+    if (unwrapped && Object.keys(unwrapped).length) return unwrapped;
   }
+
+  // 3) JSON-ish single quotes
+  if (trimmed.includes("'")) {
+    const dequoted = tryJson(trimmed.replaceAll("'", '"'));
+    if (dequoted && Object.keys(dequoted).length) return dequoted;
+  }
+
+  // 4) Fallback: parse "4=SKU,5=SKU" or "4:SKU" separated by commas/newlines
+  const parts = trimmed.split(/[\n,]+/g).map((p) => p.trim()).filter(Boolean);
+  const out: Record<string, string> = {};
+  for (const part of parts) {
+    const m = part.match(/^(\d+)\s*[:=]\s*([A-Za-z0-9_-]+)$/);
+    if (!m) continue;
+    out[m[1]!] = m[2]!;
+  }
+  return out;
 }
 
 const typePriority: Record<string, number> = {
@@ -395,12 +443,26 @@ export default function RequestOrderPage() {
   const [drafts, setDrafts] = useState<OfflineDraft[]>([]);
   const [sendingDraftId, setSendingDraftId] = useState<string | null>(null);
   const bartenderSkuMap = useMemo(
-    () => parseBartenderSkuMap(GI_BARTENDER_VARIANT_SKUS_RAW),
+    () => {
+      const parsed = parseBartenderSkuMap(GI_BARTENDER_VARIANT_SKUS_RAW);
+      if (Object.keys(parsed).length) return parsed;
+      if (GI_BARTENDER_VARIANT_SKU) {
+        return { [String(GI_BARTENDER_DEFAULT_HOURS || "4")]: GI_BARTENDER_VARIANT_SKU };
+      }
+      return DEFAULT_GI_BARTENDER_VARIANT_SKUS;
+    },
     [],
   );
   const [bartenderHours, setBartenderHours] = useState<string>(
     GI_BARTENDER_DEFAULT_HOURS,
   );
+  useEffect(() => {
+    const keys = Object.keys(bartenderSkuMap || {});
+    if (!keys.length) return;
+    if (bartenderSkuMap[bartenderHours]) return;
+    const first = keys.slice().sort((a, b) => Number(a) - Number(b))[0];
+    if (first) setBartenderHours(first);
+  }, [bartenderSkuMap, bartenderHours]);
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [servingsByRecipeId, setServingsByRecipeId] = useState<

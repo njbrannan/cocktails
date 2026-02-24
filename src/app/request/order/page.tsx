@@ -367,12 +367,27 @@ function buildGetInvolvedCartImportUrl(
   rows: Array<{ url: string; count: number; sku?: string | null }>,
   origin = "https://www.getinvolved.com.au",
 ) {
+  const originNormalized = origin.replace(/\/$/, "");
+
   // Keep payload intentionally small.
   const payload = rows
     .filter((r) => r && r.url && r.count > 0)
-    .map((r) => ({ url: r.url, count: r.count, sku: r.sku || null }));
+    .map((r) => {
+      // Reduce URL length to improve compatibility with mobile browsers.
+      // The cart-import page runs on getinvolved.com.au, so relative URLs are fine.
+      let url = String(r.url || "").trim();
+      try {
+        const parsed = new URL(url, originNormalized);
+        if (parsed.origin === originNormalized) {
+          url = `${parsed.pathname}${parsed.search}`;
+        }
+      } catch {
+        // Keep as-is.
+      }
+      return { url, count: r.count, sku: r.sku || null };
+    });
   const encoded = base64UrlEncodeUtf8(JSON.stringify({ v: 1, items: payload }));
-  return `${origin.replace(/\/$/, "")}/cart-import?items=${encoded}`;
+  return `${originNormalized}/cart-import?items=${encoded}`;
 }
 
 type PackTier = "economy" | "business" | "first_class";

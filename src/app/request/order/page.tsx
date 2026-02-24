@@ -1227,6 +1227,12 @@ export default function RequestOrderPage() {
       setError(null);
       setSuccess(null);
       setExportingToCart(true);
+      // Important: browsers will block popups if window.open happens after an await.
+      // Reserve the tab synchronously, then navigate it once the URL is ready.
+      const popup =
+        typeof window !== "undefined"
+          ? window.open("about:blank", "_blank", "noopener,noreferrer")
+          : null;
 
       try {
         // Resolve/validate SKUs server-side so we don't abort cart-import due to a bad SKU.
@@ -1277,8 +1283,16 @@ export default function RequestOrderPage() {
         }
 
         const importUrl = buildGetInvolvedCartImportUrl(merged);
-        window.open(importUrl, "_blank", "noopener,noreferrer");
+        if (popup && !popup.closed) {
+          popup.location.href = importUrl;
+        } else {
+          // Fallback: same-tab navigation (always allowed).
+          window.location.assign(importUrl);
+        }
       } catch (err: any) {
+        try {
+          if (popup && !popup.closed) popup.close();
+        } catch {}
         setError(err?.message || "Couldn’t prepare cart export.");
       } finally {
         setExportingToCart(false);

@@ -1601,6 +1601,28 @@ export default function RequestOrderPage() {
             ))}
           </ul>
 
+          {GI_BARTENDER_PRODUCT_URL && Object.keys(bartenderSkuMap).length ? (
+            <div className="mt-4">
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                Hours per bartender
+                <select
+                  value={bartenderHours}
+                  onChange={(event) => setBartenderHours(event.target.value)}
+                  className={`mt-2 ${fieldClass} border-soft`}
+                >
+                  {Object.keys(bartenderSkuMap)
+                    .slice()
+                    .sort((a, b) => Number(a) - Number(b))
+                    .map((h) => (
+                      <option key={h} value={h}>
+                        {h} hours
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </div>
+          ) : null}
+
           <div className="mt-4">
             <button
               type="button"
@@ -1640,28 +1662,6 @@ export default function RequestOrderPage() {
                 ? "Booking request submitted, we will be in contact shortly."
                 : "Send this order list to Get Involved and we’ll follow up."}
             </p>
-
-            {GI_BARTENDER_PRODUCT_URL && Object.keys(bartenderSkuMap).length ? (
-              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                  Hours per bartender
-                  <select
-                    value={bartenderHours}
-                    onChange={(event) => setBartenderHours(event.target.value)}
-                    className={`mt-2 ${fieldClass} border-soft`}
-                  >
-                    {Object.keys(bartenderSkuMap)
-                      .slice()
-                      .sort((a, b) => Number(a) - Number(b))
-                      .map((h) => (
-                        <option key={h} value={h}>
-                          {h} hours
-                        </option>
-                      ))}
-                  </select>
-                </label>
-              </div>
-            ) : null}
 
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">

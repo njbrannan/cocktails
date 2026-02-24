@@ -122,6 +122,21 @@ const GI_BARTENDER_VARIANT_SKUS_RAW =
 const GI_BARTENDER_DEFAULT_HOURS =
   process.env.NEXT_PUBLIC_GI_BARTENDER_DEFAULT_HOURS || "4";
 
+function normalizeUrlPath(value: string) {
+  try {
+    const u = new URL(String(value || "").trim());
+    const path = u.pathname.replace(/\/+$/, "");
+    return path || "/";
+  } catch {
+    return "";
+  }
+}
+
+const DEFAULT_GI_BARTENDER_PRODUCT_PATH = normalizeUrlPath(
+  DEFAULT_GI_BARTENDER_PRODUCT_URL,
+);
+const GI_BARTENDER_PRODUCT_PATH = normalizeUrlPath(GI_BARTENDER_PRODUCT_URL);
+
 function parseBartenderSkuMap(raw: string): Record<string, string> {
   const trimmed = String(raw || "").trim();
   if (!trimmed) return {};
@@ -368,6 +383,13 @@ function buildGetInvolvedCartImportUrl(
   origin = "https://www.getinvolved.com.au",
 ) {
   const originNormalized = origin.replace(/\/$/, "");
+  const originHost = (() => {
+    try {
+      return new URL(originNormalized).hostname.replace(/^www\./i, "").toLowerCase();
+    } catch {
+      return "getinvolved.com.au";
+    }
+  })();
 
   // Keep payload intentionally small.
   const payload = rows
@@ -378,7 +400,10 @@ function buildGetInvolvedCartImportUrl(
       let url = String(r.url || "").trim();
       try {
         const parsed = new URL(url, originNormalized);
-        if (parsed.origin === originNormalized) {
+        const parsedHost = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+        // Treat apex + www as the same origin so the cart-import page can fetch JSON
+        // without running into cross-origin/CORS issues.
+        if (parsedHost === originHost) {
           url = `${parsed.pathname}${parsed.search}`;
         }
       } catch {
@@ -462,6 +487,15 @@ export default function RequestOrderPage() {
   const [sendingDraftId, setSendingDraftId] = useState<string | null>(null);
   const bartenderSkuMap = useMemo(
     () => {
+      // For our canonical Mixologist product, keep the mapping hard-coded so
+      // production doesn't break if Vercel env vars are misconfigured.
+      if (
+        GI_BARTENDER_PRODUCT_PATH &&
+        GI_BARTENDER_PRODUCT_PATH === DEFAULT_GI_BARTENDER_PRODUCT_PATH
+      ) {
+        return DEFAULT_GI_BARTENDER_VARIANT_SKUS;
+      }
+
       const parsed = parseBartenderSkuMap(GI_BARTENDER_VARIANT_SKUS_RAW);
       if (Object.keys(parsed).length) return parsed;
       if (GI_BARTENDER_VARIANT_SKU) {
@@ -827,6 +861,10 @@ export default function RequestOrderPage() {
     }, 0);
   }, [cocktailsSummary]);
 
+  const recommendedMixologists = useMemo(() => {
+    return recommendedBartenders(totalDrinks, cocktailsSummary.length);
+  }, [totalDrinks, cocktailsSummary.length]);
+
   useEffect(() => {
     if (!stored) return;
     if (!stored.cocktails.length) return;
@@ -1076,7 +1114,8 @@ export default function RequestOrderPage() {
     for (const item of orderList ?? []) {
       if (item.packPlan?.length) {
         for (const line of item.packPlan) {
-          const url = line.purchaseUrl || line.searchUrl || "";
+          const url =
+            line.purchaseUrl || line.searchUrl || item.purchaseUrl || "";
           const lineRetailer = (line.retailer as any) || retailerForUrl(url);
           if (lineRetailer !== retailer) continue;
           if (!url) continue;
@@ -1129,7 +1168,8 @@ export default function RequestOrderPage() {
           bartenderSkuMap[String(Number(bartenderHours) || "")] ||
           GI_BARTENDER_VARIANT_SKU ||
           null;
-        getInvolvedCartItems.push({
+        // Add this first so even if a later item fails, the bartender is still added.
+        getInvolvedCartItems.unshift({
           url: GI_BARTENDER_PRODUCT_URL,
           count: bartenders,
           sku: variantSku,
@@ -1598,7 +1638,8 @@ export default function RequestOrderPage() {
                           .slice()
                           .sort((a, b) => b.packSize - a.packSize)
                           .map((p) => {
-                            const url = p.purchaseUrl || p.searchUrl;
+                            const url =
+                              p.purchaseUrl || p.searchUrl || item.purchaseUrl;
                             const label = `${p.count} × ${p.packSize}${item.unit}`;
                             return url ? (
                               <a
@@ -1647,7 +1688,13 @@ export default function RequestOrderPage() {
             ))}
           </ul>
 
-          {GI_BARTENDER_PRODUCT_URL && Object.keys(bartenderSkuMap).length ? (
+          <p className="mt-4 text-[12px] leading-relaxed text-ink-muted">
+            Alcohol must be bought and supplied by the client. Involved Events are
+            a service provider only &mdash; ultimately the type and volume of
+            alcohol supplied remains the client&apos;s choice and responsibility.
+          </p>
+
+          {GI_BARTENDER_PRODUCT_URL ? (
             <div className="mt-4">
               <label className="block text-center text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                 Hours per bartender
@@ -1658,17 +1705,27 @@ export default function RequestOrderPage() {
                     className={`${fieldClass} border-soft text-center`}
                     style={{ textAlignLast: "center" }}
                   >
-                    {Object.keys(bartenderSkuMap)
-                      .slice()
-                      .sort((a, b) => Number(a) - Number(b))
-                      .map((h) => (
-                        <option key={h} value={h}>
-                          {h} hours
-                        </option>
-                      ))}
+                    {(Object.keys(bartenderSkuMap).length
+                      ? Object.keys(bartenderSkuMap)
+                          .slice()
+                          .sort((a, b) => Number(a) - Number(b))
+                      : ["4", "5", "6", "7", "8"]
+                    ).map((h) => (
+                      <option key={h} value={h}>
+                        {h} hours
+                      </option>
+                    ))}
                   </select>
                 </div>
               </label>
+              <p className="mt-2 text-center text-[12px] text-ink-muted">
+                Recommended:{" "}
+                {recommendedMixologists} mixologist
+                {recommendedMixologists ===
+                1
+                  ? ""
+                  : "s"}
+              </p>
             </div>
           ) : null}
 
@@ -1684,11 +1741,6 @@ export default function RequestOrderPage() {
               </span>
             </button>
           </div>
-          <p className="mt-3 text-[12px] leading-relaxed text-ink-muted">
-            Alcohol must be bought and supplied by the client. Involved Events are
-            a service provider only &mdash; ultimately the type and volume of
-            alcohol supplied remains the client&apos;s choice and responsibility.
-          </p>
           <button
             type="button"
             onClick={() =>

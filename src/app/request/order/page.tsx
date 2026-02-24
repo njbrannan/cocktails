@@ -1509,28 +1509,6 @@ export default function RequestOrderPage() {
         <div className="glass-panel rounded-[28px] px-8 py-6">
           <h2 className="font-display text-2xl text-accent">Order List</h2>
 
-          <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="gi-btn-secondary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] hover:-translate-y-0.5"
-            >
-              Print order list
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                orderBartendersRef.current?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start",
-                })
-              }
-              className="gi-btn-primary px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] shadow-lg shadow-[#c47b4a]/30 hover:-translate-y-0.5"
-            >
-              Send order list
-            </button>
-          </div>
-
           <div className="mt-10 flex items-baseline justify-between gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">
               Shopping list
@@ -1541,12 +1519,12 @@ export default function RequestOrderPage() {
               </p>
             ) : null}
           </div>
-          <div className="mt-3 flex items-center justify-start">
-            <div className="inline-flex overflow-hidden rounded-full border border-subtle bg-white/70 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+          <div className="mt-3">
+            <div className="flex w-full overflow-hidden rounded-full border border-subtle bg-white/70 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
               <button
                 type="button"
                 onClick={() => setPricingTier("house")}
-                className={`px-4 py-2 transition ${
+                className={`flex-1 px-4 py-2 text-center transition ${
                   pricingTier === "house"
                     ? "bg-accent text-on-accent"
                     : "hover:bg-white"
@@ -1557,7 +1535,7 @@ export default function RequestOrderPage() {
               <button
                 type="button"
                 onClick={() => setPricingTier("top_shelf")}
-                className={`border-l border-subtle px-4 py-2 transition ${
+                className={`flex-1 border-l border-subtle px-4 py-2 text-center transition ${
                   pricingTier === "top_shelf"
                     ? "bg-accent text-on-accent"
                     : "hover:bg-white"
@@ -1653,22 +1631,24 @@ export default function RequestOrderPage() {
 
           {GI_BARTENDER_PRODUCT_URL && Object.keys(bartenderSkuMap).length ? (
             <div className="mt-4">
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+              <label className="block text-center text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                 Hours per bartender
-                <select
-                  value={bartenderHours}
-                  onChange={(event) => setBartenderHours(event.target.value)}
-                  className={`mt-2 ${fieldClass} border-soft`}
-                >
-                  {Object.keys(bartenderSkuMap)
-                    .slice()
-                    .sort((a, b) => Number(a) - Number(b))
-                    .map((h) => (
-                      <option key={h} value={h}>
-                        {h} hours
-                      </option>
-                    ))}
-                </select>
+                <div className="mx-auto mt-2 max-w-[240px]">
+                  <select
+                    value={bartenderHours}
+                    onChange={(event) => setBartenderHours(event.target.value)}
+                    className={`${fieldClass} border-soft text-center`}
+                  >
+                    {Object.keys(bartenderSkuMap)
+                      .slice()
+                      .sort((a, b) => Number(a) - Number(b))
+                      .map((h) => (
+                        <option key={h} value={h}>
+                          {h} hours
+                        </option>
+                      ))}
+                  </select>
+                </div>
               </label>
             </div>
           ) : null}

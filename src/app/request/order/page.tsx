@@ -251,7 +251,10 @@ function formatPackPlan(
 
 function resolvePurchaseUrlForItem(item: IngredientTotal) {
   const plan = item.packPlan ?? [];
-  if (plan.length > 1) return undefined;
+  // If we have multiple pack sizes, we still want the ingredient name to be
+  // clickable (use the canonical product/search page), while pack-size lines
+  // can link individually when possible.
+  if (plan.length > 1) return item.purchaseUrl;
   if (plan.length === 1) {
     return plan[0]?.purchaseUrl || plan[0]?.searchUrl || item.purchaseUrl;
   }

@@ -95,6 +95,15 @@ type StoredOrder = {
 
 const STORAGE_KEY = "get-involved:order:v1";
 
+// Optional: when set, the "Get Involved!" export can also add recommended bartenders to cart.
+// Example:
+// NEXT_PUBLIC_GI_BARTENDER_PRODUCT_URL="https://www.getinvolved.com.au/services/p/bartender"
+// NEXT_PUBLIC_GI_BARTENDER_VARIANT_SKU="SQxxxx" (only if the product has variants)
+const GI_BARTENDER_PRODUCT_URL =
+  process.env.NEXT_PUBLIC_GI_BARTENDER_PRODUCT_URL || "";
+const GI_BARTENDER_VARIANT_SKU =
+  process.env.NEXT_PUBLIC_GI_BARTENDER_VARIANT_SKU || "";
+
 const typePriority: Record<string, number> = {
   liquor: 0,
   mixer: 1,
@@ -122,6 +131,21 @@ function CartIcon({ className }: { className?: string }) {
       <path d="M3 4h2l2.2 10.4a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L23 7H6" />
     </svg>
   );
+}
+
+function recommendedBartenders(totalDrinks: number, cocktailCount: number) {
+  const drinks = Math.max(0, Math.floor(totalDrinks || 0));
+  const cocktails = Math.max(0, Math.floor(cocktailCount || 0));
+  if (drinks <= 0) return 0;
+
+  // Baseline: 1 bartender per 150 drinks.
+  let count = Math.max(1, Math.ceil(drinks / 150));
+
+  // If there are more than 2 cocktails, add an extra bartender,
+  // unless the total is under 75 drinks.
+  if (cocktails > 2 && drinks >= 75) count += 1;
+
+  return count;
 }
 
 function todayIsoDate() {
@@ -986,6 +1010,17 @@ export default function RequestOrderPage() {
         pricingTier,
       });
       if (kitItems.length) getInvolvedCartItems.push(...kitItems);
+
+      // Also add recommended bartenders to cart (if configured).
+      const cocktailCount = cocktailsSummary.length;
+      const bartenders = recommendedBartenders(totalDrinks, cocktailCount);
+      if (bartenders > 0 && GI_BARTENDER_PRODUCT_URL) {
+        getInvolvedCartItems.push({
+          url: GI_BARTENDER_PRODUCT_URL,
+          count: bartenders,
+          sku: GI_BARTENDER_VARIANT_SKU || null,
+        });
+      }
     }
 
     if (!rows.length && !(retailer === "getinvolved" && getInvolvedCartItems.length)) {

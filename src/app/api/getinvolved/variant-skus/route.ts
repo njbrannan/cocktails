@@ -22,7 +22,12 @@ function normalizeGetInvolvedUrl(raw: string): URL | null {
 
   try {
     // Allow relative paths like "/store/p/hire-a-mixologist"
-    if (value.startsWith("/")) return new URL(value, BASE_ORIGIN);
+    if (value.startsWith("/")) {
+      const u = new URL(value, BASE_ORIGIN);
+      u.protocol = "https:";
+      u.hostname = "www.getinvolved.com.au";
+      return u;
+    }
 
     const u = new URL(value);
     const host = normalizeHostname(u.hostname);

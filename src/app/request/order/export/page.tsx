@@ -75,6 +75,9 @@ function Spinner() {
 export default function GetInvolvedCartExportPage() {
   const [status, setStatus] = useState("Preparing your cart…");
   const [error, setError] = useState<string | null>(null);
+  const [debugItems, setDebugItems] = useState<
+    Array<{ url: string; count: number; sku: string | null }>
+  >([]);
 
   const itemsParam = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -149,6 +152,28 @@ export default function GetInvolvedCartExportPage() {
 
       setStatus("Sending items to Get Involved cart…");
 
+      // Debug: keep a small trace on-screen so we can spot missing SKUs/items quickly.
+      setDebugItems(
+        merged.map((m) => ({
+          url: String(m.url || ""),
+          count: Number(m.count) || 0,
+          sku: (m.sku as any) ? String(m.sku) : null,
+        })),
+      );
+
+      // Sanity-check: ensure the mixologist is included and has a SKU (variant products require it).
+      const mixologist = merged.find((m) =>
+        String(m.url || "").includes("/store/p/hire-a-mixologist"),
+      );
+      if (mixologist) {
+        if (!mixologist.sku) {
+          setError(
+            "Mixologist was included, but no hours variant was found. Please select hours per bartender and try again.",
+          );
+          return;
+        }
+      }
+
       const importUrl = buildGetInvolvedCartImportUrl(merged);
       window.location.assign(importUrl);
     };
@@ -174,6 +199,26 @@ export default function GetInvolvedCartExportPage() {
           {error ? (
             <p className="mt-4 text-sm font-medium text-red-700">{error}</p>
           ) : null}
+          {debugItems.length ? (
+            <details className="mt-6 text-left text-[12px] text-ink-muted">
+              <summary className="cursor-pointer font-semibold text-ink">
+                Details
+              </summary>
+              <ul className="mt-3 space-y-2">
+                {debugItems.map((it, idx) => (
+                  <li key={`${it.url}-${idx}`} className="break-all">
+                    <span className="font-semibold text-ink">
+                      {it.count}×
+                    </span>{" "}
+                    {it.url}{" "}
+                    <span className="text-ink-muted">
+                      {it.sku ? `(SKU ${it.sku})` : "(no SKU)"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
           <p className="mt-6 text-[12px] leading-relaxed text-ink-muted">
             Keep this tab open &mdash; we’ll redirect you to your cart automatically.
           </p>
@@ -182,4 +227,3 @@ export default function GetInvolvedCartExportPage() {
     </div>
   );
 }
-

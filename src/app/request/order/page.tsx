@@ -122,6 +122,18 @@ const GI_BARTENDER_VARIANT_SKUS_RAW =
 const GI_BARTENDER_DEFAULT_HOURS =
   process.env.NEXT_PUBLIC_GI_BARTENDER_DEFAULT_HOURS || "4";
 
+// Mixologist product has required product-form fields on Squarespace.
+// If these IDs change (e.g. you edit the product form), update the env vars in Vercel.
+const GI_MIXOLOGIST_FIELD_EMAIL =
+  process.env.NEXT_PUBLIC_GI_MIXOLOGIST_FIELD_EMAIL ||
+  "email-15b5309e-0de9-418d-9c17-e9f4d23bd666";
+const GI_MIXOLOGIST_FIELD_PHONE =
+  process.env.NEXT_PUBLIC_GI_MIXOLOGIST_FIELD_PHONE ||
+  "phone-40d993da-d122-4534-af2d-b6c66853d03d";
+const GI_MIXOLOGIST_FIELD_ADDRESS =
+  process.env.NEXT_PUBLIC_GI_MIXOLOGIST_FIELD_ADDRESS ||
+  "textarea-76333c31-e0ec-4a05-9b45-edfb1ebf36f9";
+
 function normalizeUrlPath(value: string) {
   try {
     const u = new URL(String(value || "").trim());
@@ -416,7 +428,13 @@ function buildGetInvolvedCartImportUrl(
 }
 
 function buildLocalGetInvolvedExportUrl(
-  rows: Array<{ url: string; count: number; sku?: string | null; desiredValue?: string | null }>,
+  rows: Array<{
+    url: string;
+    count: number;
+    sku?: string | null;
+    desiredValue?: string | null;
+    fields?: Record<string, string> | null;
+  }>,
   origin = "https://www.getinvolved.com.au",
 ) {
   const originNormalized = origin.replace(/\/$/, "");
@@ -447,6 +465,7 @@ function buildLocalGetInvolvedExportUrl(
         count: r.count,
         sku: r.sku || null,
         desiredValue: r.desiredValue || null,
+        fields: r.fields || null,
       };
     });
 
@@ -1162,6 +1181,7 @@ export default function RequestOrderPage() {
     count: number;
     sku?: string | null;
     desiredValue?: string | null;
+    fields?: Record<string, string> | null;
   };
 
   const exportRetailer = (
@@ -1191,6 +1211,7 @@ export default function RequestOrderPage() {
               count: line.count,
               sku: line.variantSku || null,
               desiredValue: String(line.packSize),
+              fields: null,
             });
           }
         }
@@ -1216,6 +1237,7 @@ export default function RequestOrderPage() {
           count: item.bottlesNeeded || 1,
           sku: null,
           desiredValue: null,
+          fields: null,
         });
       }
     }
@@ -1243,6 +1265,7 @@ export default function RequestOrderPage() {
           count: bartenders,
           sku: variantSku,
           desiredValue: bartenderHours,
+          fields: null,
         });
       }
     }
@@ -1263,6 +1286,40 @@ export default function RequestOrderPage() {
     // Squarespace page that adds these products to cart in the *customer's* browser session.
     // This requires a small JS snippet on getinvolved.com.au to process the query string.
     if (retailer === "getinvolved" && getInvolvedCartItems.length) {
+      // Mixologist add-to-cart on Squarespace requires required product-form fields.
+      // If the user hasn't filled these yet, we can still add glassware/ice/kits,
+      // but the mixologist line would silently fail. We block and explain instead.
+      const hasMixologist = getInvolvedCartItems.some((it) =>
+        String(it.url || "").includes("/store/p/hire-a-mixologist"),
+      );
+      if (hasMixologist) {
+        const emailMessage = validateEmail(clientEmail);
+        const phoneMessage = validatePhone(phoneLocal);
+        if (emailMessage || phoneMessage) {
+          setError(
+            "To add a mixologist to the cart, please fill Email and Telephone in Bespoke Requests first (then click Get Involved! again).",
+          );
+          return;
+        }
+
+        const email = String(clientEmail || "").trim();
+        const phone = String(combinedPhone || "").trim();
+        const address =
+          String(notes || "").trim() ||
+          String(eventName || "").trim() ||
+          "TBC";
+
+        // Attach required fields to the mixologist item(s).
+        for (const it of getInvolvedCartItems) {
+          if (!String(it.url || "").includes("/store/p/hire-a-mixologist")) continue;
+          it.fields = {
+            [GI_MIXOLOGIST_FIELD_EMAIL]: email,
+            [GI_MIXOLOGIST_FIELD_PHONE]: phone,
+            [GI_MIXOLOGIST_FIELD_ADDRESS]: address,
+          };
+        }
+      }
+
       // Open a dedicated export page (new tab). That page resolves SKUs + redirects to /cart-import.
       // This avoids popup blockers while still giving users a clean "Adding to cart…" experience.
       const exportUrl = buildLocalGetInvolvedExportUrl(getInvolvedCartItems);

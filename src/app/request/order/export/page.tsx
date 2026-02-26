@@ -7,6 +7,7 @@ type ExportItem = {
   count: number;
   sku?: string | null;
   desiredValue?: string | null;
+  fields?: Record<string, string> | null;
 };
 
 function base64UrlToBase64(s: string) {
@@ -35,7 +36,12 @@ function base64UrlEncodeUtf8(input: string) {
 }
 
 function buildGetInvolvedCartImportUrl(
-  rows: Array<{ url: string; count: number; sku?: string | null }>,
+  rows: Array<{
+    url: string;
+    count: number;
+    sku?: string | null;
+    fields?: Record<string, string> | null;
+  }>,
   origin = "https://www.getinvolved.com.au",
 ) {
   const originNormalized = origin.replace(/\/$/, "");
@@ -56,7 +62,12 @@ function buildGetInvolvedCartImportUrl(
         const parsedHost = parsed.hostname.replace(/^www\./i, "").toLowerCase();
         if (parsedHost === originHost) url = `${parsed.pathname}${parsed.search}`;
       } catch {}
-      return { url, count: r.count, sku: r.sku || null };
+      return {
+        url,
+        count: r.count,
+        sku: r.sku || null,
+        fields: r.fields || null,
+      };
     });
 
   const encoded = base64UrlEncodeUtf8(JSON.stringify({ v: 1, items: payload }));
@@ -129,10 +140,14 @@ export default function GetInvolvedCartExportPage() {
         url: it.url,
         count: Number(it.count) || 0,
         sku: data?.items?.[idx]?.sku ?? null,
+        fields: it.fields || null,
       }));
 
       // Merge duplicates to reduce add-to-cart requests and lower the chance of 429 rate limits.
-      const mergedMap = new Map<string, { url: string; count: number; sku?: string | null }>();
+      const mergedMap = new Map<
+        string,
+        { url: string; count: number; sku?: string | null; fields?: Record<string, string> | null }
+      >();
       for (const it of resolved) {
         if (!it.url || it.count <= 0) continue;
         const key = `${it.url}||${it.sku || ""}`;

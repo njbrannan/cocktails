@@ -415,6 +415,45 @@ function buildGetInvolvedCartImportUrl(
   return `${originNormalized}/cart-import?items=${encoded}`;
 }
 
+function buildLocalGetInvolvedExportUrl(
+  rows: Array<{ url: string; count: number; sku?: string | null; desiredValue?: string | null }>,
+  origin = "https://www.getinvolved.com.au",
+) {
+  const originNormalized = origin.replace(/\/$/, "");
+  const originHost = (() => {
+    try {
+      return new URL(originNormalized).hostname.replace(/^www\./i, "").toLowerCase();
+    } catch {
+      return "getinvolved.com.au";
+    }
+  })();
+
+  const payload = rows
+    .filter((r) => r && r.url && r.count > 0)
+    .map((r) => {
+      // Keep URLs short for mobile browsers (we'll re-expand later).
+      let url = String(r.url || "").trim();
+      try {
+        const parsed = new URL(url, originNormalized);
+        const parsedHost = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+        if (parsedHost === originHost) {
+          url = `${parsed.pathname}${parsed.search}`;
+        }
+      } catch {
+        // Keep as-is.
+      }
+      return {
+        url,
+        count: r.count,
+        sku: r.sku || null,
+        desiredValue: r.desiredValue || null,
+      };
+    });
+
+  const encoded = base64UrlEncodeUtf8(JSON.stringify({ v: 1, items: payload }));
+  return `/request/order/export?items=${encoded}`;
+}
+
 type PackTier = "economy" | "business" | "first_class";
 
 function allowedPackTiersForPricingTier(
@@ -1125,7 +1164,7 @@ export default function RequestOrderPage() {
     desiredValue?: string | null;
   };
 
-  const exportRetailer = async (
+  const exportRetailer = (
     retailer: "danmurphys" | "woolworths" | "getinvolved",
   ) => {
     const rows: Array<{ name: string; type: string; qty: string; total: string; url: string }> = [];
@@ -1224,79 +1263,10 @@ export default function RequestOrderPage() {
     // Squarespace page that adds these products to cart in the *customer's* browser session.
     // This requires a small JS snippet on getinvolved.com.au to process the query string.
     if (retailer === "getinvolved" && getInvolvedCartItems.length) {
-      setError(null);
-      setSuccess(null);
-      setExportingToCart(true);
-      // Important: browsers will block popups if window.open happens after an await.
-      // Reserve the tab synchronously, then navigate it once the URL is ready.
-      const popup =
-        typeof window !== "undefined"
-          ? window.open("about:blank", "_blank", "noopener,noreferrer")
-          : null;
-
-      try {
-        // Resolve/validate SKUs server-side so we don't abort cart-import due to a bad SKU.
-        const response = await fetch("/api/getinvolved/variant-skus", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            items: getInvolvedCartItems.map((it) => ({
-              url: it.url,
-              desiredValue: it.desiredValue || null,
-              providedSku: it.sku || null,
-            })),
-          }),
-        });
-        const data = await response.json().catch(() => null);
-        if (!response.ok) {
-          setError(
-            data?.error ||
-              `Couldn’t prepare cart export (HTTP ${response.status}).`,
-          );
-          return;
-        }
-
-        const resolved: Array<{ url: string; count: number; sku?: string | null }> =
-          getInvolvedCartItems.map((it, idx) => ({
-            url: it.url,
-            count: it.count,
-            sku: data?.items?.[idx]?.sku ?? null,
-          }));
-
-        // Merge duplicates to reduce add-to-cart requests and lower the chance of 429 rate limits.
-        const mergedMap = new Map<string, { url: string; count: number; sku?: string | null }>();
-        for (const it of resolved) {
-          if (!it.url || it.count <= 0) continue;
-          const key = `${it.url}||${it.sku || ""}`;
-          const existing = mergedMap.get(key);
-          if (existing) existing.count += it.count;
-          else mergedMap.set(key, { ...it });
-        }
-        const merged = Array.from(mergedMap.values());
-
-        const totalItems = merged.reduce((sum, it) => sum + (Number(it.count) || 0), 0);
-        if (totalItems > 500) {
-          setError(
-            `This order is too large to auto-fill into the Get Involved cart (Squarespace cart limit is 500 total items). Reduce quantities or offer larger pack sizes for kits/glassware.`,
-          );
-          return;
-        }
-
-        const importUrl = buildGetInvolvedCartImportUrl(merged);
-        if (popup && !popup.closed) {
-          popup.location.href = importUrl;
-        } else {
-          // Fallback: same-tab navigation (always allowed).
-          window.location.assign(importUrl);
-        }
-      } catch (err: any) {
-        try {
-          if (popup && !popup.closed) popup.close();
-        } catch {}
-        setError(err?.message || "Couldn’t prepare cart export.");
-      } finally {
-        setExportingToCart(false);
-      }
+      // Open a dedicated export page (new tab). That page resolves SKUs + redirects to /cart-import.
+      // This avoids popup blockers while still giving users a clean "Adding to cart…" experience.
+      const exportUrl = buildLocalGetInvolvedExportUrl(getInvolvedCartItems);
+      window.open(exportUrl, "_blank", "noopener,noreferrer");
       return;
     }
 

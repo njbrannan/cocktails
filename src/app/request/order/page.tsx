@@ -1267,8 +1267,8 @@ export default function RequestOrderPage() {
           bartenderSkuMap[String(Number(bartenderHours) || "")] ||
           GI_BARTENDER_VARIANT_SKU ||
           null;
-        // Add this first so even if a later item fails, the bartender is still added.
-        getInvolvedCartItems.unshift({
+        // Add this last so a bartender failure doesn't block glassware/ice/kits.
+        getInvolvedCartItems.push({
           url: GI_BARTENDER_PRODUCT_URL,
           count: bartenders,
           sku: variantSku,

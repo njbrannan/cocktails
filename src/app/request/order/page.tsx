@@ -219,7 +219,7 @@ function CartIcon({ className }: { className?: string }) {
       aria-hidden="true"
       className={className}
       fill="none"
-      stroke="white"
+      stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -598,6 +598,7 @@ export default function RequestOrderPage() {
 
   const [eventDate, setEventDate] = useState("");
   const [eventName, setEventName] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [guestCountInput, setGuestCountInput] = useState("");
@@ -1076,7 +1077,14 @@ export default function RequestOrderPage() {
       const payload = {
         title: eventName.trim() ? eventName.trim() : "Cocktail booking request",
         eventDate,
-        notes,
+        notes: [
+          eventLocation.trim()
+            ? `Event location: ${eventLocation.trim()}`
+            : "",
+          notes,
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
         clientEmail,
         guestCount: Number(guestCountInput),
         clientPhone: combinedPhone || null,
@@ -1297,7 +1305,7 @@ export default function RequestOrderPage() {
         const phoneMessage = validatePhone(phoneLocal);
         if (emailMessage || phoneMessage) {
           setError(
-            "To add a mixologist to the cart, please fill Email and Telephone in Bespoke Requests first (then click Get Involved! again).",
+            "To add a mixologist to the cart, please fill Email and Telephone above (then click Get Involved! again).",
           );
           return;
         }
@@ -1305,6 +1313,7 @@ export default function RequestOrderPage() {
         const email = String(clientEmail || "").trim();
         const phone = String(combinedPhone || "").trim();
         const address =
+          String(eventLocation || "").trim() ||
           String(notes || "").trim() ||
           String(eventName || "").trim() ||
           "TBC";
@@ -1817,11 +1826,101 @@ export default function RequestOrderPage() {
             ))}
           </ul>
 
-          <p className="mt-4 text-[12px] leading-relaxed text-ink-muted">
-            Alcohol must be bought and supplied by the client. Involved Events are
-            a service provider only &mdash; ultimately the type and volume of
-            alcohol supplied remains the client&apos;s choice and responsibility.
-          </p>
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent md:col-span-2">
+              Event location
+              <input
+                type="text"
+                value={eventLocation}
+                onChange={(event) => setEventLocation(event.target.value)}
+                placeholder="Venue address, suburb, city..."
+                autoComplete="street-address"
+                className={`mt-2 ${fieldClass} border-soft`}
+              />
+            </label>
+
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+              Email
+              <input
+                type="email"
+                value={clientEmail}
+                onChange={(event) => {
+                  setClientEmail(event.target.value);
+                  if (emailError) setEmailError(null);
+                }}
+                onBlur={() => setEmailError(validateEmail(clientEmail))}
+                placeholder="you@example.com"
+                inputMode="email"
+                autoComplete="email"
+                className={`mt-2 ${fieldClass} ${
+                  emailError ? "border-red-400" : "border-soft"
+                }`}
+              />
+              {emailError ? (
+                <p className="mt-2 text-[12px] font-medium text-red-600 normal-case tracking-normal">
+                  {emailError}
+                </p>
+              ) : null}
+            </label>
+
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+              Telephone
+              <div className="mt-2 flex w-full max-w-full flex-nowrap items-stretch gap-2">
+                <div className="relative h-[52px] w-[52px] shrink-0">
+                  <div className="pointer-events-none flex h-full w-full items-center justify-center rounded-2xl border border-soft bg-white/80 text-[18px]">
+                    {flagEmoji(phoneCountryIso2 as string)}
+                  </div>
+                  <select
+                    value={phoneCountryIso2}
+                    onChange={(event) => {
+                      setPhoneCountryIso2(
+                        event.target.value as keyof typeof countries,
+                      );
+                      if (phoneError) setPhoneError(null);
+                    }}
+                    aria-label="Country"
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  >
+                    <optgroup label="Priority">
+                      {countryOptions.priority.map((c) => (
+                        <option key={c.iso2} value={c.iso2}>
+                          {c.flag} {c.dial} {c.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="All countries">
+                      {countryOptions.rest.map((c) => (
+                        <option key={c.iso2} value={c.iso2}>
+                          {c.flag} {c.dial} {c.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={phoneLocal}
+                  onChange={(event) => {
+                    setPhoneLocal(event.target.value);
+                    if (phoneError) setPhoneError(null);
+                  }}
+                  onBlur={() => setPhoneError(validatePhone(phoneLocal))}
+                  placeholder={phonePlaceholder}
+                  className={`${fieldClass} flex-1 placeholder:text-muted/55 focus:placeholder-transparent ${
+                    phoneError ? "border-red-400" : "border-soft"
+                  }`}
+                />
+              </div>
+              {phoneError ? (
+                <p className="mt-2 text-[12px] font-medium text-red-600 normal-case tracking-normal">
+                  {phoneError}
+                </p>
+              ) : null}
+            </label>
+          </div>
 
           {GI_BARTENDER_PRODUCT_URL ? (
             <div className="mt-4">
@@ -1867,10 +1966,15 @@ export default function RequestOrderPage() {
             >
               <span className="inline-flex items-center justify-center gap-2">
                 {exportingToCart ? "Adding to cart..." : "Get Involved!"}
-                <CartIcon className="h-4 w-4" />
+                <CartIcon className="h-4 w-4 text-white" />
               </span>
             </button>
           </div>
+          <p className="mt-4 text-[12px] leading-relaxed text-ink-muted">
+            Alcohol must be bought and supplied by the client. Involved Events are
+            a service provider only &mdash; ultimately the type and volume of
+            alcohol supplied remains the client&apos;s choice and responsibility.
+          </p>
           <button
             type="button"
             onClick={() =>
@@ -1923,31 +2027,6 @@ export default function RequestOrderPage() {
                 />
               </label>
 
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                Email
-                <input
-                  type="email"
-                  value={clientEmail}
-                  onChange={(event) => {
-                    setClientEmail(event.target.value);
-                    if (emailError) setEmailError(null);
-                  }}
-                  onBlur={() => setEmailError(validateEmail(clientEmail))}
-                  placeholder="you@example.com"
-                  inputMode="email"
-                  autoComplete="email"
-                  // iOS Safari zooms when inputs are < 16px font-size.
-                  className={`mt-2 ${fieldClass} ${
-                    emailError ? "border-red-400" : "border-soft"
-                  }`}
-                />
-                {emailError ? (
-                  <p className="mt-2 text-[12px] font-medium text-red-600 normal-case tracking-normal">
-                    {emailError}
-                  </p>
-                ) : null}
-              </label>
-
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent md:col-start-2">
                 Number of guests
                 <input
@@ -1971,64 +2050,6 @@ export default function RequestOrderPage() {
                 {guestCountError ? (
                   <p className="mt-2 text-[12px] font-medium text-red-600 normal-case tracking-normal">
                     {guestCountError}
-                  </p>
-                ) : null}
-              </label>
-
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent md:col-span-2">
-                Telephone
-                <div className="mt-2 flex w-full max-w-full flex-nowrap items-stretch gap-2">
-                  <div className="relative h-[52px] w-[52px] shrink-0">
-                    <div className="pointer-events-none flex h-full w-full items-center justify-center rounded-2xl border border-soft bg-white/80 text-[18px]">
-                      {flagEmoji(phoneCountryIso2 as string)}
-                    </div>
-                    <select
-                      value={phoneCountryIso2}
-                      onChange={(event) => {
-                        setPhoneCountryIso2(
-                          event.target.value as keyof typeof countries,
-                        );
-                        if (phoneError) setPhoneError(null);
-                      }}
-                      aria-label="Country"
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                    >
-                      <optgroup label="Priority">
-                        {countryOptions.priority.map((c) => (
-                          <option key={c.iso2} value={c.iso2}>
-                            {c.flag} {c.dial} {c.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="All countries">
-                        {countryOptions.rest.map((c) => (
-                          <option key={c.iso2} value={c.iso2}>
-                            {c.flag} {c.dial} {c.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    </select>
-                  </div>
-
-                  <input
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    value={phoneLocal}
-                    onChange={(event) => {
-                      setPhoneLocal(event.target.value);
-                      if (phoneError) setPhoneError(null);
-                    }}
-                    onBlur={() => setPhoneError(validatePhone(phoneLocal))}
-                    placeholder={phonePlaceholder}
-                    className={`${fieldClass} flex-1 placeholder:text-muted/55 focus:placeholder-transparent ${
-                      phoneError ? "border-red-400" : "border-soft"
-                    }`}
-                  />
-                </div>
-                {phoneError ? (
-                  <p className="mt-2 text-[12px] font-medium text-red-600 normal-case tracking-normal">
-                    {phoneError}
                   </p>
                 ) : null}
               </label>

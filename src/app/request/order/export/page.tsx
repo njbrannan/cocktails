@@ -176,19 +176,6 @@ export default function GetInvolvedCartExportPage() {
         })),
       );
 
-      // Sanity-check: ensure the mixologist is included and has a SKU (variant products require it).
-      const mixologist = merged.find((m) =>
-        String(m.url || "").includes("/store/p/hire-a-mixologist"),
-      );
-      if (mixologist) {
-        if (!mixologist.sku) {
-          setError(
-            "Mixologist was included, but no hours variant was found. Please select hours per bartender and try again.",
-          );
-          return;
-        }
-      }
-
       const importUrl = buildGetInvolvedCartImportUrl(merged);
       window.location.assign(importUrl);
     };

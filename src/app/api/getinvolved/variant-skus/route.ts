@@ -51,11 +51,29 @@ function pickSkuForValue(
   const wanted = String(desiredValue || "").trim();
   if (!wanted) return null;
 
+  const wantedLower = wanted.toLowerCase();
+  const wantedNum = Number(wanted);
+  const wantedHasNum = Number.isFinite(wantedNum) && wantedNum > 0;
+
   for (const v of variants || []) {
     const optionValues = Array.isArray(v?.optionValues) ? v.optionValues : [];
-    const matches = optionValues.some(
-      (ov: any) => String(ov?.value || "").trim() === wanted,
-    );
+    const matches = optionValues.some((ov: any) => {
+      const raw = String(ov?.value || "").trim();
+      if (!raw) return false;
+      if (raw === wanted) return true;
+
+      const lower = raw.toLowerCase();
+      if (lower === wantedLower) return true;
+
+      // Common pattern: option is "5 hours" and we pass "5".
+      if (wantedHasNum) {
+        const n = Number(String(raw).match(/(\d+(?:\.\d+)?)/)?.[1] ?? "");
+        if (Number.isFinite(n) && n === wantedNum) return true;
+      }
+
+      // Loose match for safety (e.g. "5h").
+      return lower.includes(wantedLower);
+    });
     if (matches) return String(v?.sku || "").trim() || null;
   }
 
@@ -134,7 +152,12 @@ export async function POST(req: Request) {
     const skuForValue = desired ? pickSkuForValue(variants, desired) : null;
     const providedOk = provided ? skuSet.has(provided) : false;
 
-    return { sku: skuForValue || (providedOk ? provided : null) };
+    // If we can't match the desired option value or the provided SKU, fall back to:
+    // - the first variant (common for services/glassware), or
+    // - null (cart-import script can still try to add by URL, depending on implementation).
+    const firstSku = String(variants?.[0]?.sku || "").trim() || null;
+
+    return { sku: skuForValue || (providedOk ? provided : null) || firstSku };
   });
 
   return NextResponse.json({ items: out });

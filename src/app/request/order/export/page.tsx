@@ -7,7 +7,8 @@ type ExportItem = {
   count: number;
   sku?: string | null;
   desiredValue?: string | null;
-  fields?: Record<string, string> | null;
+  // Squarespace additionalFields can include arrays (e.g. phone field parts).
+  fields?: Record<string, any> | null;
 };
 
 function base64UrlToBase64(s: string) {
@@ -40,7 +41,7 @@ function buildGetInvolvedCartImportUrl(
     url: string;
     count: number;
     sku?: string | null;
-    fields?: Record<string, string> | null;
+    fields?: Record<string, any> | null;
   }>,
   origin = "https://www.getinvolved.com.au",
 ) {
@@ -146,7 +147,7 @@ export default function GetInvolvedCartExportPage() {
       // Merge duplicates to reduce add-to-cart requests and lower the chance of 429 rate limits.
       const mergedMap = new Map<
         string,
-        { url: string; count: number; sku?: string | null; fields?: Record<string, string> | null }
+        { url: string; count: number; sku?: string | null; fields?: Record<string, any> | null }
       >();
       for (const it of resolved) {
         if (!it.url || it.count <= 0) continue;

@@ -433,7 +433,7 @@ function buildLocalGetInvolvedExportUrl(
     count: number;
     sku?: string | null;
     desiredValue?: string | null;
-    fields?: Record<string, string> | null;
+    fields?: Record<string, any> | null;
   }>,
   origin = "https://www.getinvolved.com.au",
 ) {
@@ -1189,7 +1189,8 @@ export default function RequestOrderPage() {
     count: number;
     sku?: string | null;
     desiredValue?: string | null;
-    fields?: Record<string, string> | null;
+    // Squarespace additionalFields values can be strings or arrays (e.g. phone field expects parts).
+    fields?: Record<string, any> | null;
   };
 
   const exportRetailer = (
@@ -1311,19 +1312,35 @@ export default function RequestOrderPage() {
         }
 
         const email = String(clientEmail || "").trim();
-        const phone = String(combinedPhone || "").trim();
+        const phoneRaw = String(phoneLocal || "").trim();
         const address =
           String(eventLocation || "").trim() ||
           String(notes || "").trim() ||
           String(eventName || "").trim() ||
           "TBC";
 
+        // Squarespace's "phone" form field expects 3-3-4 parts: [Country, AreaCode, Prefix, Line]
+        // (Country is blank when showCountryCode=false).
+        const phoneParts = (() => {
+          const digits = phoneRaw.replace(/\D/g, "");
+          if (digits.length < 10) return null;
+          const last10 = digits.slice(-10);
+          return [
+            "",
+            last10.slice(0, 3),
+            last10.slice(3, 6),
+            last10.slice(6, 10),
+          ];
+        })();
+
         // Attach required fields to the mixologist item(s).
         for (const it of getInvolvedCartItems) {
           if (!String(it.url || "").includes("/store/p/hire-a-mixologist")) continue;
           it.fields = {
             [GI_MIXOLOGIST_FIELD_EMAIL]: email,
-            [GI_MIXOLOGIST_FIELD_PHONE]: phone,
+            // If we can't safely format the phone into parts, fall back to raw.
+            // (Cart-import script can still try to coerce it.)
+            [GI_MIXOLOGIST_FIELD_PHONE]: phoneParts || phoneRaw,
             [GI_MIXOLOGIST_FIELD_ADDRESS]: address,
           };
         }

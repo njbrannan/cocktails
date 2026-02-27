@@ -528,6 +528,11 @@ export async function POST(request: NextRequest) {
         ? formatOrderListHtml(orderTotals)
         : "<p style=\"margin:0;color:#666\">(Order list unavailable)</p>";
 
+      const liquorTotals = orderTotals.filter((t) => t.type === "liquor");
+      const liquorListHtml = liquorTotals.length
+        ? formatOrderListHtml(liquorTotals)
+        : "<p style=\"margin:0;color:#666\">(Alcohol shopping list unavailable)</p>";
+
       if (adminEmail) {
         const guestsHtml = cleanedGuestCount
           ? safeGuests
@@ -564,19 +569,31 @@ export async function POST(request: NextRequest) {
           html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
   <h2 style="margin:0 0 12px 0">Thank you!</h2>
   <p style="margin:0 0 12px 0">We have received your booking request. A member of our team will be in contact shortly to organise everything with you properly.</p>
-  <p style="margin:0 0 12px 0">In the meantime, if you would like to update your booking request, please feel free to use your personal booking request link to make amendments:</p>
-  <p style="margin:0 0 12px 0">
+  ${cocktailsHtml ? `<h3 style="margin:16px 0 8px 0">Cocktails</h3>${cocktailsHtml}` : ""}
+  <h3 style="margin:16px 0 8px 0">Your Shopping List</h3>
+  <p style="margin:0 0 10px 0;color:#666;font-size:13px">This list covers alcohol only. Involved Events supplies mixers, juices, garnishes, ice, and glassware.</p>
+  ${liquorListHtml}
+  <p style="margin:16px 0 0 0">
     <a href="${safeLink}" style="display:inline-block;padding:10px 14px;border-radius:12px;background:#6a2e2a;color:#f8f1e7;text-decoration:none;font-weight:600">
-      Open your booking link
+      If you need to make any changes click here
     </a>
   </p>
-  <p style="margin:0;color:#666;font-size:12px;word-break:break-all">${safeLink}</p>
   <p style="margin:12px 0 0 0">Cheers!</p>
 </div>`,
           text:
             `Thank you! We have received your booking request. ` +
             `A member of our team will be in contact shortly to organise everything with you properly.\n\n` +
-            `In the meantime, if you would like to update your booking request, please use your personal booking request link:\n` +
+            (cleanedCocktails.length
+              ? `Cocktails:\n${cleanedCocktails
+                  .map((c) => `- ${(c.recipeName || c.recipeId)}: ${c.servings}`)
+                  .join("\n")}\n\n`
+              : "") +
+            `Your Shopping List (alcohol only):\n` +
+            `${liquorTotals
+              .map((t) => `- ${t.name}: ${t.total} ${t.unit}`)
+              .join("\n")}\n\n` +
+            `Involved Events supplies mixers, juices, garnishes, ice, and glassware.\n\n` +
+            `If you need to make any changes, use this link:\n` +
             `${editLink}\n\n` +
             `Cheers!`,
           replyTo: adminEmail || undefined,

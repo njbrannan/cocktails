@@ -167,27 +167,7 @@
           var res = await fetch(u.toString(), { credentials: "include" });
           if (!res.ok) return null;
           var json = await res.json().catch(() => null);
-          // Squarespace product JSON typically has { item: {...} }
           return (json && (json.item || json)) || null;
-        }
-
-        function pickSku(product, preferredSku) {
-          var sku = String(preferredSku || "").trim();
-          var variants = Array.isArray(product && product.variants) ? product.variants : [];
-          if (sku) {
-            for (var i = 0; i < variants.length; i++) {
-              var vs = String(variants[i] && variants[i].sku || "").trim();
-              if (vs && vs === sku) return sku;
-            }
-          }
-          // Fallback: first variant SKU
-          for (var j = 0; j < variants.length; j++) {
-            var s = String(variants[j] && variants[j].sku || "").trim();
-            if (s) return s;
-          }
-          // Some products may have top-level sku
-          var rootSku = String(product && product.sku || "").trim();
-          return rootSku || "";
         }
 
         async function addToCart(items) {
@@ -195,6 +175,18 @@
           if (!crumb) {
             throw new Error("Missing Squarespace crumb. Please refresh this page.");
           }
+
+          // Remove null/undefined keys to avoid Squarespace 400 "may not be null".
+          items = (items || []).map(function (it) {
+            var out = {};
+            for (var k in it) {
+              if (!Object.prototype.hasOwnProperty.call(it, k)) continue;
+              var v = it[k];
+              if (v === null || v === undefined) continue;
+              out[k] = v;
+            }
+            return out;
+          });
 
           var res = await fetch("/api/commerce/shopping-cart/entries?crumb=" + encodeURIComponent(crumb), {
             method: "POST",
@@ -250,40 +242,43 @@
             var key = url + "||" + sku;
             var existing = merged.get(key);
             if (existing) existing.count += count;
-            else merged.set(key, { url: url, count: count, sku: sku || null, fields: it.fields || null });
+            else merged.set(key, { url: url, count: count, sku: sku || null, itemId: it.itemId || null, variantId: it.variantId || null, fields: it.fields || null });
           }
           var items = Array.from(merged.values());
           showDetails(items);
-
-          setStatus("Fetching product details…");
-
-          // Cache product JSON by URL
-          var productCache = new Map();
-          for (var j = 0; j < items.length; j++) {
-            var u = items[j].url;
-            if (productCache.has(u)) continue;
-            var product = await fetchProductJson(u);
-            if (!product) throw new Error("Couldn’t load product: " + u);
-            productCache.set(u, product);
-          }
 
           setStatus("Adding items to cart…");
 
           // Add sequentially (more reliable with Squarespace)
           for (var k = 0; k < items.length; k++) {
             var entry = items[k];
-            var product = productCache.get(entry.url);
-            var itemId = String(product && product.id || "").trim();
+            var itemId = String(entry.itemId || "").trim();
+            var variantId = String(entry.variantId || "").trim();
+            var skuToUse = entry.sku ? String(entry.sku).trim() : "";
+
+            // If we weren't given item/variant ids (older payload), fall back to product JSON.
+            if (!itemId || (!variantId && !skuToUse)) {
+              setStatus("Fetching product details… (" + (k + 1) + "/" + items.length + ")");
+              var product = await fetchProductJson(entry.url);
+              if (!product) throw new Error("Couldn’t load product: " + entry.url);
+              itemId = String(product && product.id || "").trim();
+              if (!itemId) throw new Error("Missing itemId for product: " + entry.url);
+              var variants = Array.isArray(product && product.variants) ? product.variants : [];
+              if (!variantId && variants.length) {
+                variantId = String(variants[0] && variants[0].id || "").trim();
+              }
+              if (!skuToUse && variants.length) {
+                skuToUse = String(variants[0] && variants[0].sku || "").trim();
+              }
+            }
+
             if (!itemId) throw new Error("Missing itemId for product: " + entry.url);
+            if (!variantId && !skuToUse) throw new Error("Missing variantId/SKU for product: " + entry.url);
 
-            var skuToUse = pickSku(product, entry.sku);
-            if (!skuToUse) throw new Error("Missing SKU for product: " + entry.url);
-
-            var cartItem = {
-              itemId: itemId,
-              sku: skuToUse,
-              quantity: Number(entry.count) || 0,
-            };
+            var cartItem = { itemId: itemId, quantity: Number(entry.count) || 0 };
+            // Prefer variantId (works even when SKU is blank).
+            if (variantId) cartItem.variantId = variantId;
+            else cartItem.sku = skuToUse;
 
             // Required for some products (e.g. "Hire a mixologist" has required form fields).
             var fields = entry.fields && typeof entry.fields === "object" ? entry.fields : null;
@@ -311,4 +306,3 @@
     </script>
   </body>
 </html>
-

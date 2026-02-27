@@ -41,6 +41,8 @@ function buildGetInvolvedCartImportUrl(
     url: string;
     count: number;
     sku?: string | null;
+    itemId?: string | null;
+    variantId?: string | null;
     fields?: Record<string, any> | null;
   }>,
   origin = "https://www.getinvolved.com.au",
@@ -67,6 +69,8 @@ function buildGetInvolvedCartImportUrl(
         url,
         count: r.count,
         sku: r.sku || null,
+        itemId: r.itemId || null,
+        variantId: r.variantId || null,
         fields: r.fields || null,
       };
     });
@@ -141,17 +145,20 @@ export default function GetInvolvedCartExportPage() {
         url: it.url,
         count: Number(it.count) || 0,
         sku: data?.items?.[idx]?.sku ?? null,
+        itemId: data?.items?.[idx]?.itemId ?? null,
+        variantId: data?.items?.[idx]?.variantId ?? null,
         fields: it.fields || null,
       }));
 
       // Merge duplicates to reduce add-to-cart requests and lower the chance of 429 rate limits.
       const mergedMap = new Map<
         string,
-        { url: string; count: number; sku?: string | null; fields?: Record<string, any> | null }
+        { url: string; count: number; sku?: string | null; itemId?: string | null; variantId?: string | null; fields?: Record<string, any> | null }
       >();
       for (const it of resolved) {
         if (!it.url || it.count <= 0) continue;
-        const key = `${it.url}||${it.sku || ""}`;
+        // Prefer variantId when present; SKUs can be blank on Squarespace products.
+        const key = `${it.url}||${it.variantId || ""}||${it.sku || ""}`;
         const existing = mergedMap.get(key);
         if (existing) existing.count += it.count;
         else mergedMap.set(key, { ...it });

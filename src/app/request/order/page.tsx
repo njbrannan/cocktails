@@ -1225,7 +1225,7 @@ export default function RequestOrderPage() {
     fields?: Record<string, any> | null;
   };
 
-  const exportRetailer = (
+  const exportRetailer = async (
     retailer: "danmurphys" | "woolworths" | "getinvolved",
   ) => {
     const rows: Array<{ name: string; type: string; qty: string; total: string; url: string }> = [];
@@ -1327,6 +1327,34 @@ export default function RequestOrderPage() {
     // Squarespace page that adds these products to cart in the *customer's* browser session.
     // This requires a small JS snippet on getinvolved.com.au to process the query string.
     if (retailer === "getinvolved" && getInvolvedCartItems.length) {
+      // Also email the full order list to admin (so clients only see liquor, but you still get everything).
+      // Don't block the cart export if email fails.
+      try {
+        await fetch("/api/admin/order-list-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: eventName.trim() ? eventName.trim() : "Cocktail booking request",
+            eventDate,
+            guestCount: guestCountInput ? Number(guestCountInput) : null,
+            clientEmail,
+            clientPhone: combinedPhone || null,
+            notes,
+            cocktails: cocktailsSummary.map((c) => ({
+              recipeId: c.recipeId,
+              recipeName: c.recipeName,
+              servings:
+                Number(servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0)) ||
+                0,
+            })),
+            // Send the *full* order list (not the liquor-only client view).
+            orderList,
+          }),
+        });
+      } catch {
+        // Ignore; cart export is still useful.
+      }
+
       // Mixologist add-to-cart on Squarespace requires required product-form fields.
       // If the user hasn't filled these yet, we can still add glassware/ice/kits,
       // but the mixologist line would silently fail. We block and explain instead.
@@ -2009,7 +2037,9 @@ export default function RequestOrderPage() {
           <div className="mt-4">
             <button
               type="button"
-              onClick={() => exportRetailer("getinvolved")}
+              onClick={() => {
+                void exportRetailer("getinvolved");
+              }}
               disabled={exportingToCart}
               className="gi-btn-primary w-full px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5 disabled:opacity-60"
             >

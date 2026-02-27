@@ -8,6 +8,8 @@ type InputItem = {
 
 type OutputItem = {
   sku: string | null;
+  itemId: string | null;
+  variantId: string | null;
 };
 
 const BASE_ORIGIN = "https://www.getinvolved.com.au";
@@ -157,7 +159,32 @@ export async function POST(req: Request) {
     // - null (cart-import script can still try to add by URL, depending on implementation).
     const firstSku = String(variants?.[0]?.sku || "").trim() || null;
 
-    return { sku: skuForValue || (providedOk ? provided : null) || firstSku };
+    const sku = skuForValue || (providedOk ? provided : null) || firstSku;
+
+    const variantId = (() => {
+      // Prefer: match desiredValue, then provided sku, then first variant.
+      const wanted = desired ? String(desired).trim() : "";
+      if (wanted) {
+        const matchSku = pickSkuForValue(variants, wanted);
+        if (matchSku) {
+          const v = (variants || []).find((vv: any) => String(vv?.sku || "").trim() === matchSku);
+          const id = String(v?.id || "").trim();
+          if (id) return id;
+        }
+      }
+      if (providedOk && provided) {
+        const v = (variants || []).find((vv: any) => String(vv?.sku || "").trim() === provided);
+        const id = String(v?.id || "").trim();
+        if (id) return id;
+      }
+      const first = variants?.[0];
+      const id = String(first?.id || "").trim();
+      return id || null;
+    })();
+
+    const itemId = String(item?.id || "").trim() || null;
+
+    return { sku, itemId, variantId };
   });
 
   return NextResponse.json({ items: out });

@@ -1340,6 +1340,7 @@ export default function RequestOrderPage() {
             clientEmail,
             clientPhone: combinedPhone || null,
             notes,
+            editLink: editLink || null,
             cocktails: cocktailsSummary.map((c) => ({
               recipeId: c.recipeId,
               recipeName: c.recipeName,

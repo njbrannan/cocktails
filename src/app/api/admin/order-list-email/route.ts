@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
     const clientEmail = String(body?.clientEmail || "").trim();
     const clientPhone = String(body?.clientPhone || "").trim();
     const eventDate = String(body?.eventDate || "").trim();
+    const editLink = String(body?.editLink || "").trim();
     const guestCount = body?.guestCount;
     const cocktails = Array.isArray(body?.cocktails) ? body.cocktails : [];
     const orderList = Array.isArray(body?.orderList) ? body.orderList : [];
@@ -98,6 +99,11 @@ export async function POST(req: NextRequest) {
   <p style="margin:0 0 8px 0"><strong>Number of guests:</strong> ${escapeHtml(String(guestCount ?? ""))}</p>
   <p style="margin:0 0 8px 0"><strong>Client email:</strong> ${escapeHtml(clientEmail)}</p>
   <p style="margin:0 0 8px 0"><strong>Telephone:</strong> ${escapeHtml(clientPhone)}</p>
+  ${
+    editLink
+      ? `<p style="margin:12px 0 0 0"><strong>Edit link:</strong> <a href="${escapeHtml(editLink)}">${escapeHtml(editLink)}</a></p>`
+      : ""
+  }
   <h3 style="margin:16px 0 8px 0">Cocktails</h3>
   ${cocktailsHtml}
   <h3 style="margin:16px 0 8px 0">Full order list</h3>
@@ -124,4 +130,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

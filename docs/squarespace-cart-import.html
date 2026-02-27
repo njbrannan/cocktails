@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Involved Events — Cart Import</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        padding: 32px 18px;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: #f6f3ef;
+        color: #151210;
+      }
+      .card {
+        max-width: 720px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 24px;
+        padding: 22px 20px;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+      }
+      .row {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+      .spinner {
+        width: 44px;
+        height: 44px;
+        border-radius: 999px;
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-top-color: rgba(0, 0, 0, 0.45);
+        animation: spin 900ms linear infinite;
+        flex: none;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+      p {
+        margin: 6px 0 0 0;
+        color: rgba(21, 18, 16, 0.72);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .error {
+        margin-top: 12px;
+        color: #b42318;
+        font-weight: 650;
+      }
+      details {
+        margin-top: 14px;
+        font-size: 12px;
+        color: rgba(21, 18, 16, 0.72);
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+      }
+      ul {
+        margin: 10px 0 0 18px;
+        padding: 0;
+      }
+      li {
+        margin: 6px 0;
+        word-break: break-all;
+      }
+      .footer {
+        margin-top: 14px;
+        font-size: 12px;
+        color: rgba(21, 18, 16, 0.6);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="row">
+        <div class="spinner" aria-hidden="true"></div>
+        <div>
+          <h1>Involved Events</h1>
+          <p id="status">Preparing your cart…</p>
+        </div>
+      </div>
+      <p id="error" class="error" style="display:none"></p>
+      <details id="details" style="display:none">
+        <summary><strong>Details</strong></summary>
+        <ul id="items"></ul>
+      </details>
+      <p class="footer">Keep this tab open — we’ll redirect you to your cart automatically.</p>
+    </div>
+
+    <script>
+      (function () {
+        function setStatus(msg) {
+          document.getElementById("status").textContent = msg;
+        }
+        function showError(msg) {
+          var el = document.getElementById("error");
+          el.textContent = msg;
+          el.style.display = "block";
+        }
+        function showDetails(items) {
+          if (!Array.isArray(items) || !items.length) return;
+          var details = document.getElementById("details");
+          var list = document.getElementById("items");
+          list.innerHTML = "";
+          for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            var li = document.createElement("li");
+            li.textContent = String(it.count || 0) + "× " + String(it.url || "") + (it.sku ? " (SKU " + it.sku + ")" : "");
+            list.appendChild(li);
+          }
+          details.style.display = "block";
+        }
+
+        function getCookie(name) {
+          var match = document.cookie.match(new RegExp("(^|;\\s*)" + name + "=([^;]*)"));
+          return match ? decodeURIComponent(match[2]) : "";
+        }
+        function getCrumb() {
+          return (
+            getCookie("crumb") ||
+            (window.Static && window.Static.SQUARESPACE_CONTEXT && window.Static.SQUARESPACE_CONTEXT.crumb) ||
+            ""
+          );
+        }
+
+        function base64UrlToBase64(s) {
+          s = String(s || "").replace(/-/g, "+").replace(/_/g, "/");
+          var pad = s.length % 4;
+          if (pad === 2) s += "==";
+          else if (pad === 3) s += "=";
+          return s;
+        }
+        function decodeItemsParam(itemsParam) {
+          var b64 = base64UrlToBase64(itemsParam);
+          var bin = atob(b64);
+          var bytes = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          var json = new TextDecoder().decode(bytes);
+          return JSON.parse(json);
+        }
+
+        function toAbsoluteUrl(pathOrUrl) {
+          try {
+            return new URL(String(pathOrUrl || ""), window.location.origin).toString();
+          } catch {
+            return "";
+          }
+        }
+
+        async function fetchProductJson(pathOrUrl) {
+          var abs = toAbsoluteUrl(pathOrUrl);
+          if (!abs) return null;
+          var u = new URL(abs);
+          u.searchParams.set("format", "json");
+          var res = await fetch(u.toString(), { credentials: "include" });
+          if (!res.ok) return null;
+          var json = await res.json().catch(() => null);
+          // Squarespace product JSON typically has { item: {...} }
+          return (json && (json.item || json)) || null;
+        }
+
+        function pickSku(product, preferredSku) {
+          var sku = String(preferredSku || "").trim();
+          var variants = Array.isArray(product && product.variants) ? product.variants : [];
+          if (sku) {
+            for (var i = 0; i < variants.length; i++) {
+              var vs = String(variants[i] && variants[i].sku || "").trim();
+              if (vs && vs === sku) return sku;
+            }
+          }
+          // Fallback: first variant SKU
+          for (var j = 0; j < variants.length; j++) {
+            var s = String(variants[j] && variants[j].sku || "").trim();
+            if (s) return s;
+          }
+          // Some products may have top-level sku
+          var rootSku = String(product && product.sku || "").trim();
+          return rootSku || "";
+        }
+
+        async function addToCart(items) {
+          var crumb = getCrumb();
+          if (!crumb) {
+            throw new Error("Missing Squarespace crumb. Please refresh this page.");
+          }
+
+          var res = await fetch("/api/commerce/shopping-cart/entries?crumb=" + encodeURIComponent(crumb), {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items: items }),
+          });
+
+          var data = await res.json().catch(() => null);
+          if (!res.ok) {
+            var msg = (data && (data.message || data.error)) ? (data.message || data.error) : ("HTTP " + res.status);
+            throw new Error("Add-to-cart failed (" + res.status + "): " + msg);
+          }
+
+          // Squarespace can return 200 with an error payload; handle defensively.
+          if (data && data.error) {
+            throw new Error("Add-to-cart failed: " + (data.message || data.error || "Unknown error"));
+          }
+
+          return data;
+        }
+
+        async function run() {
+          var params = new URLSearchParams(window.location.search);
+          var itemsParam = params.get("items") || "";
+          if (!itemsParam) {
+            showError("No items were provided.");
+            return;
+          }
+
+          var payload = null;
+          try {
+            payload = decodeItemsParam(itemsParam);
+          } catch (e) {
+            showError("Couldn’t read the order payload. Please re-open the export link.");
+            return;
+          }
+
+          var rawItems = Array.isArray(payload && payload.items) ? payload.items : [];
+          if (!rawItems.length) {
+            showError("No items in payload.");
+            return;
+          }
+
+          // Normalize + merge duplicates
+          var merged = new Map();
+          for (var i = 0; i < rawItems.length; i++) {
+            var it = rawItems[i] || {};
+            var url = String(it.url || "").trim();
+            var count = Number(it.count) || 0;
+            if (!url || count <= 0) continue;
+            var sku = it.sku ? String(it.sku).trim() : "";
+            var key = url + "||" + sku;
+            var existing = merged.get(key);
+            if (existing) existing.count += count;
+            else merged.set(key, { url: url, count: count, sku: sku || null, fields: it.fields || null });
+          }
+          var items = Array.from(merged.values());
+          showDetails(items);
+
+          setStatus("Fetching product details…");
+
+          // Cache product JSON by URL
+          var productCache = new Map();
+          for (var j = 0; j < items.length; j++) {
+            var u = items[j].url;
+            if (productCache.has(u)) continue;
+            var product = await fetchProductJson(u);
+            if (!product) throw new Error("Couldn’t load product: " + u);
+            productCache.set(u, product);
+          }
+
+          setStatus("Adding items to cart…");
+
+          // Add sequentially (more reliable with Squarespace)
+          for (var k = 0; k < items.length; k++) {
+            var entry = items[k];
+            var product = productCache.get(entry.url);
+            var itemId = String(product && product.id || "").trim();
+            if (!itemId) throw new Error("Missing itemId for product: " + entry.url);
+
+            var skuToUse = pickSku(product, entry.sku);
+            if (!skuToUse) throw new Error("Missing SKU for product: " + entry.url);
+
+            var cartItem = {
+              itemId: itemId,
+              sku: skuToUse,
+              quantity: Number(entry.count) || 0,
+            };
+
+            // Required for some products (e.g. "Hire a mixologist" has required form fields).
+            var fields = entry.fields && typeof entry.fields === "object" ? entry.fields : null;
+            if (fields && Object.keys(fields).length) {
+              // IMPORTANT: Squarespace expects additionalFields as a JSON string.
+              cartItem.additionalFields = JSON.stringify(fields);
+            }
+
+            if (cartItem.quantity > 0) {
+              await addToCart([cartItem]);
+            }
+
+            setStatus("Adding items to cart… (" + (k + 1) + "/" + items.length + ")");
+          }
+
+          setStatus("Done — opening your cart…");
+          window.location.assign("/cart");
+        }
+
+        run().catch(function (e) {
+          showError(String(e && e.message || e || "Couldn’t auto-fill cart. Please add items manually."));
+          setStatus("Couldn’t auto-fill cart. Please add items manually.");
+        });
+      })();
+    </script>
+  </body>
+</html>
+

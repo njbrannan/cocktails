@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
     const clientEmail = String(body?.clientEmail || "").trim();
     const clientPhone = String(body?.clientPhone || "").trim();
     const eventDate = String(body?.eventDate || "").trim();
+    const eventLocation = String(body?.eventLocation || "").trim();
     const editLink = String(body?.editLink || "").trim();
     const guestCount = body?.guestCount;
     const cocktails = Array.isArray(body?.cocktails) ? body.cocktails : [];
@@ -95,6 +96,7 @@ export async function POST(req: NextRequest) {
   <h2 style="margin:0 0 12px 0">Booking request cart export</h2>
   <p style="margin:0 0 8px 0"><strong>Title:</strong> ${escapeHtml(title)}</p>
   <p style="margin:0 0 8px 0"><strong>Date:</strong> ${escapeHtml(eventDate || "TBD")}</p>
+  <p style="margin:0 0 8px 0"><strong>Location:</strong> ${escapeHtml(eventLocation || "TBC")}</p>
   <p style="margin:0 0 8px 0"><strong>Number of drinks:</strong> ${escapeHtml(String(drinksCount))}</p>
   <p style="margin:0 0 8px 0"><strong>Number of guests:</strong> ${escapeHtml(String(guestCount ?? ""))}</p>
   <p style="margin:0 0 8px 0"><strong>Client email:</strong> ${escapeHtml(clientEmail)}</p>
@@ -115,7 +117,14 @@ export async function POST(req: NextRequest) {
       subject: `Cart export: ${title}`,
       replyTo: clientEmail || undefined,
       html,
-      text: `Cart export: ${title}\nDate: ${eventDate || "TBD"}\nDrinks: ${drinksCount}\nGuests: ${guestCount || ""}\nClient: ${clientEmail}\nPhone: ${clientPhone}\n`,
+      text:
+        `Cart export: ${title}\n` +
+        `Date: ${eventDate || "TBD"}\n` +
+        `Location: ${eventLocation || "TBC"}\n` +
+        `Drinks: ${drinksCount}\n` +
+        `Guests: ${guestCount || ""}\n` +
+        `Client: ${clientEmail}\n` +
+        `Phone: ${clientPhone}\n`,
     });
 
     if (!res.ok) {

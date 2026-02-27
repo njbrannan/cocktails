@@ -1336,6 +1336,7 @@ export default function RequestOrderPage() {
           body: JSON.stringify({
             title: eventName.trim() ? eventName.trim() : "Cocktail booking request",
             eventDate,
+            eventLocation,
             guestCount: guestCountInput ? Number(guestCountInput) : null,
             clientEmail,
             clientPhone: combinedPhone || null,

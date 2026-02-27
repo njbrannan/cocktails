@@ -148,8 +148,32 @@ export default function RequestEditPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const minDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const isLocked = event?.status === "confirmed";
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        const user = data?.user;
+        if (!user) return;
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        if (cancelled) return;
+        if (!profileError && profile?.role === "admin") setIsAdmin(true);
+      } catch {
+        // Ignore auth/profile errors; treat as non-admin.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleEventDateChange = (value: string) => {
     if (!value) {
@@ -386,6 +410,11 @@ export default function RequestEditPage() {
     });
   }, [recipes, cocktailsSummary, pricingTier]);
 
+  const visibleOrderList = useMemo(() => {
+    const list = orderList ?? [];
+    return isAdmin ? list : list.filter((it) => it.type === "liquor");
+  }, [orderList, isAdmin]);
+
   const loadEvent = async () => {
     setLoading(true);
     setError(null);
@@ -614,10 +643,10 @@ export default function RequestEditPage() {
           </ul>
 
           <h2 className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-black/80">
-            Shopping list
+            {isAdmin ? "Shopping list" : "Your Shopping List"}
           </h2>
           <ul className="mt-2 space-y-1 text-sm">
-            {orderList.map((item) => (
+            {visibleOrderList.map((item) => (
               <li key={item.ingredientId} className="flex items-baseline justify-between gap-6">
                 <span>
                   <span className="font-medium">{item.name}</span>{" "}
@@ -1640,14 +1669,16 @@ export default function RequestEditPage() {
             ) : null}
 
             <div className="glass-panel rounded-[28px] px-8 py-6">
-              <h2 className="font-display text-2xl text-accent">Order list</h2>
+              <h2 className="font-display text-2xl text-accent">
+                {isAdmin ? "Order list" : "Your Shopping List"}
+              </h2>
               <p className="mt-2 text-sm text-muted">
                 Shopping list style totals include a 10% buffer.
               </p>
 
               <ul className="mt-5 grid gap-3">
-                {orderList.length ? (
-                  orderList.map((item) => (
+                {visibleOrderList.length ? (
+                  visibleOrderList.map((item) => (
                     <li
                       key={item.ingredientId}
                       className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-subtle bg-white/80 px-5 py-4"

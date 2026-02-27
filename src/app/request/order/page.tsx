@@ -615,12 +615,44 @@ export default function RequestOrderPage() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editLink, setEditLink] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const minDate = useMemo(() => todayIsoDate(), []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        const user = data?.user;
+        if (!user) return;
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        if (cancelled) return;
+        if (!profileError && profile?.role === "admin") setIsAdmin(true);
+      } catch {
+        // Ignore auth/profile errors; treat as non-admin.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const visibleOrderList = useMemo(() => {
+    const list = orderList ?? [];
+    return isAdmin ? list : list.filter((it) => it.type === "liquor");
+  }, [orderList, isAdmin]);
+
   const estimatedCost = useMemo(() => {
-    const sum = (orderList ?? []).reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
+    const sum = (visibleOrderList ?? []).reduce(
+      (acc, item) => acc + (item.totalCost ?? 0),
+      0,
+    );
     return Number.isFinite(sum) ? sum : 0;
-  }, [orderList]);
+  }, [visibleOrderList]);
 
   const formattedEstimatedCost = useMemo(() => formatAud(estimatedCost), [estimatedCost]);
 
@@ -1451,10 +1483,10 @@ export default function RequestOrderPage() {
           </ul>
 
           <h2 className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-black/80">
-            Shopping list
+            {isAdmin ? "Shopping list" : "Your Shopping List"}
           </h2>
           <ul className="mt-2 space-y-1 text-sm">
-            {orderList.map((item) => (
+            {visibleOrderList.map((item) => (
               <li key={item.ingredientId} className="flex items-baseline justify-between gap-6">
                 <span>
                   <span className="font-medium">{item.name}</span>{" "}
@@ -1724,7 +1756,7 @@ export default function RequestOrderPage() {
 
           <div className="mt-4 flex items-baseline justify-between gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">
-              Shopping list
+              {isAdmin ? "Shopping list" : "Your Shopping List"}
             </h3>
             {formattedEstimatedCost ? (
               <p className="shrink-0 whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.2em] text-accent/80 sm:text-[11px]">
@@ -1759,7 +1791,7 @@ export default function RequestOrderPage() {
             </div>
           </div>
           <ul className="mt-4 divide-y divide-[#c47b4a]/15 overflow-hidden rounded-2xl border border-subtle bg-white/70">
-            {(orderList ?? []).map((item) => (
+            {visibleOrderList.map((item) => (
               <li
                 key={item.ingredientId}
                 className="flex items-start justify-between gap-6 px-4 py-3"

@@ -63,6 +63,24 @@ PAGE MARKUP (paste into the /cart-import page content)
     </div>
 
     <div id="gi-cart-error" style="display:none;margin-top:12px;color:#b42318;font-weight:650;font-size:13px;line-height:1.35;"></div>
+    <div id="gi-cart-open" style="display:none;margin-top:12px;">
+      <a
+        href="/cart"
+        style="
+          display:inline-block;
+          padding:10px 14px;
+          border-radius:999px;
+          border:1px solid rgba(0,0,0,0.12);
+          background: rgba(0,0,0,0.04);
+          text-decoration:none;
+          font-weight:700;
+          font-size:13px;
+          color:inherit;
+        "
+      >
+        Open cart
+      </a>
+    </div>
 
     <details id="gi-cart-details" style="display:none;margin-top:12px;font-size:12px;color:rgba(0,0,0,0.65);">
       <summary style="cursor:pointer;"><strong>Details</strong></summary>
@@ -107,6 +125,10 @@ FOOTER SCRIPT (paste into Code Injection → Footer)
       if (!el) return;
       el.textContent = msg;
       el.style.display = "block";
+    }
+    function showOpenCart() {
+      var el = $("gi-cart-open");
+      if (el) el.style.display = "block";
     }
     function showDetails(items) {
       if (!Array.isArray(items) || !items.length) return;
@@ -388,15 +410,30 @@ FOOTER SCRIPT (paste into Code Injection → Footer)
           clampProgressAtLeast(Math.min(90, 25 + Math.round(((idx + 1) / items.length) * 60)));
         }
 
-        setStatus("Done — opening your cart…");
-        setPercent(100);
         clearInterval(timer);
-        window.location.assign("/cart");
+        setPercent(100);
+        setStatus("Done — opening your cart…");
+
+        // Some browsers (or Squarespace frame navigation) can occasionally block redirects.
+        // We attempt a redirect, but also show a manual "Open cart" link after a short delay.
+        var opened = false;
+        setTimeout(function () {
+          if (!opened) showOpenCart();
+        }, 1200);
+
+        try {
+          opened = true;
+          window.location.assign("/cart");
+        } catch (e) {
+          opened = false;
+          showOpenCart();
+        }
       } catch (e) {
         clearInterval(timer);
         showError(String((e && e.message) || e || "Couldn’t auto-fill cart. Please add items manually."));
         setStatus("Couldn’t auto-fill cart. Please add items manually.");
         setPercent(100);
+        showOpenCart();
       }
     }
 

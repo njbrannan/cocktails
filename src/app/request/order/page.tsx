@@ -1162,6 +1162,9 @@ export default function RequestOrderPage() {
           eventLocation.trim()
             ? `Event location: ${eventLocation.trim()}`
             : "",
+          bartenderStartTime && bartenderFinishTime
+            ? `Bartender service time: ${bartenderStartTime}–${bartenderFinishTime} (${computedBartenderHours || bartenderHours} hours)`
+            : "",
           notes,
         ]
           .filter(Boolean)
@@ -1402,6 +1405,9 @@ export default function RequestOrderPage() {
             guestCount: guestCountInput ? Number(guestCountInput) : null,
             clientEmail,
             clientPhone: combinedPhone || null,
+            bartenderStartTime: bartenderStartTime || null,
+            bartenderFinishTime: bartenderFinishTime || null,
+            bartenderHours: computedBartenderHours || Number(bartenderHours) || null,
             notes,
             editLink: editLink || null,
             cocktails: cocktailsSummary.map((c) => ({

@@ -69,6 +69,9 @@ export async function POST(req: NextRequest) {
     const clientPhone = String(body?.clientPhone || "").trim();
     const eventDate = String(body?.eventDate || "").trim();
     const eventLocation = String(body?.eventLocation || "").trim();
+    const bartenderStartTime = String(body?.bartenderStartTime || "").trim();
+    const bartenderFinishTime = String(body?.bartenderFinishTime || "").trim();
+    const bartenderHours = body?.bartenderHours;
     const editLink = String(body?.editLink || "").trim();
     const guestCount = body?.guestCount;
     const cocktails = Array.isArray(body?.cocktails) ? body.cocktails : [];
@@ -102,6 +105,15 @@ export async function POST(req: NextRequest) {
   <p style="margin:0 0 8px 0"><strong>Client email:</strong> ${escapeHtml(clientEmail)}</p>
   <p style="margin:0 0 8px 0"><strong>Telephone:</strong> ${escapeHtml(clientPhone)}</p>
   ${
+    bartenderStartTime || bartenderFinishTime || bartenderHours
+      ? `<p style="margin:0 0 8px 0"><strong>Bartender time:</strong> ${escapeHtml(
+          bartenderStartTime && bartenderFinishTime
+            ? `${bartenderStartTime}–${bartenderFinishTime}`
+            : bartenderStartTime || bartenderFinishTime,
+        )}${bartenderHours ? ` (${escapeHtml(String(bartenderHours))} hours)` : ""}</p>`
+      : ""
+  }
+  ${
     editLink
       ? `<p style="margin:12px 0 0 0"><strong>Edit link:</strong> <a href="${escapeHtml(editLink)}">${escapeHtml(editLink)}</a></p>`
       : ""
@@ -124,7 +136,14 @@ export async function POST(req: NextRequest) {
         `Drinks: ${drinksCount}\n` +
         `Guests: ${guestCount || ""}\n` +
         `Client: ${clientEmail}\n` +
-        `Phone: ${clientPhone}\n`,
+        `Phone: ${clientPhone}\n` +
+        (bartenderStartTime || bartenderFinishTime || bartenderHours
+          ? `Bartender time: ${
+              bartenderStartTime && bartenderFinishTime
+                ? `${bartenderStartTime}–${bartenderFinishTime}`
+                : bartenderStartTime || bartenderFinishTime || ""
+            }${bartenderHours ? ` (${bartenderHours} hours)` : ""}\n`
+          : ""),
     });
 
     if (!res.ok) {

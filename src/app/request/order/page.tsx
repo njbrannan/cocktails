@@ -122,18 +122,6 @@ const GI_BARTENDER_VARIANT_SKUS_RAW =
 const GI_BARTENDER_DEFAULT_HOURS =
   process.env.NEXT_PUBLIC_GI_BARTENDER_DEFAULT_HOURS || "4";
 
-// Mixologist product has required product-form fields on Squarespace.
-// If these IDs change (e.g. you edit the product form), update the env vars in Vercel.
-const GI_MIXOLOGIST_FIELD_EMAIL =
-  process.env.NEXT_PUBLIC_GI_MIXOLOGIST_FIELD_EMAIL ||
-  "email-15b5309e-0de9-418d-9c17-e9f4d23bd666";
-const GI_MIXOLOGIST_FIELD_PHONE =
-  process.env.NEXT_PUBLIC_GI_MIXOLOGIST_FIELD_PHONE ||
-  "phone-40d993da-d122-4534-af2d-b6c66853d03d";
-const GI_MIXOLOGIST_FIELD_ADDRESS =
-  process.env.NEXT_PUBLIC_GI_MIXOLOGIST_FIELD_ADDRESS ||
-  "textarea-76333c31-e0ec-4a05-9b45-edfb1ebf36f9";
-
 function normalizeUrlPath(value: string) {
   try {
     const u = new URL(String(value || "").trim());
@@ -609,7 +597,9 @@ export default function RequestOrderPage() {
 
   const [loading, setLoading] = useState(false);
   const [exportingToCart, setExportingToCart] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [cartError, setCartError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [guestCountError, setGuestCountError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
@@ -1058,7 +1048,7 @@ export default function RequestOrderPage() {
 
   const handleOrderBartenders = async () => {
       setLoading(true);
-      setError(null);
+      setSubmitError(null);
       setEmailError(null);
       setGuestCountError(null);
       setPhoneError(null);
@@ -1067,24 +1057,26 @@ export default function RequestOrderPage() {
 
     try {
       if (!stored || cocktailsSummary.length === 0) {
-        setError("No order list found. Go back and create your order list first.");
+        setSubmitError(
+          "No order list found. Go back and create your order list first.",
+        );
         return;
       }
 
       if (eventDate && eventDate < minDate) {
-        setError("Date of Event must be today or in the future.");
+        setSubmitError("Date of Event must be today or in the future.");
         return;
       }
       const guestsMessage = validateGuestCount(guestCountInput);
       if (guestsMessage) {
         setGuestCountError(guestsMessage);
-        setError("Please fix the highlighted fields.");
+        setSubmitError("Please fix the highlighted fields.");
         return;
       }
       const emailMessage = validateEmail(clientEmail);
       if (emailMessage) {
         setEmailError(emailMessage);
-        setError("Please fix the highlighted fields.");
+        setSubmitError("Please fix the highlighted fields.");
         return;
       }
 
@@ -1093,7 +1085,7 @@ export default function RequestOrderPage() {
         const raw = servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0);
         const n = parseNonNegativeInt(raw);
         if (n === null) {
-          setError(`Please enter a valid quantity for ${c.recipeName}.`);
+          setSubmitError(`Please enter a valid quantity for ${c.recipeName}.`);
           return;
         }
       }
@@ -1102,7 +1094,7 @@ export default function RequestOrderPage() {
       const phoneMessage = validatePhone(phoneLocal);
       if (phoneMessage) {
         setPhoneError(phoneMessage);
-        setError("Please fix the highlighted fields.");
+        setSubmitError("Please fix the highlighted fields.");
         return;
       }
 
@@ -1155,14 +1147,16 @@ export default function RequestOrderPage() {
       }
 
       if (!response.ok) {
-        setError(data?.error || `Unable to send request (HTTP ${response.status}).`);
+        setSubmitError(
+          data?.error || `Unable to send request (HTTP ${response.status}).`,
+        );
         return;
       }
 
       const token = data?.editToken as string | undefined;
       const slug = data?.editSlug as string | undefined | null;
       if (!token && !slug) {
-        setError("Request created, but no edit token was returned.");
+        setSubmitError("Request created, but no edit token was returned.");
         return;
       }
 
@@ -1207,7 +1201,7 @@ export default function RequestOrderPage() {
         })),
       });
       setDrafts(loadDrafts());
-      setError(
+      setSubmitError(
         err?.message ||
           "Network error while sending request. We saved it as a draft on this device.",
       );
@@ -1228,208 +1222,176 @@ export default function RequestOrderPage() {
   const exportRetailer = async (
     retailer: "danmurphys" | "woolworths" | "getinvolved",
   ) => {
+    if (retailer === "getinvolved") {
+      setExportingToCart(true);
+      setCartError(null);
+    }
     const rows: Array<{ name: string; type: string; qty: string; total: string; url: string }> = [];
     const getInvolvedCartItems: GetInvolvedCartItem[] = [];
 
-    for (const item of orderList ?? []) {
-      if (item.packPlan?.length) {
-        for (const line of item.packPlan) {
-          const url =
-            line.purchaseUrl || line.searchUrl || item.purchaseUrl || "";
-          const lineRetailer = (line.retailer as any) || retailerForUrl(url);
-          if (lineRetailer !== retailer) continue;
-          if (!url) continue;
-          rows.push({
-            name: `${item.name} (${line.packSize}${item.unit})`,
-            type: item.type,
-            qty: `${line.count} × ${line.packSize}${item.unit}`,
-            total: `${item.total} ${item.unit}`,
-            url,
-          });
-          if (retailer === "getinvolved") {
-            getInvolvedCartItems.push({
+    try {
+      for (const item of orderList ?? []) {
+        if (item.packPlan?.length) {
+          for (const line of item.packPlan) {
+            const url =
+              line.purchaseUrl || line.searchUrl || item.purchaseUrl || "";
+            const lineRetailer = (line.retailer as any) || retailerForUrl(url);
+            if (lineRetailer !== retailer) continue;
+            if (!url) continue;
+            rows.push({
+              name: `${item.name} (${line.packSize}${item.unit})`,
+              type: item.type,
+              qty: `${line.count} × ${line.packSize}${item.unit}`,
+              total: `${item.total} ${item.unit}`,
               url,
-              count: line.count,
-              sku: line.variantSku || null,
-              desiredValue: String(line.packSize),
-              fields: null,
             });
+            if (retailer === "getinvolved") {
+              getInvolvedCartItems.push({
+                url,
+                count: line.count,
+                sku: line.variantSku || null,
+                desiredValue: String(line.packSize),
+                fields: null,
+              });
+            }
           }
+          continue;
         }
-        continue;
-      }
 
-      const url = resolvePurchaseUrlForItem(item) || "";
-      if (retailerForUrl(url) !== retailer) continue;
-      if (!url) continue;
-      const qty = item.bottlesNeeded
-        ? `${item.bottlesNeeded} × ${item.bottleSizeMl}${item.unit}`
-        : `${item.total} ${item.unit}`;
-      rows.push({
-        name: item.name,
-        type: item.type,
-        qty,
-        total: `${item.total} ${item.unit}`,
-        url,
-      });
-      if (retailer === "getinvolved") {
-        getInvolvedCartItems.push({
+        const url = resolvePurchaseUrlForItem(item) || "";
+        if (retailerForUrl(url) !== retailer) continue;
+        if (!url) continue;
+        const qty = item.bottlesNeeded
+          ? `${item.bottlesNeeded} × ${item.bottleSizeMl}${item.unit}`
+          : `${item.total} ${item.unit}`;
+        rows.push({
+          name: item.name,
+          type: item.type,
+          qty,
+          total: `${item.total} ${item.unit}`,
           url,
-          count: item.bottlesNeeded || 1,
-          sku: null,
-          desiredValue: null,
-          fields: null,
         });
-      }
-    }
-
-    if (retailer === "getinvolved") {
-      const kitItems = buildGetInvolvedCocktailKitCartItems({
-        recipes,
-        servingsByRecipeId,
-        pricingTier,
-      });
-      if (kitItems.length) getInvolvedCartItems.push(...kitItems);
-
-      // Also add recommended bartenders to cart (if configured).
-      const cocktailCount = cocktailsSummary.length;
-      const bartenders = recommendedBartenders(totalDrinks, cocktailCount);
-      if (bartenders > 0 && GI_BARTENDER_PRODUCT_URL) {
-        const variantSku =
-          bartenderSkuMap[bartenderHours] ||
-          bartenderSkuMap[String(Number(bartenderHours) || "")] ||
-          GI_BARTENDER_VARIANT_SKU ||
-          null;
-        // Add this last so a bartender failure doesn't block glassware/ice/kits.
-        getInvolvedCartItems.push({
-          url: GI_BARTENDER_PRODUCT_URL,
-          count: bartenders,
-          sku: variantSku,
-          desiredValue: bartenderHours,
-          fields: null,
-        });
-      }
-    }
-
-    if (!rows.length && !(retailer === "getinvolved" && getInvolvedCartItems.length)) {
-      setError("No items found for that store yet. Add pack purchase/search links for those items first.");
-      return;
-    }
-
-    const storeLabel =
-      retailer === "danmurphys"
-        ? "dan-murphys"
-        : retailer === "woolworths"
-          ? "woolworths"
-          : "getinvolved";
-
-    // For Get Involved items (ice + glassware), we can optionally deep-link to a
-    // Squarespace page that adds these products to cart in the *customer's* browser session.
-    // This requires a small JS snippet on getinvolved.com.au to process the query string.
-    if (retailer === "getinvolved" && getInvolvedCartItems.length) {
-      // Also email the full order list to admin (so clients only see liquor, but you still get everything).
-      // Don't block the cart export if email fails.
-      try {
-        await fetch("/api/admin/order-list-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: eventName.trim() ? eventName.trim() : "Cocktail booking request",
-            eventDate,
-            eventLocation,
-            guestCount: guestCountInput ? Number(guestCountInput) : null,
-            clientEmail,
-            clientPhone: combinedPhone || null,
-            notes,
-            editLink: editLink || null,
-            cocktails: cocktailsSummary.map((c) => ({
-              recipeId: c.recipeId,
-              recipeName: c.recipeName,
-              servings:
-                Number(servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0)) ||
-                0,
-            })),
-            // Send the *full* order list (not the liquor-only client view).
-            orderList,
-          }),
-        });
-      } catch {
-        // Ignore; cart export is still useful.
+        if (retailer === "getinvolved") {
+          getInvolvedCartItems.push({
+            url,
+            count: item.bottlesNeeded || 1,
+            sku: null,
+            desiredValue: null,
+            fields: null,
+          });
+        }
       }
 
-      // Mixologist add-to-cart on Squarespace requires required product-form fields.
-      // If the user hasn't filled these yet, we can still add glassware/ice/kits,
-      // but the mixologist line would silently fail. We block and explain instead.
-      const hasMixologist = getInvolvedCartItems.some((it) =>
-        String(it.url || "").includes("/store/p/hire-a-mixologist"),
-      );
-      if (hasMixologist) {
-        const emailMessage = validateEmail(clientEmail);
-        const phoneMessage = validatePhone(phoneLocal);
-        if (emailMessage || phoneMessage) {
-          setError(
-            "To add a mixologist to the cart, please fill Email and Telephone above (then click Get Involved! again).",
+      if (retailer === "getinvolved") {
+        const kitItems = buildGetInvolvedCocktailKitCartItems({
+          recipes,
+          servingsByRecipeId,
+          pricingTier,
+        });
+        if (kitItems.length) getInvolvedCartItems.push(...kitItems);
+
+        // Also add recommended bartenders to cart.
+        const cocktailCount = cocktailsSummary.length;
+        const bartenders = recommendedBartenders(totalDrinks, cocktailCount);
+        if (bartenders > 0 && GI_BARTENDER_PRODUCT_URL) {
+          const variantSku =
+            bartenderSkuMap[bartenderHours] ||
+            bartenderSkuMap[String(Number(bartenderHours) || "")] ||
+            GI_BARTENDER_VARIANT_SKU ||
+            null;
+          getInvolvedCartItems.push({
+            url: GI_BARTENDER_PRODUCT_URL,
+            count: bartenders,
+            sku: variantSku,
+            desiredValue: bartenderHours,
+            fields: null,
+          });
+        }
+      }
+
+      if (
+        !rows.length &&
+        !(retailer === "getinvolved" && getInvolvedCartItems.length)
+      ) {
+        if (retailer === "getinvolved") {
+          setCartError(
+            "No items found for Get Involved yet. Add pack purchase links for kits/ice/glassware first.",
           );
-          return;
         }
-
-        const email = String(clientEmail || "").trim();
-        const phoneRaw = String(phoneLocal || "").trim();
-        const address =
-          String(eventLocation || "").trim() ||
-          String(notes || "").trim() ||
-          String(eventName || "").trim() ||
-          "TBC";
-
-        // Squarespace's "phone" form field expects 3-3-4 parts: [Country, AreaCode, Prefix, Line]
-        // (Country is blank when showCountryCode=false).
-        const phoneParts = (() => {
-          const digits = phoneRaw.replace(/\D/g, "");
-          if (digits.length < 10) return null;
-          const last10 = digits.slice(-10);
-          return [
-            "",
-            last10.slice(0, 3),
-            last10.slice(3, 6),
-            last10.slice(6, 10),
-          ];
-        })();
-
-        // Attach required fields to the mixologist item(s).
-        for (const it of getInvolvedCartItems) {
-          if (!String(it.url || "").includes("/store/p/hire-a-mixologist")) continue;
-          it.fields = {
-            [GI_MIXOLOGIST_FIELD_EMAIL]: email,
-            // If we can't safely format the phone into parts, fall back to raw.
-            // (Cart-import script can still try to coerce it.)
-            [GI_MIXOLOGIST_FIELD_PHONE]: phoneParts || phoneRaw,
-            [GI_MIXOLOGIST_FIELD_ADDRESS]: address,
-          };
-        }
+        return;
       }
 
-      // Open a dedicated export page (new tab). That page resolves SKUs + redirects to /cart-import.
-      // This avoids popup blockers while still giving users a clean "Adding to cart…" experience.
-      const exportUrl = buildLocalGetInvolvedExportUrl(getInvolvedCartItems);
-      window.open(exportUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
+      const storeLabel =
+        retailer === "danmurphys"
+          ? "dan-murphys"
+          : retailer === "woolworths"
+            ? "woolworths"
+            : "getinvolved";
 
-    const html = buildRetailerExportHtml(
-      `Shopping list — ${storeLabel.replaceAll("-", " ")}`,
-      rows.map((r) => ({ name: r.name, qty: r.qty, url: r.url })),
-    );
-    window.open(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`, "_blank", "noopener,noreferrer");
+      if (retailer === "getinvolved" && getInvolvedCartItems.length) {
+        // Email the full order list to admin in parallel (best-effort).
+        try {
+          await fetch("/api/admin/order-list-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: eventName.trim()
+                ? eventName.trim()
+                : "Cocktail booking request",
+              eventDate,
+              eventLocation,
+              guestCount: guestCountInput ? Number(guestCountInput) : null,
+              clientEmail,
+              clientPhone: combinedPhone || null,
+              notes,
+              editLink: editLink || null,
+              cocktails: cocktailsSummary.map((c) => ({
+                recipeId: c.recipeId,
+                recipeName: c.recipeName,
+                servings:
+                  Number(
+                    servingsByRecipeId[c.recipeId] ??
+                      String(c.servings ?? 0),
+                  ) || 0,
+              })),
+              orderList,
+            }),
+          });
+        } catch {
+          // Ignore; cart export is still useful.
+        }
+
+        const exportUrl = buildLocalGetInvolvedExportUrl(getInvolvedCartItems);
+        window.open(exportUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      const html = buildRetailerExportHtml(
+        `Shopping list — ${storeLabel.replaceAll("-", " ")}`,
+        rows.map((r) => ({ name: r.name, qty: r.qty, url: r.url })),
+      );
+      window.open(
+        `data:text/html;charset=utf-8,${encodeURIComponent(html)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+    } catch (err: any) {
+      if (retailer === "getinvolved") {
+        setCartError(err?.message || "Couldn’t add items to the cart.");
+      }
+    } finally {
+      if (retailer === "getinvolved") setExportingToCart(false);
+    }
   };
 
   const sendDraft = async (draft: OfflineDraft) => {
     if (!draft?.payload) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      setError("You’re offline. Connect to the internet to send this draft.");
+      setDraftError("You’re offline. Connect to the internet to send this draft.");
       return;
     }
     setSendingDraftId(draft.id);
-    setError(null);
+    setDraftError(null);
     setSuccess(null);
     setEditLink(null);
     try {
@@ -1440,7 +1402,7 @@ export default function RequestOrderPage() {
       });
       const data = await response.json().catch(() => null);
       if (!response.ok) {
-        setError(data?.error || `Unable to send draft (HTTP ${response.status}).`);
+        setDraftError(data?.error || `Unable to send draft (HTTP ${response.status}).`);
         return;
       }
 
@@ -1455,7 +1417,7 @@ export default function RequestOrderPage() {
       }
       setSuccess("Draft sent. We’ll be in touch soon.");
     } catch (err: any) {
-      setError(err?.message || "Network error while sending draft.");
+      setDraftError(err?.message || "Network error while sending draft.");
     } finally {
       setSendingDraftId(null);
     }
@@ -1584,7 +1546,6 @@ export default function RequestOrderPage() {
           </p>
         </header>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
         {recalcError ? <p className="text-sm text-red-600">{recalcError}</p> : null}
 
         {drafts.length ? (
@@ -1593,6 +1554,9 @@ export default function RequestOrderPage() {
             <p className="mt-2 text-sm text-muted">
               If you were offline, your booking request was saved here. When you’re online, you can send it.
             </p>
+            {draftError ? (
+              <p className="mt-3 text-sm font-medium text-red-700">{draftError}</p>
+            ) : null}
             <div className="mt-4 grid gap-3">
               {drafts.map((d) => (
                 <div
@@ -2063,6 +2027,11 @@ export default function RequestOrderPage() {
                 <CartIcon className="h-4 w-4 text-white" />
               </span>
             </button>
+            {cartError ? (
+              <p className="mt-3 text-sm font-medium text-red-700">
+                {cartError}
+              </p>
+            ) : null}
           </div>
           <p className="mt-4 text-[12px] leading-relaxed text-ink-muted">
             Alcohol must be bought and supplied by the client. Involved Events are
@@ -2151,6 +2120,11 @@ export default function RequestOrderPage() {
             >
               {loading ? "Submitting..." : "Submit request"}
             </button>
+            {submitError ? (
+              <p className="mt-3 text-sm font-medium text-red-700">
+                {submitError}
+              </p>
+            ) : null}
           </div>
 
           {editLink ? (
@@ -2158,7 +2132,12 @@ export default function RequestOrderPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                 Booking request submitted, a member of our team will be in contact shortly.
               </p>
-              <p className="mt-2 break-all text-sm text-ink">{editLink}</p>
+              <a
+                href={editLink}
+                className="mt-2 inline-block text-sm font-semibold text-accent underline underline-offset-4"
+              >
+                If you need to make any changes click here
+              </a>
             </div>
           ) : null}
         </div>

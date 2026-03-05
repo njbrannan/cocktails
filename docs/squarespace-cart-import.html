@@ -291,6 +291,7 @@
             setStatus("Fetching product details… (" + (k + 1) + "/" + items.length + ")");
             var product = await fetchProductJson(entry.url);
             if (!product) throw new Error("Couldn’t load product: " + entry.url);
+            var productType = Number((product.structuredContent && product.structuredContent.productType) || 0);
             var itemId = String((product && product.id) || "");
             if (!itemId) throw new Error("Missing itemId for product: " + entry.url);
             var variants = Array.isArray(product && product.variants) ? product.variants : [];
@@ -308,8 +309,24 @@
               cartItem.additionalFields = JSON.stringify(fields);
             }
 
+            // Squarespace service items can be fussy about quantity > 1.
+            // If this is a service product, add one-at-a-time for reliability.
             if (cartItem.quantity > 0) {
-              await addToCart([cartItem]);
+              if (productType === 1 && cartItem.quantity > 1) {
+                for (var q = 0; q < cartItem.quantity; q++) {
+                  await addToCart([
+                    {
+                      itemId: cartItem.itemId,
+                      quantity: 1,
+                      variantId: cartItem.variantId,
+                      sku: cartItem.sku,
+                      additionalFields: cartItem.additionalFields,
+                    },
+                  ]);
+                }
+              } else {
+                await addToCart([cartItem]);
+              }
             }
             setStatus("Adding items to cart… (" + (k + 1) + "/" + items.length + ")");
           }
@@ -326,4 +343,3 @@
     </script>
   </body>
 </html>
-

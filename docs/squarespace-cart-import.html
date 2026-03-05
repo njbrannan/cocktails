@@ -303,8 +303,9 @@
             if (!variantId && !skuToUse) throw new Error("Missing variant for product: " + entry.url);
 
             var cartItem = { itemId: itemId, quantity: Number(entry.count) || 0 };
-            if (variantId) cartItem.variantId = variantId;
-            else cartItem.sku = skuToUse;
+            // Prefer SKU when available; variantId can be finicky for some service items.
+            if (skuToUse) cartItem.sku = skuToUse;
+            else cartItem.variantId = variantId;
 
             var fields = entry.fields && typeof entry.fields === "object" ? entry.fields : null;
             if (fields && Object.keys(fields).length) {
@@ -324,7 +325,9 @@
                 }
               } catch (e) {
                 var msg = String((e && e.message) || e || "Unknown error");
-                throw new Error("Failed adding " + String(entry.count) + "× " + String(entry.url || "") + (entry.sku ? " (SKU " + entry.sku + ")" : "") + ": " + msg);
+                var payload = "";
+                try { payload = JSON.stringify(cartItem); } catch (e2) { payload = ""; }
+                throw new Error("Failed adding " + String(entry.count) + "× " + String(entry.url || "") + (entry.sku ? " (SKU " + entry.sku + ")" : "") + ": " + msg + (payload ? " | payload: " + payload : ""));
               }
             }
             setStatus("Adding items to cart… (" + (k + 1) + "/" + items.length + ")");

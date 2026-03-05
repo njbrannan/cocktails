@@ -233,11 +233,27 @@
             return null;
           });
           if (!res.ok) {
+            var raw =
+              data != null
+                ? (function () {
+                    try {
+                      return JSON.stringify(data);
+                    } catch (e) {
+                      return String(data);
+                    }
+                  })()
+                : "";
             var msg =
               data && (data.message || data.error)
                 ? data.message || data.error
                 : "HTTP " + res.status;
-            throw new Error("Add-to-cart failed (" + res.status + "): " + msg);
+            throw new Error(
+              "Add-to-cart failed (" +
+                res.status +
+                "): " +
+                msg +
+                (raw ? " | response: " + raw : ""),
+            );
           }
 
           if (data && data.error) {
@@ -303,9 +319,10 @@
             if (!variantId && !skuToUse) throw new Error("Missing variant for product: " + entry.url);
 
             var cartItem = { itemId: itemId, quantity: Number(entry.count) || 0 };
-            // Prefer SKU when available; variantId can be finicky for some service items.
+            // Squarespace cart is generally happiest with `variantId` when available.
+            // We include SKU as a fallback/debug aid.
+            if (variantId) cartItem.variantId = variantId;
             if (skuToUse) cartItem.sku = skuToUse;
-            else cartItem.variantId = variantId;
 
             var fields = entry.fields && typeof entry.fields === "object" ? entry.fields : null;
             if (fields && Object.keys(fields).length) {
@@ -318,7 +335,11 @@
               try {
                 if (productType === 1 && cartItem.quantity > 1) {
                   for (var q = 0; q < cartItem.quantity; q++) {
-                    await addToCart([{ itemId: cartItem.itemId, quantity: 1, variantId: cartItem.variantId, sku: cartItem.sku, additionalFields: cartItem.additionalFields }]);
+                    var one = { itemId: cartItem.itemId, quantity: 1 };
+                    if (cartItem.variantId) one.variantId = cartItem.variantId;
+                    if (cartItem.sku) one.sku = cartItem.sku;
+                    if (cartItem.additionalFields) one.additionalFields = cartItem.additionalFields;
+                    await addToCart([one]);
                   }
                 } else {
                   await addToCart([cartItem]);

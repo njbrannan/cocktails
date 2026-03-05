@@ -199,44 +199,80 @@ FOOTER SCRIPT (paste into Code Injection → Footer)
       return variants[0] || null;
     }
 
-    async function addToCart(items) {
+    function randomAddToCartId() {
+      try {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+          return window.crypto.randomUUID();
+        }
+      } catch (e) {}
+      return (
+        "gi-" +
+        Math.random().toString(16).slice(2) +
+        "-" +
+        Date.now().toString(16)
+      );
+    }
+
+    async function addToCart(item) {
       var crumb = getCrumb();
       if (!crumb) throw new Error("Missing Squarespace crumb. Please refresh this page.");
 
       // Remove null/undefined/empty strings (Squarespace can treat "" as null).
-      items = (items || []).map(function (it) {
-        var out = {};
-        for (var k in it) {
-          if (!Object.prototype.hasOwnProperty.call(it, k)) continue;
-          var v = it[k];
-          if (v === null || v === undefined) continue;
-          if (typeof v === "string" && v.trim() === "") continue;
-          out[k] = v;
-        }
-        return out;
-      });
+      var out = {};
+      for (var k in item) {
+        if (!Object.prototype.hasOwnProperty.call(item, k)) continue;
+        var v = item[k];
+        if (v === null || v === undefined) continue;
+        if (typeof v === "string" && v.trim() === "") continue;
+        out[k] = v;
+      }
 
-      var res = await fetch("/api/commerce/shopping-cart/entries?crumb=" + encodeURIComponent(crumb), {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: items }),
-      });
+      // Squarespace expects a *single item payload* at this endpoint (not {items:[...]}).
+      var res = await fetch(
+        "/api/commerce/shopping-cart/entries?crumb=" + encodeURIComponent(crumb),
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "Add-To-Cart-Id": randomAddToCartId(),
+          },
+          body: JSON.stringify(out),
+        },
+      );
 
-      var data = await res.json().catch(function () { return null; });
+      var data = await res.json().catch(function () {
+        return null;
+      });
       if (!res.ok) {
         var raw =
           data != null
-            ? (function () { try { return JSON.stringify(data); } catch (e) { return String(data); } })()
+            ? (function () {
+                try {
+                  return JSON.stringify(data);
+                } catch (e) {
+                  return String(data);
+                }
+              })()
             : "";
         var msg =
           data && (data.message || data.error)
-            ? (data.message || data.error)
-            : ("HTTP " + res.status);
-        throw new Error("Add-to-cart failed (" + res.status + "): " + msg + (raw ? " | response: " + raw : ""));
+            ? data.message || data.error
+            : "HTTP " + res.status;
+        throw new Error(
+          "Add-to-cart failed (" +
+            res.status +
+            "): " +
+            msg +
+            (raw ? " | response: " + raw : ""),
+        );
       }
+
       if (data && data.error) {
-        throw new Error("Add-to-cart failed: " + (data.message || data.error || "Unknown error"));
+        throw new Error(
+          "Add-to-cart failed: " + (data.message || data.error || "Unknown error"),
+        );
       }
       return data;
     }
@@ -313,10 +349,14 @@ FOOTER SCRIPT (paste into Code Injection → Footer)
           var skuToUse = chosen ? String((chosen.sku || "")).trim() : "";
           if (!variantId && !skuToUse) throw new Error("Missing variant for product: " + entry.url);
 
-          // Squarespace cart is generally happiest with `variantId` when available.
-          var cartItem = { itemId: itemId, quantity: Number(entry.count) || 0 };
-          if (variantId) cartItem.variantId = variantId;
-          if (skuToUse) cartItem.sku = skuToUse;
+          // Squarespace expects { itemId, sku, quantity, additionalFields } at this endpoint.
+          // Note: additionalFields is a JSON string; pass "{}" when empty.
+          var cartItem = {
+            itemId: itemId,
+            sku: skuToUse || null,
+            quantity: Number(entry.count) || 0,
+            additionalFields: "{}",
+          };
 
           var fields = entry.fields && typeof entry.fields === "object" ? entry.fields : null;
           if (fields && Object.keys(fields).length) cartItem.additionalFields = JSON.stringify(fields);
@@ -326,14 +366,15 @@ FOOTER SCRIPT (paste into Code Injection → Footer)
               // Service items are fussy about quantity > 1: add one-at-a-time.
               if (productType === 1 && cartItem.quantity > 1) {
                 for (var q = 0; q < cartItem.quantity; q++) {
-                  var one = { itemId: cartItem.itemId, quantity: 1 };
-                  if (cartItem.variantId) one.variantId = cartItem.variantId;
-                  if (cartItem.sku) one.sku = cartItem.sku;
-                  if (cartItem.additionalFields) one.additionalFields = cartItem.additionalFields;
-                  await addToCart([one]);
+                  await addToCart({
+                    itemId: cartItem.itemId,
+                    sku: cartItem.sku,
+                    quantity: 1,
+                    additionalFields: cartItem.additionalFields || "{}",
+                  });
                 }
               } else {
-                await addToCart([cartItem]);
+                await addToCart(cartItem);
               }
             } catch (e) {
               var msg = String((e && e.message) || e || "Unknown error");
@@ -369,4 +410,3 @@ FOOTER SCRIPT (paste into Code Injection → Footer)
     }
   })();
 </script>
-

@@ -1329,40 +1329,34 @@ export default function RequestOrderPage() {
             : "getinvolved";
 
       if (retailer === "getinvolved" && getInvolvedCartItems.length) {
-        // Email the full order list to admin in parallel (best-effort).
-        try {
-          await fetch("/api/admin/order-list-email", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: eventName.trim()
-                ? eventName.trim()
-                : "Cocktail booking request",
-              eventDate,
-              eventLocation,
-              guestCount: guestCountInput ? Number(guestCountInput) : null,
-              clientEmail,
-              clientPhone: combinedPhone || null,
-              notes,
-              editLink: editLink || null,
-              cocktails: cocktailsSummary.map((c) => ({
-                recipeId: c.recipeId,
-                recipeName: c.recipeName,
-                servings:
-                  Number(
-                    servingsByRecipeId[c.recipeId] ??
-                      String(c.servings ?? 0),
-                  ) || 0,
-              })),
-              orderList,
-            }),
-          });
-        } catch {
-          // Ignore; cart export is still useful.
-        }
-
+        // IMPORTANT: open the export tab synchronously (popup blockers will block if we `await` first).
         const exportUrl = buildLocalGetInvolvedExportUrl(getInvolvedCartItems);
         window.open(exportUrl, "_blank", "noopener,noreferrer");
+
+        // Email the full order list to admin in parallel (best-effort).
+        // Don't await this; it would make the popup blocker kick in.
+        void fetch("/api/admin/order-list-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: eventName.trim() ? eventName.trim() : "Cocktail booking request",
+            eventDate,
+            eventLocation,
+            guestCount: guestCountInput ? Number(guestCountInput) : null,
+            clientEmail,
+            clientPhone: combinedPhone || null,
+            notes,
+            editLink: editLink || null,
+            cocktails: cocktailsSummary.map((c) => ({
+              recipeId: c.recipeId,
+              recipeName: c.recipeName,
+              servings:
+                Number(servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0)) ||
+                0,
+            })),
+            orderList,
+          }),
+        }).catch(() => {});
         return;
       }
 

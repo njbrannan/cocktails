@@ -336,12 +336,13 @@ FOOTER SCRIPT (paste into Code Injection → Footer)
         var url = String(it.url || "").trim();
         var count = Number(it.count) || 0;
         if (!url || count <= 0) continue;
+        var itemId = it.itemId ? String(it.itemId).trim() : "";
         var sku = it.sku ? String(it.sku).trim() : "";
         var desiredValue = it.desiredValue ? String(it.desiredValue).trim() : "";
-        var key = url + "||" + sku + "||" + desiredValue;
+        var key = url + "||" + itemId + "||" + sku + "||" + desiredValue;
         var existing = merged.get(key);
         if (existing) existing.count += count;
-        else merged.set(key, { url: url, count: count, sku: sku || null, desiredValue: desiredValue || null, fields: it.fields || null });
+        else merged.set(key, { url: url, itemId: itemId || null, count: count, sku: sku || null, desiredValue: desiredValue || null, fields: it.fields || null });
       }
 
       var items = Array.from(merged.values());
@@ -356,26 +357,31 @@ FOOTER SCRIPT (paste into Code Injection → Footer)
 
         for (var idx = 0; idx < items.length; idx++) {
           var entry = items[idx];
-          setStatus("Fetching product details… (" + (idx + 1) + "/" + items.length + ")");
-          clampProgressAtLeast(20);
+          // Fast path: if the payload already includes itemId + sku, we don't need to fetch product JSON.
+          // (Our Vercel export step can resolve these server-side.)
+          var itemId = entry.itemId ? String(entry.itemId).trim() : "";
+          var skuToUse = entry.sku ? String(entry.sku).trim() : "";
 
-          var product = await fetchProductJson(entry.url);
-          if (!product) throw new Error("Couldn’t load product: " + entry.url);
-          var productType = Number((product.structuredContent && product.structuredContent.productType) || 0);
-          var itemId = String((product && product.id) || "");
-          if (!itemId) throw new Error("Missing itemId for product: " + entry.url);
+          if (!itemId || !skuToUse) {
+            setStatus("Fetching product details… (" + (idx + 1) + "/" + items.length + ")");
+            clampProgressAtLeast(20);
 
-          var variants = Array.isArray(product && product.variants) ? product.variants : [];
-          var chosen = pickVariant(variants, entry.sku, entry.desiredValue);
-          var variantId = chosen ? String((chosen.id || "")).trim() : "";
-          var skuToUse = chosen ? String((chosen.sku || "")).trim() : "";
-          if (!variantId && !skuToUse) throw new Error("Missing variant for product: " + entry.url);
+            var product = await fetchProductJson(entry.url);
+            if (!product) throw new Error("Couldn’t load product: " + entry.url);
+            itemId = String((product && product.id) || "").trim();
+            if (!itemId) throw new Error("Missing itemId for product: " + entry.url);
+
+            var variants = Array.isArray(product && product.variants) ? product.variants : [];
+            var chosen = pickVariant(variants, skuToUse || entry.sku, entry.desiredValue);
+            skuToUse = chosen ? String((chosen.sku || "")).trim() : skuToUse;
+            if (!skuToUse) throw new Error("Missing SKU for product: " + entry.url);
+          }
 
           // Squarespace expects { itemId, sku, quantity, additionalFields } at this endpoint.
           // Note: additionalFields is a JSON string; pass "{}" when empty.
           var cartItem = {
             itemId: itemId,
-            sku: skuToUse || null,
+            sku: skuToUse,
             quantity: Number(entry.count) || 0,
             additionalFields: "{}",
           };
@@ -385,8 +391,12 @@ FOOTER SCRIPT (paste into Code Injection → Footer)
 
           if (cartItem.quantity > 0) {
             try {
-              // Service items are fussy about quantity > 1: add one-at-a-time.
-              if (productType === 1 && cartItem.quantity > 1) {
+              // Fast path: try to add the full quantity at once.
+              // If Squarespace rejects it for this product type, fall back to one-by-one.
+              await addToCart(cartItem);
+            } catch (e) {
+              if (cartItem.quantity > 1) {
+                // Retry one-at-a-time.
                 for (var q = 0; q < cartItem.quantity; q++) {
                   await addToCart({
                     itemId: cartItem.itemId,
@@ -396,13 +406,11 @@ FOOTER SCRIPT (paste into Code Injection → Footer)
                   });
                 }
               } else {
-                await addToCart(cartItem);
+                var msg = String((e && e.message) || e || "Unknown error");
+                var payloadTxt = "";
+                try { payloadTxt = JSON.stringify(cartItem); } catch (e2) { payloadTxt = ""; }
+                throw new Error("Failed adding " + String(entry.count) + "× " + String(entry.url || "") + (entry.sku ? " (SKU " + entry.sku + ")" : "") + ": " + msg + (payloadTxt ? " | payload: " + payloadTxt : ""));
               }
-            } catch (e) {
-              var msg = String((e && e.message) || e || "Unknown error");
-              var payloadTxt = "";
-              try { payloadTxt = JSON.stringify(cartItem); } catch (e2) { payloadTxt = ""; }
-              throw new Error("Failed adding " + String(entry.count) + "× " + String(entry.url || "") + (entry.sku ? " (SKU " + entry.sku + ")" : "") + ": " + msg + (payloadTxt ? " | payload: " + payloadTxt : ""));
             }
           }
 

@@ -239,6 +239,12 @@ function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function localDateTimeToIso(date: string, time: string) {
+  const d = new Date(`${String(date || "").trim()}T${String(time || "").trim()}`);
+  if (!Number.isFinite(d.getTime())) return null;
+  return d.toISOString();
+}
+
 function formatAud(amount: number) {
   if (!Number.isFinite(amount) || amount <= 0) return "";
   try {
@@ -1120,7 +1126,11 @@ export default function RequestOrderPage() {
         return;
       }
 
-      if (eventDate && eventDate < minDate) {
+      if (!eventDate) {
+        setSubmitError("Please select a Date of Event.");
+        return;
+      }
+      if (eventDate < minDate) {
         setSubmitError("Date of Event must be today or in the future.");
         return;
       }
@@ -1152,6 +1162,34 @@ export default function RequestOrderPage() {
       if (phoneMessage) {
         setPhoneError(phoneMessage);
         setSubmitError("Please fix the highlighted fields.");
+        return;
+      }
+
+      // Availability check (server-side, based on Date + Bartender times)
+      if (!bartenderStartTime || !bartenderFinishTime) {
+        setSubmitError("Please select bartender start and finish times.");
+        return;
+      }
+      const startIso = localDateTimeToIso(eventDate, bartenderStartTime);
+      const endIso = localDateTimeToIso(eventDate, bartenderFinishTime);
+      if (!startIso || !endIso) {
+        setSubmitError("Please select a valid date/time range.");
+        return;
+      }
+      const availResp = await fetch("/api/availability/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ start: startIso, end: endIso }),
+      });
+      const availData = await availResp.json().catch(() => null);
+      if (!availResp.ok) {
+        setSubmitError(availData?.error || "Unable to check availability.");
+        return;
+      }
+      if (!availData?.available) {
+        setSubmitError(
+          "This booking slot is not available, please pick another date or call us at +61 472 775 268 to discuss what we can do for you.",
+        );
         return;
       }
 
@@ -1343,6 +1381,43 @@ export default function RequestOrderPage() {
       }
 
       if (retailer === "getinvolved") {
+        // Require date + times before exporting to cart.
+        if (!eventDate) {
+          setCartError("Please select a Date of Event first.");
+          return;
+        }
+        if (eventDate < minDate) {
+          setCartError("Date of Event must be today or in the future.");
+          return;
+        }
+        if (!bartenderStartTime || !bartenderFinishTime) {
+          setCartError("Please select bartender start and finish times first.");
+          return;
+        }
+        const startIso = localDateTimeToIso(eventDate, bartenderStartTime);
+        const endIso = localDateTimeToIso(eventDate, bartenderFinishTime);
+        if (!startIso || !endIso) {
+          setCartError("Please select a valid date/time range.");
+          return;
+        }
+
+        const availResp = await fetch("/api/availability/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ start: startIso, end: endIso }),
+        });
+        const availData = await availResp.json().catch(() => null);
+        if (!availResp.ok) {
+          setCartError(availData?.error || "Unable to check availability.");
+          return;
+        }
+        if (!availData?.available) {
+          setCartError(
+            "This booking slot is not available, please pick another date or call us at +61 472 775 268 to discuss what we can do for you.",
+          );
+          return;
+        }
+
         const kitItems = buildGetInvolvedCocktailKitCartItems({
           recipes,
           servingsByRecipeId,

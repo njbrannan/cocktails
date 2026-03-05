@@ -43,6 +43,20 @@ export default function AdminHome() {
               View Inventory
             </Link>
           </div>
+          <div className="glass-panel rounded-[28px] px-8 py-8 md:col-span-2">
+            <h2 className="font-display text-2xl text-[#6a2e2a]">
+              Availability
+            </h2>
+            <p className="mt-2 text-sm text-[#4b3f3a]">
+              Control which dates and times are bookable.
+            </p>
+            <Link
+              href="/admin/availability"
+              className="mt-6 inline-flex rounded-full bg-[#0f766e] px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-[#0f766e]/25 hover:-translate-y-0.5"
+            >
+              Manage Availability
+            </Link>
+          </div>
         </div>
       </div>
     </div>

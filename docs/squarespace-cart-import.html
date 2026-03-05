@@ -1,368 +1,372 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Involved Events — Cart Import</title>
-    <style>
-      :root {
-        color-scheme: light;
-      }
-      body {
-        margin: 0;
-        padding: 32px 18px;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        background: #f6f3ef;
-        color: #151210;
-      }
-      .card {
-        max-width: 720px;
-        margin: 0 auto;
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        border-radius: 24px;
-        padding: 22px 20px;
-        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
-      }
-      .row {
-        display: flex;
-        gap: 16px;
-        align-items: center;
-      }
-      .spinner {
-        width: 44px;
-        height: 44px;
-        border-radius: 999px;
-        border: 4px solid rgba(0, 0, 0, 0.1);
-        border-top-color: rgba(0, 0, 0, 0.45);
-        animation: spin 900ms linear infinite;
-        flex: none;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      h1 {
-        margin: 0;
-        font-size: 18px;
-      }
-      p {
-        margin: 6px 0 0 0;
-        color: rgba(21, 18, 16, 0.72);
-        font-size: 13px;
-        line-height: 1.4;
-      }
-      .error {
-        margin-top: 12px;
-        color: #b42318;
-        font-weight: 650;
-      }
-      details {
-        margin-top: 14px;
-        font-size: 12px;
-        color: rgba(21, 18, 16, 0.72);
-      }
-      ul {
-        margin: 10px 0 0 18px;
-        padding: 0;
-      }
-      li {
-        margin: 6px 0;
-        word-break: break-all;
-      }
-      .footer {
-        margin-top: 14px;
-        font-size: 12px;
-        color: rgba(21, 18, 16, 0.6);
-      }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <div class="row">
-        <div class="spinner" aria-hidden="true"></div>
-        <div>
-          <h1>Involved Events</h1>
-          <p id="status">Preparing your cart…</p>
+<!--
+Squarespace Cart Import (Get Involved)
+
+Goal: Add items (from ?items=...) into the visitor's Squarespace cart WITHOUT breaking site styling.
+
+How to install
+
+1) Create a normal Squarespace page at:
+   /cart-import
+
+2) Add a Code Block (or HTML block) to that page and paste ONLY the "PAGE MARKUP" section below.
+
+3) Go to:
+   Settings → Advanced → Code Injection → Footer
+   and paste ONLY the "FOOTER SCRIPT" section below.
+
+Notes
+- The script is scoped to the #gi-cart-import container, so it won’t affect global styles.
+- The percentage is “steady” and reassuring (not a precise measurement), but it does accelerate with real progress.
+-->
+
+<!-- =========================
+PAGE MARKUP (paste into the /cart-import page content)
+========================== -->
+
+<div id="gi-cart-import" style="max-width:720px;margin:0 auto;padding:24px 16px;">
+  <div
+    style="
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 22px;
+      padding: 18px 18px 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.08);
+    "
+  >
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div
+        aria-hidden="true"
+        style="
+          width:42px;height:42px;border-radius:999px;
+          border:4px solid rgba(0,0,0,0.10);
+          border-top-color: rgba(0,0,0,0.45);
+          animation: giSpin 900ms linear infinite;
+          flex:none;
+        "
+      ></div>
+      <div style="min-width:0;">
+        <div style="font-weight:700;font-size:16px;line-height:1.2;">Involved Events</div>
+        <div id="gi-cart-status" style="margin-top:4px;font-size:13px;line-height:1.35;color:rgba(0,0,0,0.68);">
+          Preparing your cart…
         </div>
       </div>
-      <p id="error" class="error" style="display: none"></p>
-      <details id="details" style="display: none">
-        <summary><strong>Details</strong></summary>
-        <ul id="items"></ul>
-      </details>
-      <p class="footer">Keep this tab open — we’ll redirect you to your cart automatically.</p>
+      <div style="margin-left:auto;text-align:right;flex:none;">
+        <div id="gi-cart-percent" style="font-weight:750;font-size:14px;line-height:1;">0%</div>
+        <div style="margin-top:4px;font-size:11px;color:rgba(0,0,0,0.55);">Adding items</div>
+      </div>
     </div>
 
-    <script>
-      (function () {
-        function setStatus(msg) {
-          document.getElementById("status").textContent = msg;
+    <div style="margin-top:14px;">
+      <div style="height:10px;background:rgba(0,0,0,0.08);border-radius:999px;overflow:hidden;">
+        <div id="gi-cart-bar" style="height:100%;width:0%;background:#0f766e;border-radius:999px;transition:width 240ms ease;"></div>
+      </div>
+    </div>
+
+    <div id="gi-cart-error" style="display:none;margin-top:12px;color:#b42318;font-weight:650;font-size:13px;line-height:1.35;"></div>
+
+    <details id="gi-cart-details" style="display:none;margin-top:12px;font-size:12px;color:rgba(0,0,0,0.65);">
+      <summary style="cursor:pointer;"><strong>Details</strong></summary>
+      <ul id="gi-cart-items" style="margin:10px 0 0 18px;padding:0;"></ul>
+    </details>
+
+    <div style="margin-top:12px;font-size:12px;color:rgba(0,0,0,0.55);">
+      Keep this tab open — we’ll redirect you to your cart automatically.
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes giSpin { to { transform: rotate(360deg); } }
+</style>
+
+<!-- =========================
+FOOTER SCRIPT (paste into Code Injection → Footer)
+========================== -->
+
+<script>
+  (function () {
+    // Avoid double-running if Squarespace loads scripts twice.
+    if (window.__GI_CART_IMPORT_RUNNING__) return;
+    window.__GI_CART_IMPORT_RUNNING__ = true;
+
+    function $(id) { return document.getElementById(id); }
+    function setText(id, text) { var el = $(id); if (el) el.textContent = text; }
+    function show(id) { var el = $(id); if (el) el.style.display = ""; }
+    function hide(id) { var el = $(id); if (el) el.style.display = "none"; }
+
+    function setPercent(p) {
+      var pct = Math.max(0, Math.min(100, Math.round(p)));
+      setText("gi-cart-percent", pct + "%");
+      var bar = $("gi-cart-bar");
+      if (bar) bar.style.width = pct + "%";
+    }
+
+    function setStatus(msg) { setText("gi-cart-status", msg); }
+    function showError(msg) {
+      var el = $("gi-cart-error");
+      if (!el) return;
+      el.textContent = msg;
+      el.style.display = "block";
+    }
+    function showDetails(items) {
+      if (!Array.isArray(items) || !items.length) return;
+      var details = $("gi-cart-details");
+      var list = $("gi-cart-items");
+      if (!details || !list) return;
+      list.innerHTML = "";
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i] || {};
+        var li = document.createElement("li");
+        li.style.margin = "6px 0";
+        li.style.wordBreak = "break-all";
+        li.textContent =
+          String(it.count || 0) +
+          "× " +
+          String(it.url || "") +
+          (it.sku ? " (SKU " + it.sku + ")" : "");
+        list.appendChild(li);
+      }
+      details.style.display = "block";
+    }
+
+    function getCookie(name) {
+      var match = document.cookie.match(new RegExp("(^|;\\s*)" + name + "=([^;]*)"));
+      return match ? decodeURIComponent(match[2]) : "";
+    }
+    function getCrumb() {
+      return (
+        getCookie("crumb") ||
+        (window.Static && window.Static.SQUARESPACE_CONTEXT && window.Static.SQUARESPACE_CONTEXT.crumb) ||
+        ""
+      );
+    }
+
+    function base64UrlToBase64(s) {
+      s = String(s || "").replace(/-/g, "+").replace(/_/g, "/");
+      var pad = s.length % 4;
+      if (pad === 2) s += "==";
+      else if (pad === 3) s += "=";
+      return s;
+    }
+    function decodeItemsParam(itemsParam) {
+      var b64 = base64UrlToBase64(itemsParam);
+      var bin = atob(b64);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      var json = new TextDecoder().decode(bytes);
+      return JSON.parse(json);
+    }
+
+    function toAbsoluteUrl(pathOrUrl) {
+      try { return new URL(String(pathOrUrl || ""), window.location.origin).toString(); }
+      catch (e) { return ""; }
+    }
+    async function fetchProductJson(pathOrUrl) {
+      var abs = toAbsoluteUrl(pathOrUrl);
+      if (!abs) return null;
+      var u = new URL(abs);
+      u.searchParams.set("format", "json");
+      var res = await fetch(u.toString(), { credentials: "include" });
+      if (!res.ok) return null;
+      var json = await res.json().catch(function () { return null; });
+      return (json && (json.item || json)) || null;
+    }
+
+    function pickVariant(variants, sku, desiredValue) {
+      variants = Array.isArray(variants) ? variants : [];
+      var skuWanted = String(sku || "").trim();
+      if (skuWanted) {
+        for (var i = 0; i < variants.length; i++) {
+          if (String((variants[i] && variants[i].sku) || "").trim() === skuWanted) return variants[i];
         }
-        function showError(msg) {
-          var el = document.getElementById("error");
-          el.textContent = msg;
-          el.style.display = "block";
-        }
-        function showDetails(items) {
-          if (!Array.isArray(items) || !items.length) return;
-          var details = document.getElementById("details");
-          var list = document.getElementById("items");
-          list.innerHTML = "";
-          for (var i = 0; i < items.length; i++) {
-            var it = items[i];
-            var li = document.createElement("li");
-            li.textContent =
-              String(it.count || 0) +
-              "× " +
-              String(it.url || "") +
-              (it.sku ? " (SKU " + it.sku + ")" : "");
-            list.appendChild(li);
-          }
-          details.style.display = "block";
-        }
+      }
 
-        function getCookie(name) {
-          var match = document.cookie.match(new RegExp("(^|;\\s*)" + name + "=([^;]*)"));
-          return match ? decodeURIComponent(match[2]) : "";
-        }
-        function getCrumb() {
-          return (
-            getCookie("crumb") ||
-            (window.Static && window.Static.SQUARESPACE_CONTEXT && window.Static.SQUARESPACE_CONTEXT.crumb) ||
-            ""
-          );
-        }
-
-        function base64UrlToBase64(s) {
-          s = String(s || "").replace(/-/g, "+").replace(/_/g, "/");
-          var pad = s.length % 4;
-          if (pad === 2) s += "==";
-          else if (pad === 3) s += "=";
-          return s;
-        }
-        function decodeItemsParam(itemsParam) {
-          var b64 = base64UrlToBase64(itemsParam);
-          var bin = atob(b64);
-          var bytes = new Uint8Array(bin.length);
-          for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-          var json = new TextDecoder().decode(bytes);
-          return JSON.parse(json);
-        }
-
-        function toAbsoluteUrl(pathOrUrl) {
-          try {
-            return new URL(String(pathOrUrl || ""), window.location.origin).toString();
-          } catch (e) {
-            return "";
+      var wanted = String(desiredValue || "").trim().toLowerCase();
+      if (wanted) {
+        for (var j = 0; j < variants.length; j++) {
+          var ov = Array.isArray(variants[j] && variants[j].optionValues) ? variants[j].optionValues : [];
+          for (var k = 0; k < ov.length; k++) {
+            var v = String((ov[k] && ov[k].value) || "").trim().toLowerCase();
+            if (!v) continue;
+            if (v === wanted) return variants[j];
+            if (v.indexOf(wanted) !== -1) return variants[j];
+            var m = v.match(/(\\d+(?:\\.\\d+)?)/);
+            if (m && m[1] === wanted) return variants[j];
           }
         }
+      }
 
-        async function fetchProductJson(pathOrUrl) {
-          var abs = toAbsoluteUrl(pathOrUrl);
-          if (!abs) return null;
-          var u = new URL(abs);
-          u.searchParams.set("format", "json");
-          var res = await fetch(u.toString(), { credentials: "include" });
-          if (!res.ok) return null;
-          var json = await res.json().catch(function () {
-            return null;
-          });
-          return (json && (json.item || json)) || null;
+      return variants[0] || null;
+    }
+
+    async function addToCart(items) {
+      var crumb = getCrumb();
+      if (!crumb) throw new Error("Missing Squarespace crumb. Please refresh this page.");
+
+      // Remove null/undefined/empty strings (Squarespace can treat "" as null).
+      items = (items || []).map(function (it) {
+        var out = {};
+        for (var k in it) {
+          if (!Object.prototype.hasOwnProperty.call(it, k)) continue;
+          var v = it[k];
+          if (v === null || v === undefined) continue;
+          if (typeof v === "string" && v.trim() === "") continue;
+          out[k] = v;
         }
+        return out;
+      });
 
-        function pickVariant(variants, sku, desiredValue) {
-          variants = Array.isArray(variants) ? variants : [];
-          var skuWanted = String(sku || "").trim();
-          if (skuWanted) {
-            for (var i = 0; i < variants.length; i++) {
-              if (String((variants[i] && variants[i].sku) || "").trim() === skuWanted) return variants[i];
-            }
-          }
+      var res = await fetch("/api/commerce/shopping-cart/entries?crumb=" + encodeURIComponent(crumb), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: items }),
+      });
 
-          var wanted = String(desiredValue || "").trim().toLowerCase();
-          if (wanted) {
-            for (var j = 0; j < variants.length; j++) {
-              var ov = Array.isArray(variants[j] && variants[j].optionValues) ? variants[j].optionValues : [];
-              for (var k = 0; k < ov.length; k++) {
-                var v = String((ov[k] && ov[k].value) || "").trim().toLowerCase();
-                if (!v) continue;
-                if (v === wanted) return variants[j];
-                if (v.indexOf(wanted) !== -1) return variants[j];
-                var m = v.match(/(\\d+(?:\\.\\d+)?)/);
-                if (m && m[1] === wanted) return variants[j];
-              }
-            }
-          }
+      var data = await res.json().catch(function () { return null; });
+      if (!res.ok) {
+        var raw =
+          data != null
+            ? (function () { try { return JSON.stringify(data); } catch (e) { return String(data); } })()
+            : "";
+        var msg =
+          data && (data.message || data.error)
+            ? (data.message || data.error)
+            : ("HTTP " + res.status);
+        throw new Error("Add-to-cart failed (" + res.status + "): " + msg + (raw ? " | response: " + raw : ""));
+      }
+      if (data && data.error) {
+        throw new Error("Add-to-cart failed: " + (data.message || data.error || "Unknown error"));
+      }
+      return data;
+    }
 
-          return variants[0] || null;
-        }
+    function startSteadyProgress() {
+      // A reassuring “steady” progress that never jumps backwards.
+      // Real progress steps will clamp it upwards.
+      var p = 0;
+      setPercent(0);
+      return setInterval(function () {
+        // Ease toward 92% while work is happening.
+        if (p < 92) p += (p < 60 ? 2 : 1);
+        setPercent(p);
+      }, 320);
+    }
 
-        async function addToCart(items) {
-          var crumb = getCrumb();
-          if (!crumb) {
-            throw new Error("Missing Squarespace crumb. Please refresh this page.");
-          }
+    function clampProgressAtLeast(minPct) {
+      var current = parseInt(String(($("gi-cart-percent") || {}).textContent || "0").replace(/\\D/g, ""), 10);
+      if (!isFinite(current)) current = 0;
+      if (current < minPct) setPercent(minPct);
+    }
 
-          // Remove null/undefined/empty-string keys to avoid Squarespace 400
-          // "may not be null, current value is null" (Squarespace can treat "" as null).
-          items = (items || []).map(function (it) {
-            var out = {};
-            for (var k in it) {
-              if (!Object.prototype.hasOwnProperty.call(it, k)) continue;
-              var v = it[k];
-              if (v === null || v === undefined) continue;
-              if (typeof v === "string" && v.trim() === "") continue;
-              out[k] = v;
-            }
-            return out;
-          });
+    async function run() {
+      var params = new URLSearchParams(window.location.search);
+      var itemsParam = params.get("items") || "";
+      if (!itemsParam) { showError("No items were provided."); return; }
 
-          var res = await fetch(
-            "/api/commerce/shopping-cart/entries?crumb=" + encodeURIComponent(crumb),
-            {
-              method: "POST",
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ items: items }),
-            },
-          );
+      var payload = null;
+      try { payload = decodeItemsParam(itemsParam); }
+      catch (e) { showError("Couldn’t read the order payload. Please re-open the export link."); return; }
 
-          var data = await res.json().catch(function () {
-            return null;
-          });
-          if (!res.ok) {
-            var raw =
-              data != null
-                ? (function () {
-                    try {
-                      return JSON.stringify(data);
-                    } catch (e) {
-                      return String(data);
-                    }
-                  })()
-                : "";
-            var msg =
-              data && (data.message || data.error)
-                ? data.message || data.error
-                : "HTTP " + res.status;
-            throw new Error(
-              "Add-to-cart failed (" +
-                res.status +
-                "): " +
-                msg +
-                (raw ? " | response: " + raw : ""),
-            );
-          }
+      var rawItems = Array.isArray(payload && payload.items) ? payload.items : [];
+      if (!rawItems.length) { showError("No items in payload."); return; }
 
-          if (data && data.error) {
-            throw new Error("Add-to-cart failed: " + (data.message || data.error || "Unknown error"));
-          }
+      // Merge duplicates so we make fewer add-to-cart calls.
+      var merged = new Map();
+      for (var i = 0; i < rawItems.length; i++) {
+        var it = rawItems[i] || {};
+        var url = String(it.url || "").trim();
+        var count = Number(it.count) || 0;
+        if (!url || count <= 0) continue;
+        var sku = it.sku ? String(it.sku).trim() : "";
+        var desiredValue = it.desiredValue ? String(it.desiredValue).trim() : "";
+        var key = url + "||" + sku + "||" + desiredValue;
+        var existing = merged.get(key);
+        if (existing) existing.count += count;
+        else merged.set(key, { url: url, count: count, sku: sku || null, desiredValue: desiredValue || null, fields: it.fields || null });
+      }
 
-          return data;
-        }
+      var items = Array.from(merged.values());
+      showDetails(items);
 
-        async function run() {
-          var params = new URLSearchParams(window.location.search);
-          var itemsParam = params.get("items") || "";
-          if (!itemsParam) {
-            showError("No items were provided.");
-            return;
-          }
+      var timer = startSteadyProgress();
+      setStatus("Preparing your cart…");
 
-          var payload = null;
-          try {
-            payload = decodeItemsParam(itemsParam);
-          } catch (e) {
-            showError("Couldn’t read the order payload. Please re-open the export link.");
-            return;
-          }
+      try {
+        setStatus("Adding items to cart…");
+        clampProgressAtLeast(10);
 
-          var rawItems = Array.isArray(payload && payload.items) ? payload.items : [];
-          if (!rawItems.length) {
-            showError("No items in payload.");
-            return;
-          }
+        for (var idx = 0; idx < items.length; idx++) {
+          var entry = items[idx];
+          setStatus("Fetching product details… (" + (idx + 1) + "/" + items.length + ")");
+          clampProgressAtLeast(20);
 
-          var merged = new Map();
-          for (var i = 0; i < rawItems.length; i++) {
-            var it = rawItems[i] || {};
-            var url = String(it.url || "").trim();
-            var count = Number(it.count) || 0;
-            if (!url || count <= 0) continue;
-            var sku = it.sku ? String(it.sku).trim() : "";
-            var desiredValue = it.desiredValue ? String(it.desiredValue).trim() : "";
-            var key = url + "||" + sku + "||" + desiredValue;
-            var existing = merged.get(key);
-            if (existing) existing.count += count;
-            else merged.set(key, { url: url, count: count, sku: sku || null, desiredValue: desiredValue || null, fields: it.fields || null });
-          }
+          var product = await fetchProductJson(entry.url);
+          if (!product) throw new Error("Couldn’t load product: " + entry.url);
+          var productType = Number((product.structuredContent && product.structuredContent.productType) || 0);
+          var itemId = String((product && product.id) || "");
+          if (!itemId) throw new Error("Missing itemId for product: " + entry.url);
 
-          var items = Array.from(merged.values());
-          showDetails(items);
+          var variants = Array.isArray(product && product.variants) ? product.variants : [];
+          var chosen = pickVariant(variants, entry.sku, entry.desiredValue);
+          var variantId = chosen ? String((chosen.id || "")).trim() : "";
+          var skuToUse = chosen ? String((chosen.sku || "")).trim() : "";
+          if (!variantId && !skuToUse) throw new Error("Missing variant for product: " + entry.url);
 
-          setStatus("Adding items to cart…");
+          // Squarespace cart is generally happiest with `variantId` when available.
+          var cartItem = { itemId: itemId, quantity: Number(entry.count) || 0 };
+          if (variantId) cartItem.variantId = variantId;
+          if (skuToUse) cartItem.sku = skuToUse;
 
-          for (var k = 0; k < items.length; k++) {
-            var entry = items[k];
-            setStatus("Fetching product details… (" + (k + 1) + "/" + items.length + ")");
-            var product = await fetchProductJson(entry.url);
-            if (!product) throw new Error("Couldn’t load product: " + entry.url);
-            var productType = Number((product.structuredContent && product.structuredContent.productType) || 0);
-            var itemId = String((product && product.id) || "");
-            if (!itemId) throw new Error("Missing itemId for product: " + entry.url);
-            var variants = Array.isArray(product && product.variants) ? product.variants : [];
-            var chosen = pickVariant(variants, entry.sku, entry.desiredValue);
-            var variantId = chosen ? String((chosen.id || "")).trim() : "";
-            var skuToUse = chosen ? String((chosen.sku || "")).trim() : "";
-            if (!variantId && !skuToUse) throw new Error("Missing variant for product: " + entry.url);
+          var fields = entry.fields && typeof entry.fields === "object" ? entry.fields : null;
+          if (fields && Object.keys(fields).length) cartItem.additionalFields = JSON.stringify(fields);
 
-            var cartItem = { itemId: itemId, quantity: Number(entry.count) || 0 };
-            // Squarespace cart is generally happiest with `variantId` when available.
-            // We include SKU as a fallback/debug aid.
-            if (variantId) cartItem.variantId = variantId;
-            if (skuToUse) cartItem.sku = skuToUse;
-
-            var fields = entry.fields && typeof entry.fields === "object" ? entry.fields : null;
-            if (fields && Object.keys(fields).length) {
-              cartItem.additionalFields = JSON.stringify(fields);
-            }
-
-            // Squarespace service items can be fussy about quantity > 1.
-            // If this is a service product, add one-at-a-time for reliability.
-            if (cartItem.quantity > 0) {
-              try {
-                if (productType === 1 && cartItem.quantity > 1) {
-                  for (var q = 0; q < cartItem.quantity; q++) {
-                    var one = { itemId: cartItem.itemId, quantity: 1 };
-                    if (cartItem.variantId) one.variantId = cartItem.variantId;
-                    if (cartItem.sku) one.sku = cartItem.sku;
-                    if (cartItem.additionalFields) one.additionalFields = cartItem.additionalFields;
-                    await addToCart([one]);
-                  }
-                } else {
-                  await addToCart([cartItem]);
+          if (cartItem.quantity > 0) {
+            try {
+              // Service items are fussy about quantity > 1: add one-at-a-time.
+              if (productType === 1 && cartItem.quantity > 1) {
+                for (var q = 0; q < cartItem.quantity; q++) {
+                  var one = { itemId: cartItem.itemId, quantity: 1 };
+                  if (cartItem.variantId) one.variantId = cartItem.variantId;
+                  if (cartItem.sku) one.sku = cartItem.sku;
+                  if (cartItem.additionalFields) one.additionalFields = cartItem.additionalFields;
+                  await addToCart([one]);
                 }
-              } catch (e) {
-                var msg = String((e && e.message) || e || "Unknown error");
-                var payload = "";
-                try { payload = JSON.stringify(cartItem); } catch (e2) { payload = ""; }
-                throw new Error("Failed adding " + String(entry.count) + "× " + String(entry.url || "") + (entry.sku ? " (SKU " + entry.sku + ")" : "") + ": " + msg + (payload ? " | payload: " + payload : ""));
+              } else {
+                await addToCart([cartItem]);
               }
+            } catch (e) {
+              var msg = String((e && e.message) || e || "Unknown error");
+              var payloadTxt = "";
+              try { payloadTxt = JSON.stringify(cartItem); } catch (e2) { payloadTxt = ""; }
+              throw new Error("Failed adding " + String(entry.count) + "× " + String(entry.url || "") + (entry.sku ? " (SKU " + entry.sku + ")" : "") + ": " + msg + (payloadTxt ? " | payload: " + payloadTxt : ""));
             }
-            setStatus("Adding items to cart… (" + (k + 1) + "/" + items.length + ")");
           }
 
-          setStatus("Done — opening your cart…");
-          window.location.assign("/cart");
+          // Real progress bump.
+          clampProgressAtLeast(Math.min(90, 25 + Math.round(((idx + 1) / items.length) * 60)));
         }
 
-        run().catch(function (e) {
-          showError(String((e && e.message) || e || "Couldn’t auto-fill cart. Please add items manually."));
-          setStatus("Couldn’t auto-fill cart. Please add items manually.");
-        });
-      })();
-    </script>
-  </body>
-</html>
+        setStatus("Done — opening your cart…");
+        setPercent(100);
+        clearInterval(timer);
+        window.location.assign("/cart");
+      } catch (e) {
+        clearInterval(timer);
+        showError(String((e && e.message) || e || "Couldn’t auto-fill cart. Please add items manually."));
+        setStatus("Couldn’t auto-fill cart. Please add items manually.");
+        setPercent(100);
+      }
+    }
+
+    // Only run on the cart-import page (safe if injected globally).
+    try {
+      if (String(window.location.pathname || "").indexOf("/cart-import") !== -1) {
+        run();
+      }
+    } catch (e) {
+      // ignore
+    }
+  })();
+</script>
+

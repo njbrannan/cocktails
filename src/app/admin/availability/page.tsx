@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 type Slot = {
   id: string;
@@ -33,9 +31,7 @@ function buildIsoFromLocal(date: string, time: string) {
 }
 
 export default function AdminAvailabilityPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,13 +41,10 @@ export default function AdminAvailabilityPage() {
   const [endTime, setEndTime] = useState(() => "20:00");
 
   const loadSlots = async () => {
-    const { data, error: err } = await supabase
-      .from("availability_slots")
-      .select("id, start_ts, end_ts, is_active")
-      .order("start_ts", { ascending: true })
-      .limit(200);
-    if (err) throw err;
-    setSlots((data as any) || []);
+    const res = await fetch("/api/admin/availability", { method: "GET" });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error || "Unable to load slots.");
+    setSlots((json?.slots as Slot[]) || []);
   };
 
   useEffect(() => {
@@ -60,25 +53,6 @@ export default function AdminAvailabilityPage() {
       setLoading(true);
       setError(null);
       try {
-        const { data } = await supabase.auth.getUser();
-        const user = data?.user;
-        if (!user) {
-          if (!cancelled) router.push("/login");
-          return;
-        }
-
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        if (profileError) throw profileError;
-        if (!profile || profile.role !== "admin") {
-          setIsAdmin(false);
-          setError("You are not authorized to access this page.");
-          return;
-        }
-        setIsAdmin(true);
         await loadSlots();
       } catch (e: any) {
         setError(e?.message || "Unable to load availability.");
@@ -89,7 +63,7 @@ export default function AdminAvailabilityPage() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, []);
 
   const addSlot = async () => {
     setError(null);
@@ -104,13 +78,14 @@ export default function AdminAvailabilityPage() {
       return;
     }
 
-    const { error: err } = await supabase.from("availability_slots").insert({
-      start_ts: startIso,
-      end_ts: endIso,
-      is_active: true,
+    const res = await fetch("/api/admin/availability", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ start_ts: startIso, end_ts: endIso, is_active: true }),
     });
-    if (err) {
-      setError(err.message);
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(json?.error || "Unable to add slot.");
       return;
     }
     await loadSlots();
@@ -118,12 +93,12 @@ export default function AdminAvailabilityPage() {
 
   const deleteSlot = async (id: string) => {
     setError(null);
-    const { error: err } = await supabase
-      .from("availability_slots")
-      .delete()
-      .eq("id", id);
-    if (err) {
-      setError(err.message);
+    const res = await fetch(`/api/admin/availability/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(json?.error || "Unable to delete slot.");
       return;
     }
     await loadSlots();
@@ -131,12 +106,17 @@ export default function AdminAvailabilityPage() {
 
   const toggleActive = async (slot: Slot) => {
     setError(null);
-    const { error: err } = await supabase
-      .from("availability_slots")
-      .update({ is_active: !slot.is_active })
-      .eq("id", slot.id);
-    if (err) {
-      setError(err.message);
+    const res = await fetch(
+      `/api/admin/availability/${encodeURIComponent(slot.id)}`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ is_active: !slot.is_active }),
+      },
+    );
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(json?.error || "Unable to update slot.");
       return;
     }
     await loadSlots();
@@ -163,19 +143,19 @@ export default function AdminAvailabilityPage() {
           </Link>
         </header>
 
+        {!loading && error ? (
+          <div className="glass-panel rounded-[28px] px-8 py-6">
+            <p className="text-sm font-medium text-red-700">{error}</p>
+          </div>
+        ) : null}
+
         {loading ? (
           <div className="glass-panel rounded-[28px] px-8 py-8 text-sm text-muted">
             Loading…
           </div>
         ) : null}
 
-        {!loading && !isAdmin ? (
-          <div className="glass-panel rounded-[28px] px-8 py-8">
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        ) : null}
-
-        {!loading && isAdmin ? (
+        {!loading ? (
           <>
             <div className="glass-panel rounded-[28px] px-8 py-8">
               <h2 className="font-display text-2xl text-accent">Add slot</h2>
@@ -274,4 +254,3 @@ export default function AdminAvailabilityPage() {
     </div>
   );
 }
-

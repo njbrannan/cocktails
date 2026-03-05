@@ -5,12 +5,14 @@ import { NextResponse, type NextRequest } from "next/server";
 // Why: Supabase auth in this project is currently client-session based (localStorage),
 // so we can't reliably protect /admin on the server without migrating auth to cookies.
 //
-// This middleware adds HTTP Basic Auth in front of /admin/*.
+// This middleware adds HTTP Basic Auth in front of /admin/* (and /api/admin/*).
 // Set env vars in Vercel:
 // - ADMIN_BASIC_USER
 // - ADMIN_BASIC_PASS
 //
-// If env vars are not set, the middleware will allow access (dev-friendly).
+// If env vars are not set:
+// - In production: deny access (so /admin isn't accidentally public).
+// - In dev: allow access (dev-friendly).
 
 function unauthorized() {
   return new NextResponse("Authentication required.", {
@@ -31,11 +33,23 @@ function safeEq(a: string, b: string) {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (!pathname.startsWith("/admin")) return NextResponse.next();
+  const isAdminPath = pathname.startsWith("/admin");
+  const isAdminApiPath = pathname.startsWith("/api/admin");
+  if (!isAdminPath && !isAdminApiPath) return NextResponse.next();
 
   const user = (process.env.ADMIN_BASIC_USER || "").trim();
   const pass = (process.env.ADMIN_BASIC_PASS || "").trim();
   if (!user || !pass) {
+    const isProd =
+      process.env.VERCEL === "1" ||
+      process.env.VERCEL === "true" ||
+      process.env.NODE_ENV === "production";
+    if (isProd) {
+      return new NextResponse(
+        "Admin auth is not configured. Set ADMIN_BASIC_USER and ADMIN_BASIC_PASS in your deployment environment.",
+        { status: 500 },
+      );
+    }
     // If not configured, don't lock you out of dev.
     return NextResponse.next();
   }
@@ -62,6 +76,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
 };
-

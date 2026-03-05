@@ -564,6 +564,63 @@ export default function RequestOrderPage() {
   const [bartenderHours, setBartenderHours] = useState<string>(
     GI_BARTENDER_DEFAULT_HOURS,
   );
+  const [bartenderStartTime, setBartenderStartTime] = useState<string>("");
+  const [bartenderFinishTime, setBartenderFinishTime] = useState<string>("");
+
+  const availableBartenderHours = useMemo(() => {
+    const keys = Object.keys(bartenderSkuMap || {});
+    const list = (keys.length ? keys : ["4", "5", "6", "7", "8"])
+      .map((k) => String(k).trim())
+      .filter(Boolean)
+      .map((k) => Number(k))
+      .filter((n) => Number.isFinite(n) && n > 0)
+      .sort((a, b) => a - b);
+    return Array.from(new Set(list));
+  }, [bartenderSkuMap]);
+
+  const computedBartenderHours = useMemo(() => {
+    const s = String(bartenderStartTime || "").trim();
+    const f = String(bartenderFinishTime || "").trim();
+    if (!s || !f) return null;
+    const sm = s.match(/^(\d{1,2}):(\d{2})$/);
+    const fm = f.match(/^(\d{1,2}):(\d{2})$/);
+    if (!sm || !fm) return null;
+    const sh = Number(sm[1]);
+    const smin = Number(sm[2]);
+    const fh = Number(fm[1]);
+    const fmin = Number(fm[2]);
+    if (
+      !Number.isFinite(sh) ||
+      !Number.isFinite(smin) ||
+      !Number.isFinite(fh) ||
+      !Number.isFinite(fmin)
+    )
+      return null;
+    const start = sh * 60 + smin;
+    const finish = fh * 60 + fmin;
+    let diff = finish - start;
+    // If they cross midnight, treat as next day.
+    if (diff <= 0) diff += 24 * 60;
+    // Billable time: round up to the next whole hour.
+    return Math.max(1, Math.ceil(diff / 60));
+  }, [bartenderStartTime, bartenderFinishTime]);
+
+  useEffect(() => {
+    if (!computedBartenderHours) return;
+    if (!availableBartenderHours.length) return;
+    const target = computedBartenderHours;
+    // Clamp to the closest available option.
+    let best = availableBartenderHours[0]!;
+    let bestDist = Math.abs(best - target);
+    for (const h of availableBartenderHours) {
+      const d = Math.abs(h - target);
+      if (d < bestDist) {
+        best = h;
+        bestDist = d;
+      }
+    }
+    setBartenderHours(String(best));
+  }, [computedBartenderHours, availableBartenderHours]);
   useEffect(() => {
     const keys = Object.keys(bartenderSkuMap || {});
     if (!keys.length) return;
@@ -1976,7 +2033,29 @@ export default function RequestOrderPage() {
             <div className="mt-4">
               <label className="block text-center text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                 Hours per bartender
-                <div className="mx-auto mt-2 max-w-[240px]">
+                <div className="mx-auto mt-3 grid max-w-[320px] grid-cols-2 gap-3">
+                  <label className="block text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
+                    Start
+                    <input
+                      type="time"
+                      value={bartenderStartTime}
+                      onChange={(e) => setBartenderStartTime(e.target.value)}
+                      className={`mt-2 ${fieldClass} border-soft text-center`}
+                      style={{ textAlignLast: "center" }}
+                    />
+                  </label>
+                  <label className="block text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
+                    Finish
+                    <input
+                      type="time"
+                      value={bartenderFinishTime}
+                      onChange={(e) => setBartenderFinishTime(e.target.value)}
+                      className={`mt-2 ${fieldClass} border-soft text-center`}
+                      style={{ textAlignLast: "center" }}
+                    />
+                  </label>
+                </div>
+                <div className="mx-auto mt-3 max-w-[240px]">
                   <select
                     value={bartenderHours}
                     onChange={(event) => setBartenderHours(event.target.value)}
@@ -1997,12 +2076,17 @@ export default function RequestOrderPage() {
                 </div>
               </label>
               <p className="mt-2 text-center text-[12px] text-ink-muted">
-                Recommended:{" "}
-                {recommendedMixologists} mixologist
-                {recommendedMixologists ===
-                1
-                  ? ""
-                  : "s"}
+                {computedBartenderHours ? (
+                  <span>
+                    Based on times:{" "}
+                    <strong className="font-semibold text-ink">
+                      {computedBartenderHours} hours
+                    </strong>
+                    {" · "}
+                  </span>
+                ) : null}
+                Recommended: {recommendedMixologists} mixologist
+                {recommendedMixologists === 1 ? "" : "s"}
               </p>
             </div>
           ) : null}

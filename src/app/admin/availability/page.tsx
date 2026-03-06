@@ -130,9 +130,9 @@ export default function AdminAvailabilityPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
               Admin
             </p>
-            <h1 className="font-display text-4xl text-ink">Availability</h1>
+            <h1 className="font-display text-4xl text-ink">Blocked Dates</h1>
             <p className="mt-2 max-w-xl text-sm text-muted">
-              Add available booking slots. Clients can only book within an available slot.
+              Add blocked date/time ranges. Clients can book any time except within a blocked range.
             </p>
           </div>
           <Link
@@ -158,7 +158,7 @@ export default function AdminAvailabilityPage() {
         {!loading ? (
           <>
             <div className="glass-panel rounded-[28px] px-8 py-8">
-              <h2 className="font-display text-2xl text-accent">Add slot</h2>
+              <h2 className="font-display text-2xl text-accent">Add blocked range</h2>
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                   Date
@@ -193,7 +193,7 @@ export default function AdminAvailabilityPage() {
                 onClick={() => void addSlot()}
                 className="gi-btn-primary mt-6 w-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.25em] hover:-translate-y-0.5"
               >
-                Add slot
+                Block this time
               </button>
               {error ? (
                 <p className="mt-4 text-sm font-medium text-red-700">{error}</p>
@@ -201,9 +201,9 @@ export default function AdminAvailabilityPage() {
             </div>
 
             <div className="glass-panel rounded-[28px] px-8 py-8">
-              <h2 className="font-display text-2xl text-accent">Upcoming slots</h2>
+              <h2 className="font-display text-2xl text-accent">Blocked ranges</h2>
               <p className="mt-2 text-sm text-muted">
-                Tip: If you haven’t added any slots yet, the app will allow all bookings (so it doesn’t lock up on day one).
+                Tip: If you haven’t added any blocks yet, the app will allow all bookings.
               </p>
               <div className="mt-6 grid gap-3">
                 {slots.length ? (
@@ -244,7 +244,7 @@ export default function AdminAvailabilityPage() {
                     );
                   })
                 ) : (
-                  <p className="text-sm text-muted">No slots yet.</p>
+                  <p className="text-sm text-muted">No blocked ranges yet.</p>
                 )}
               </div>
             </div>

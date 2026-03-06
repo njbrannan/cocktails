@@ -28,6 +28,7 @@ export async function POST(req: Request) {
 
     const supabase = getSupabaseServerClient();
 
+    // We treat rows in availability_slots as *blocked* periods.
     // If no slots exist at all, fail open (so the app doesn't lock up on day 1).
     const { count: totalSlots, error: countErr } = await supabase
       .from("availability_slots")
@@ -46,15 +47,17 @@ export async function POST(req: Request) {
       .from("availability_slots")
       .select("id, start_ts, end_ts")
       .eq("is_active", true)
-      .lte("start_ts", start.toISOString())
-      .gte("end_ts", end.toISOString())
+      // Overlap rule: start < block.end AND end > block.start
+      .lt("start_ts", end.toISOString())
+      .gt("end_ts", start.toISOString())
       .limit(1);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 502 });
     }
 
-    return NextResponse.json({ available: Boolean(data && data.length) });
+    const blocked = Boolean(data && data.length);
+    return NextResponse.json({ available: !blocked });
   } catch (e: any) {
     return NextResponse.json(
       { error: e?.message || "Server error" },
@@ -62,4 +65,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

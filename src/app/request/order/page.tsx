@@ -650,6 +650,9 @@ export default function RequestOrderPage() {
   const [eventDate, setEventDate] = useState("");
   const [eventName, setEventName] = useState("");
   const [eventLocation, setEventLocation] = useState("");
+  const [eventLocationError, setEventLocationError] = useState<string | null>(
+    null,
+  );
   const [notes, setNotes] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [guestCountInput, setGuestCountInput] = useState("");
@@ -666,10 +669,19 @@ export default function RequestOrderPage() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [guestCountError, setGuestCountError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [eventDateError, setEventDateError] = useState<string | null>(null);
+  const [bartenderTimeError, setBartenderTimeError] = useState<string | null>(
+    null,
+  );
   const [success, setSuccess] = useState<string | null>(null);
   const [editLink, setEditLink] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const minDate = useMemo(() => todayIsoDate(), []);
+
+  const eventLocationInputRef = useRef<HTMLInputElement | null>(null);
+  const eventDateInputRef = useRef<HTMLInputElement | null>(null);
+  const bartenderStartInputRef = useRef<HTMLInputElement | null>(null);
+  const bartenderFinishInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -734,9 +746,11 @@ export default function RequestOrderPage() {
     // Clamp so the user can't set a past date in the UI.
     if (!value) {
       setEventDate("");
+      if (eventDateError) setEventDateError(null);
       return;
     }
     setEventDate(value < minDate ? minDate : value);
+    if (eventDateError) setEventDateError(null);
   };
 
   const normalizeIngredient = (value: Ingredient | Ingredient[] | null) => {
@@ -1323,6 +1337,9 @@ export default function RequestOrderPage() {
     if (retailer === "getinvolved") {
       setExportingToCart(true);
       setCartError(null);
+      setEventLocationError(null);
+      setEventDateError(null);
+      setBartenderTimeError(null);
     }
     const rows: Array<{ name: string; type: string; qty: string; total: string; url: string }> = [];
     const getInvolvedCartItems: GetInvolvedCartItem[] = [];
@@ -1381,23 +1398,64 @@ export default function RequestOrderPage() {
       }
 
       if (retailer === "getinvolved") {
-        // Require date + times before exporting to cart.
+        // Validate required fields and highlight missing ones so it doesn't feel like "nothing happens".
+        type ReqErr = { msg: string; ref?: React.RefObject<HTMLInputElement | null> };
+        const requiredErrors: ReqErr[] = [];
+
+        if (!eventLocation.trim()) {
+          const msg = "Please enter an event location.";
+          setEventLocationError(msg);
+          requiredErrors.push({ msg, ref: eventLocationInputRef });
+        }
+
+        const emailMsg = validateEmail(clientEmail);
+        if (emailMsg) {
+          setEmailError(emailMsg);
+          requiredErrors.push({ msg: emailMsg });
+        }
+
+        const phoneMsg = validatePhone(phoneLocal);
+        if (phoneMsg) {
+          setPhoneError(phoneMsg);
+          requiredErrors.push({ msg: phoneMsg });
+        }
+
         if (!eventDate) {
-          setCartError("Please select a Date of Event first.");
-          return;
+          const msg = "Please select a Date of Event.";
+          setEventDateError(msg);
+          requiredErrors.push({ msg, ref: eventDateInputRef });
+        } else if (eventDate < minDate) {
+          const msg = "Date of Event must be today or in the future.";
+          setEventDateError(msg);
+          requiredErrors.push({ msg, ref: eventDateInputRef });
         }
-        if (eventDate < minDate) {
-          setCartError("Date of Event must be today or in the future.");
-          return;
-        }
+
         if (!bartenderStartTime || !bartenderFinishTime) {
-          setCartError("Please select bartender start and finish times first.");
+          const msg = "Please select bartender start and finish times.";
+          setBartenderTimeError(msg);
+          requiredErrors.push({ msg, ref: bartenderStartInputRef });
+        }
+
+        if (requiredErrors.length) {
+          setCartError("Please complete the highlighted fields above.");
+          const first = requiredErrors.find((e) => e.ref?.current)?.ref?.current;
+          if (first && typeof first.scrollIntoView === "function") {
+            first.scrollIntoView({ behavior: "smooth", block: "center" });
+            try {
+              first.focus();
+            } catch {
+              // ignore
+            }
+          }
           return;
         }
+
+        // Require date + times before exporting to cart.
         const startIso = localDateTimeToIso(eventDate, bartenderStartTime);
         const endIso = localDateTimeToIso(eventDate, bartenderFinishTime);
         if (!startIso || !endIso) {
-          setCartError("Please select a valid date/time range.");
+          setBartenderTimeError("Please select a valid date/time range.");
+          setCartError("Please complete the highlighted fields above.");
           return;
         }
 
@@ -2006,25 +2064,44 @@ export default function RequestOrderPage() {
               Event location
               <input
                 type="text"
+                ref={eventLocationInputRef}
                 value={eventLocation}
-                onChange={(event) => setEventLocation(event.target.value)}
+                onChange={(event) => {
+                  setEventLocation(event.target.value);
+                  if (eventLocationError) setEventLocationError(null);
+                }}
                 placeholder="Venue address, suburb, city..."
                 autoComplete="street-address"
-                className={`mt-2 ${fieldClass} border-soft`}
+                className={`mt-2 ${fieldClass} ${
+                  eventLocationError ? "border-red-400" : "border-soft"
+                }`}
               />
+              {eventLocationError ? (
+                <p className="mt-2 text-[12px] font-medium text-red-600 normal-case tracking-normal">
+                  {eventLocationError}
+                </p>
+              ) : null}
             </label>
 
             <label className="block min-w-0 text-xs font-semibold uppercase tracking-[0.2em] text-accent md:col-span-2">
               Date of Event
               <input
                 type="date"
+                ref={eventDateInputRef}
                 min={minDate}
                 value={eventDate}
                 onChange={(event) => handleEventDateChange(event.target.value)}
                 onBlur={(event) => handleEventDateChange(event.target.value)}
-                className={`mt-2 ${fieldClass} appearance-none border-soft`}
+                className={`mt-2 ${fieldClass} appearance-none ${
+                  eventDateError ? "border-red-400" : "border-soft"
+                }`}
                 style={{ letterSpacing: "normal" }}
               />
+              {eventDateError ? (
+                <p className="mt-2 text-[12px] font-medium text-red-600 normal-case tracking-normal">
+                  {eventDateError}
+                </p>
+              ) : null}
             </label>
 
             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
@@ -2119,9 +2196,15 @@ export default function RequestOrderPage() {
                     Start
                     <input
                       type="time"
+                      ref={bartenderStartInputRef}
                       value={bartenderStartTime}
-                      onChange={(e) => setBartenderStartTime(e.target.value)}
-                      className={`mt-2 ${fieldClass} border-soft text-center`}
+                      onChange={(e) => {
+                        setBartenderStartTime(e.target.value);
+                        if (bartenderTimeError) setBartenderTimeError(null);
+                      }}
+                      className={`mt-2 ${fieldClass} ${
+                        bartenderTimeError ? "border-red-400" : "border-soft"
+                      } text-center`}
                       style={{ textAlignLast: "center" }}
                     />
                   </label>
@@ -2129,9 +2212,15 @@ export default function RequestOrderPage() {
                     Finish
                     <input
                       type="time"
+                      ref={bartenderFinishInputRef}
                       value={bartenderFinishTime}
-                      onChange={(e) => setBartenderFinishTime(e.target.value)}
-                      className={`mt-2 ${fieldClass} border-soft text-center`}
+                      onChange={(e) => {
+                        setBartenderFinishTime(e.target.value);
+                        if (bartenderTimeError) setBartenderTimeError(null);
+                      }}
+                      className={`mt-2 ${fieldClass} ${
+                        bartenderTimeError ? "border-red-400" : "border-soft"
+                      } text-center`}
                       style={{ textAlignLast: "center" }}
                     />
                   </label>
@@ -2156,6 +2245,11 @@ export default function RequestOrderPage() {
                   </select>
                 </div>
               </label>
+              {bartenderTimeError ? (
+                <p className="mt-2 text-center text-[12px] font-medium text-red-600 normal-case tracking-normal">
+                  {bartenderTimeError}
+                </p>
+              ) : null}
               <p className="mt-2 text-center text-[12px] text-ink-muted">
                 {computedBartenderHours ? (
                   <span>

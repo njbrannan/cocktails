@@ -239,10 +239,71 @@ function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function localDateTimeToIso(date: string, time: string) {
+function timeToMinutes(time: string) {
+  const t = String(time || "").trim();
+  const m = t.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const hh = Number(m[1]);
+  const mm = Number(m[2]);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+  return hh * 60 + mm;
+}
+
+function localDateTimeToIso(date: string, time: string, addDays = 0) {
   const d = new Date(`${String(date || "").trim()}T${String(time || "").trim()}`);
   if (!Number.isFinite(d.getTime())) return null;
+  if (addDays) d.setDate(d.getDate() + addDays);
   return d.toISOString();
+}
+
+function localDateTimeRangeToIso(
+  date: string,
+  startTime: string,
+  finishTime: string,
+) {
+  const startM = timeToMinutes(startTime);
+  const finishM = timeToMinutes(finishTime);
+  if (startM === null || finishM === null) {
+    return {
+      startIso: null as string | null,
+      endIso: null as string | null,
+      error: "Please select valid start/finish times.",
+    };
+  }
+
+  let addDays = 0;
+  if (finishM < startM) {
+    // Allow crossing midnight only for late finishes up to 05:00.
+    if (finishM <= 5 * 60) addDays = 1;
+    else {
+      return {
+        startIso: null,
+        endIso: null,
+        error:
+          "Finish time must be after start time (or finish by 05:00 if it crosses midnight).",
+      };
+    }
+  }
+
+  const startIso = localDateTimeToIso(date, startTime, 0);
+  const endIso = localDateTimeToIso(date, finishTime, addDays);
+  if (!startIso || !endIso) {
+    return {
+      startIso: null,
+      endIso: null,
+      error: "Please select a valid date/time range.",
+    };
+  }
+  if (new Date(endIso) <= new Date(startIso)) {
+    return {
+      startIso: null,
+      endIso: null,
+      error: "Finish time must be after start time.",
+    };
+  }
+
+  return { startIso, endIso, error: null as string | null };
 }
 
 function formatAud(amount: number) {
@@ -1184,16 +1245,22 @@ export default function RequestOrderPage() {
         setSubmitError("Please select bartender start and finish times.");
         return;
       }
-      const startIso = localDateTimeToIso(eventDate, bartenderStartTime);
-      const endIso = localDateTimeToIso(eventDate, bartenderFinishTime);
-      if (!startIso || !endIso) {
-        setSubmitError("Please select a valid date/time range.");
+      const rangeIso = localDateTimeRangeToIso(
+        eventDate,
+        bartenderStartTime,
+        bartenderFinishTime,
+      );
+      if (!rangeIso.startIso || !rangeIso.endIso) {
+        setBartenderTimeError(
+          rangeIso.error || "Please select a valid date/time range.",
+        );
+        setSubmitError("Please fix the highlighted fields.");
         return;
       }
       const availResp = await fetch("/api/availability/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ start: startIso, end: endIso }),
+        body: JSON.stringify({ start: rangeIso.startIso, end: rangeIso.endIso }),
       });
       const availData = await availResp.json().catch(() => null);
       if (!availResp.ok) {
@@ -1505,10 +1572,15 @@ export default function RequestOrderPage() {
         }
 
         // Require date + times before exporting to cart.
-        const startIso = localDateTimeToIso(eventDate, bartenderStartTime);
-        const endIso = localDateTimeToIso(eventDate, bartenderFinishTime);
-        if (!startIso || !endIso) {
-          setBartenderTimeError("Please select a valid date/time range.");
+        const rangeIso = localDateTimeRangeToIso(
+          eventDate,
+          bartenderStartTime,
+          bartenderFinishTime,
+        );
+        if (!rangeIso.startIso || !rangeIso.endIso) {
+          setBartenderTimeError(
+            rangeIso.error || "Please select a valid date/time range.",
+          );
           setCartError("Please complete the highlighted fields above.");
           try {
             exportWin?.close();
@@ -1521,7 +1593,7 @@ export default function RequestOrderPage() {
         const availResp = await fetch("/api/availability/check", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ start: startIso, end: endIso }),
+          body: JSON.stringify({ start: rangeIso.startIso, end: rangeIso.endIso }),
         });
         const availData = await availResp.json().catch(() => null);
         if (!availResp.ok) {

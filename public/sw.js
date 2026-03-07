@@ -3,9 +3,12 @@
    - Navigations: network-first, fallback to cache
 */
 
-const CACHE_NAME = "gi-cocktail-v2";
+// Bump this when we ship new static assets (e.g. new cocktail icons) to avoid
+// users getting stuck with cached 404s on mobile/PWA.
+const CACHE_NAME = "gi-cocktail-v3";
 
 const APP_SHELL = [
+  "/",
   "/request",
   "/request/order",
   "/offline.html",
@@ -62,14 +65,22 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          }
           return res;
         })
         .catch(() =>
           caches
             .match(req)
-            .then((hit) => hit || caches.match("/request") || caches.match("/offline.html")),
+            .then(
+              (hit) =>
+                (hit && hit.ok ? hit : null) ||
+                caches.match("/") ||
+                caches.match("/request") ||
+                caches.match("/offline.html"),
+            ),
         ),
     );
     return;
@@ -78,10 +89,14 @@ self.addEventListener("fetch", (event) => {
   if (isCacheableAsset(url)) {
     event.respondWith(
       caches.match(req).then((hit) => {
-        if (hit) return hit;
+        // Never serve cached errors (common when an icon was missing at first).
+        if (hit && hit.ok) return hit;
         return fetch(req).then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          // Only cache successful responses; avoid "locking in" 404s.
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          }
           return res;
         });
       }),

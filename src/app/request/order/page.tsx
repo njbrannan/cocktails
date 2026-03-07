@@ -736,7 +736,6 @@ export default function RequestOrderPage() {
   );
   const [success, setSuccess] = useState<string | null>(null);
   const [editLink, setEditLink] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const minDate = useMemo(() => todayIsoDate(), []);
 
   const eventLocationInputRef = useRef<HTMLInputElement | null>(null);
@@ -744,33 +743,11 @@ export default function RequestOrderPage() {
   const bartenderStartInputRef = useRef<HTMLInputElement | null>(null);
   const bartenderFinishInputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        const user = data?.user;
-        if (!user) return;
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        if (cancelled) return;
-        if (!profileError && profile?.role === "admin") setIsAdmin(true);
-      } catch {
-        // Ignore auth/profile errors; treat as non-admin.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const visibleOrderList = useMemo(() => {
     const list = orderList ?? [];
-    return isAdmin ? list : list.filter((it) => it.type === "liquor");
-  }, [orderList, isAdmin]);
+    // Clients should only see liquor. Admin gets the full list via email after Get Involved export.
+    return list.filter((it) => it.type === "liquor");
+  }, [orderList]);
 
   const estimatedCost = useMemo(() => {
     const sum = (visibleOrderList ?? []).reduce(
@@ -1679,9 +1656,9 @@ export default function RequestOrderPage() {
           window.open(exportUrl, "_blank");
         }
 
-        // Email the full order list to admin in parallel (best-effort).
-        // Don't await this; it would make the popup blocker kick in.
-        void fetch("/api/admin/order-list-email", {
+        // Email confirmations (admin gets full list with links; client gets liquor-only + summary).
+        // Best-effort (don't block the cart export).
+        void fetch("/api/order-list-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1695,7 +1672,6 @@ export default function RequestOrderPage() {
             bartenderFinishTime: bartenderFinishTime || null,
             bartenderHours: computedBartenderHours || Number(bartenderHours) || null,
             notes,
-            editLink: editLink || null,
             cocktails: cocktailsSummary.map((c) => ({
               recipeId: c.recipeId,
               recipeName: c.recipeName,
@@ -1823,7 +1799,7 @@ export default function RequestOrderPage() {
           </ul>
 
           <h2 className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-black/80">
-            {isAdmin ? "Shopping list" : "Your Shopping List"}
+            Your Shopping List
           </h2>
           <ul className="mt-2 space-y-1 text-sm">
             {visibleOrderList.map((item) => (
@@ -2098,7 +2074,7 @@ export default function RequestOrderPage() {
 
           <div className="mt-4 flex items-baseline justify-between gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">
-              {isAdmin ? "Shopping list" : "Your Shopping List"}
+              Your Shopping List
             </h3>
             {formattedEstimatedCost ? (
               <p className="shrink-0 whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.2em] text-accent/80 sm:text-[11px]">
@@ -2349,11 +2325,12 @@ export default function RequestOrderPage() {
             <div className="mt-4">
               <label className="block text-center text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                 Hours per bartender
-                <div className="mx-auto mt-3 grid max-w-[320px] grid-cols-2 gap-3">
+                <div className="mx-auto mt-3 grid w-full max-w-[420px] grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className="block text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
                     Start
                     <input
                       type="time"
+                      step={900}
                       ref={bartenderStartInputRef}
                       value={bartenderStartTime}
                       onChange={(e) => {
@@ -2370,6 +2347,7 @@ export default function RequestOrderPage() {
                     Finish
                     <input
                       type="time"
+                      step={900}
                       ref={bartenderFinishInputRef}
                       value={bartenderFinishTime}
                       onChange={(e) => {

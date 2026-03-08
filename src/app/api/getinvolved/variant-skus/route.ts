@@ -100,15 +100,19 @@ function extractVariantUnitPrice(variant: any): number | null {
 
   for (const c of candidates) {
     if (c == null) continue;
-    if (typeof c === "number" && Number.isFinite(c) && c > 0) return c;
+    if (typeof c === "number" && Number.isFinite(c) && c > 0) {
+      // Some Squarespace JSON fields are returned in cents (e.g. 45000 for $450.00).
+      // Heuristic: values over $2,000 are almost certainly cents for our catalogue.
+      return c >= 2000 ? c / 100 : c;
+    }
     if (typeof c === "string") {
       const n = Number(c);
-      if (Number.isFinite(n) && n > 0) return n;
+      if (Number.isFinite(n) && n > 0) return n >= 2000 ? n / 100 : n;
     }
     if (typeof c === "object") {
       // Sometimes: { value: 129.99, currency: 'AUD' }
       const n = Number((c as any).value);
-      if (Number.isFinite(n) && n > 0) return n;
+      if (Number.isFinite(n) && n > 0) return n >= 2000 ? n / 100 : n;
     }
   }
 

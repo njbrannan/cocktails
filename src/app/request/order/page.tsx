@@ -1266,7 +1266,8 @@ export default function RequestOrderPage() {
     // That currently includes: ice + glassware + mobile bars (+ cocktail kits + bartenders below).
     const otherIngredients = list
       .filter((it) => it.type === "ice" || it.type === "glassware" || it.type === "bar")
-      .reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
+      // Use pack pricing only (ingredient.price is too inconsistent with the store/cart).
+      .reduce((acc, item) => acc + (item.packPlan?.length ? item.totalCost ?? 0 : 0), 0);
     const other = otherIngredients + estimatedCocktailKitCost + estimatedBartenderCost;
     return {
       liquor: Number.isFinite(liquor) ? liquor : 0,

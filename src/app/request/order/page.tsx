@@ -749,15 +749,33 @@ export default function RequestOrderPage() {
     return list.filter((it) => it.type === "liquor");
   }, [orderList]);
 
-  const estimatedCost = useMemo(() => {
-    const sum = (visibleOrderList ?? []).reduce(
-      (acc, item) => acc + (item.totalCost ?? 0),
-      0,
-    );
-    return Number.isFinite(sum) ? sum : 0;
-  }, [visibleOrderList]);
+  const costs = useMemo(() => {
+    const list = orderList ?? [];
+    const liquor = list
+      .filter((it) => it.type === "liquor")
+      .reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
+    const other = list
+      .filter((it) => it.type !== "liquor")
+      .reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
+    return {
+      liquor: Number.isFinite(liquor) ? liquor : 0,
+      other: Number.isFinite(other) ? other : 0,
+      total: Number.isFinite(liquor + other) ? liquor + other : 0,
+    };
+  }, [orderList]);
 
-  const formattedEstimatedCost = useMemo(() => formatAud(estimatedCost), [estimatedCost]);
+  const formattedEstimatedLiquorCost = useMemo(
+    () => formatAud(costs.liquor),
+    [costs.liquor],
+  );
+  const formattedEstimatedOtherCost = useMemo(
+    () => formatAud(costs.other),
+    [costs.other],
+  );
+  const formattedEstimatedTotalCost = useMemo(
+    () => formatAud(costs.total),
+    [costs.total],
+  );
 
   useEdgeSwipeNav({
     canGoBack: true,
@@ -1864,7 +1882,7 @@ export default function RequestOrderPage() {
               />
             </a>
           </p>
-          <h1 className="font-display text-4xl text-ink">Order List</h1>
+          <h1 className="font-display text-4xl text-ink">Your Shopping List</h1>
           <p className="mt-2 text-sm text-muted">
             Totals include a 10% buffer. Items are rounded up to pack sizes where provided (for example, 700ml bottles).
           </p>
@@ -2070,16 +2088,22 @@ export default function RequestOrderPage() {
         </div>
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
-          <h2 className="font-display text-2xl text-accent">Order List</h2>
-
           <div className="mt-4 flex items-baseline justify-between gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">
               Your Shopping List
             </h3>
-            {formattedEstimatedCost ? (
-              <p className="shrink-0 whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.2em] text-accent/80 sm:text-[11px]">
-                Est. cost: {formattedEstimatedCost}
-              </p>
+            {formattedEstimatedLiquorCost || formattedEstimatedOtherCost || formattedEstimatedTotalCost ? (
+              <div className="shrink-0 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-accent/80 sm:text-[11px]">
+                {formattedEstimatedLiquorCost ? (
+                  <p className="whitespace-nowrap">Est. liquor cost: {formattedEstimatedLiquorCost}</p>
+                ) : null}
+                {formattedEstimatedOtherCost ? (
+                  <p className="whitespace-nowrap">Est. cost for everything else: {formattedEstimatedOtherCost}</p>
+                ) : null}
+                {formattedEstimatedTotalCost ? (
+                  <p className="whitespace-nowrap">Total cost: {formattedEstimatedTotalCost}</p>
+                ) : null}
+              </div>
             ) : null}
           </div>
           <div className="mt-3">

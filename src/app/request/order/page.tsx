@@ -287,6 +287,13 @@ function timeToMinutes(time: string) {
   return hh * 60 + mm;
 }
 
+function minutesToTimeStr(totalMinutes: number) {
+  const m = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+  const hh = Math.floor(m / 60);
+  const mm = m % 60;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
 function localDateTimeToIso(date: string, time: string, addDays = 0) {
   const d = new Date(`${String(date || "").trim()}T${String(time || "").trim()}`);
   if (!Number.isFinite(d.getTime())) return null;
@@ -705,8 +712,41 @@ export default function RequestOrderPage() {
     let diff = finish - start;
     // If they cross midnight, treat as next day.
     if (diff <= 0) diff += 24 * 60;
+    // Recommend including setup + cleanup in billable hours.
+    const setupMinutes = 90; // 1.5 hours
+    const cleanupMinutes = 60; // 1 hour
+    const withOverheads = diff + setupMinutes + cleanupMinutes;
     // Billable time: round up to the next whole hour.
-    return Math.max(1, Math.ceil(diff / 60));
+    return Math.max(1, Math.ceil(withOverheads / 60));
+  }, [bartenderStartTime, bartenderFinishTime]);
+
+  const recommendedCrewCall = useMemo(() => {
+    const startM = timeToMinutes(bartenderStartTime);
+    const finishM = timeToMinutes(bartenderFinishTime);
+    if (startM == null || finishM == null) return null;
+
+    const setupMinutes = 90;
+    const cleanupMinutes = 60;
+
+    const crewStart = startM - setupMinutes;
+    let crewFinish = finishM + cleanupMinutes;
+    let nextDay = false;
+
+    // If the finish is "before" the start, we treat it as next-day finish.
+    if (finishM < startM) {
+      crewFinish += 24 * 60;
+      nextDay = true;
+    } else if (crewFinish >= 24 * 60) {
+      nextDay = true;
+    }
+
+    const startLabel = minutesToTimeStr(crewStart);
+    const finishLabel = minutesToTimeStr(crewFinish);
+    return {
+      startLabel,
+      finishLabel,
+      nextDay,
+    };
   }, [bartenderStartTime, bartenderFinishTime]);
 
   useEffect(() => {
@@ -2661,11 +2701,11 @@ export default function RequestOrderPage() {
             </label>
           </div>
 
-            {GI_BARTENDER_PRODUCT_URL ? (
+              {GI_BARTENDER_PRODUCT_URL ? (
             <div className="mt-4">
               <label className="block text-center text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                 Hours per bartender
-                <div className="mx-auto mt-3 grid w-full grid-cols-2 gap-2">
+                <div className="mx-auto mt-3 grid w-full max-w-[420px] grid-cols-2 gap-2 overflow-hidden">
                   <label className="block text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
                     Start
                     <input
@@ -2679,7 +2719,7 @@ export default function RequestOrderPage() {
                       }}
                       className={`mt-2 ${fieldClass} ${
                         bartenderTimeError ? "border-red-400" : "border-soft"
-                      } text-center`}
+                      } px-3 text-center`}
                       style={{ textAlignLast: "center" }}
                     />
                   </label>
@@ -2696,12 +2736,12 @@ export default function RequestOrderPage() {
                       }}
                       className={`mt-2 ${fieldClass} ${
                         bartenderTimeError ? "border-red-400" : "border-soft"
-                      } text-center`}
+                      } px-3 text-center`}
                       style={{ textAlignLast: "center" }}
                     />
                   </label>
                 </div>
-                <div className="mx-auto mt-3 w-full">
+                <div className="mx-auto mt-3 w-full max-w-[420px]">
                   <select
                     value={bartenderHours}
                     onChange={(event) => setBartenderHours(event.target.value)}
@@ -2739,6 +2779,17 @@ export default function RequestOrderPage() {
                 Recommended: {recommendedMixologists} mixologist
                 {recommendedMixologists === 1 ? "" : "s"}
               </p>
+              {recommendedCrewCall ? (
+                <p className="mt-1 text-center text-[12px] text-ink-muted">
+                  We recommend allowing <strong className="font-semibold text-ink">1.5h setup</strong> +{" "}
+                  <strong className="font-semibold text-ink">1h cleanup</strong>{" "}
+                  (crew call:{" "}
+                  <strong className="font-semibold text-ink">
+                    {recommendedCrewCall.startLabel}–{recommendedCrewCall.finishLabel}
+                  </strong>
+                  {recommendedCrewCall.nextDay ? " next day" : ""}).
+                </p>
+              ) : null}
             </div>
           ) : null}
 

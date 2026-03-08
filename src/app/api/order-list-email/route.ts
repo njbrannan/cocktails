@@ -222,6 +222,13 @@ export async function POST(req: NextRequest) {
           )}${bartenderHours ? ` (${escapeHtml(String(bartenderHours))} hours)` : ""}</p>`
         : "";
 
+    const bartenderCountLine =
+      (recommendedMixologists || bartenderCartItem?.count)
+        ? `<p style="margin:0 0 12px 0"><strong>Bartenders:</strong> ${escapeHtml(
+            String(Number(bartenderCartItem?.count || recommendedMixologists || 0) || 0),
+          )}</p>`
+        : "";
+
     // Client email: cocktails + liquor only (with links so they can buy easily)
     const clientHtml = `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
   <h2 style="margin:0 0 12px 0">Booking request submitted</h2>
@@ -230,11 +237,12 @@ export async function POST(req: NextRequest) {
   <p style="margin:0 0 12px 0"><strong>Date:</strong> ${escapeHtml(eventDate || "TBD")}</p>
   <p style="margin:0 0 12px 0"><strong>Location:</strong> ${escapeHtml(eventLocation || "TBC")}</p>
   ${bartenderTimeLine}
+  ${bartenderCountLine}
   <h3 style="margin:16px 0 8px 0">Cocktail summary</h3>
   ${cocktailsHtml}
   <h3 style="margin:16px 0 8px 0">Your Shopping List (liquor)</h3>
   ${renderOrderListHtml(liquorOnly, true)}
-  <p style="margin:16px 0 0 0;color:#555">Involved Events supplies everything else. Alcohol must be bought and supplied by the client — ultimately the type and volume of alcohol supplied remains the client's choice and responsibility.</p>
+  <p style="margin:16px 0 0 0;color:#555">Involved Events will provide everything else required, including bar, bartenders, ingredients, glassware and ice. Alcohol must be bought and supplied by the client — ultimately the type and volume of alcohol supplied remains the client's choice and responsibility.</p>
 </div>`;
 
     const [adminRes, clientRes] = await Promise.all([

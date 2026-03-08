@@ -21,7 +21,8 @@ type DbIngredient = {
     | "syrup"
     | "garnish"
     | "ice"
-    | "glassware";
+    | "glassware"
+    | "bar";
   bottle_size_ml: number | null;
   unit: string | null;
 };
@@ -118,7 +119,8 @@ export default function InventoryAdmin() {
         | "syrup"
         | "garnish"
         | "ice"
-        | "glassware";
+        | "glassware"
+        | "bar";
       amountPerServing: number;
       servings: number;
       unit?: string | null;

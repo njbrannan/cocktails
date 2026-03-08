@@ -82,7 +82,8 @@ type Ingredient = {
     | "syrup"
     | "garnish"
     | "ice"
-    | "glassware";
+    | "glassware"
+    | "bar";
   bottle_size_ml: number | null;
   unit: string | null;
   purchase_url?: string | null;
@@ -125,6 +126,7 @@ const typePriority: Record<string, number> = {
   garnish: 4,
   ice: 5,
   glassware: 6,
+  bar: 7,
 };
 
 export default function RequestEditPage() {

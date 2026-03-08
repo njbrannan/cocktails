@@ -42,7 +42,8 @@ type Ingredient = {
     | "syrup"
     | "garnish"
     | "ice"
-    | "glassware";
+    | "glassware"
+    | "bar";
   bottle_size_ml: number | null;
   unit: string | null;
   purchase_url?: string | null;
@@ -198,7 +199,43 @@ const typePriority: Record<string, number> = {
   garnish: 4,
   ice: 5,
   glassware: 6,
+  bar: 7,
 };
+
+function parseNumberMap(raw: string): Record<string, number> {
+  const trimmed = String(raw || "").trim();
+  if (!trimmed) return {};
+  const out: Record<string, number> = {};
+
+  const normalize = (obj: any) => {
+    if (!obj || typeof obj !== "object") return;
+    for (const [k, v] of Object.entries(obj)) {
+      const key = String(k).trim();
+      const num = Number(v);
+      if (!key) continue;
+      if (!Number.isFinite(num) || num < 0) continue;
+      out[key] = num;
+    }
+  };
+
+  try {
+    normalize(JSON.parse(trimmed));
+    if (Object.keys(out).length) return out;
+  } catch {
+    // ignore
+  }
+
+  // Fallback: parse "4=199,5=249" separated by commas/newlines.
+  const parts = trimmed.split(/[\n,]+/g).map((p) => p.trim()).filter(Boolean);
+  for (const part of parts) {
+    const m = part.match(/^(\d+)\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)$/);
+    if (!m) continue;
+    const num = Number(m[2]);
+    if (!Number.isFinite(num) || num < 0) continue;
+    out[m[1]!] = num;
+  }
+  return out;
+}
 
 function CartIcon({ className }: { className?: string }) {
   return (
@@ -697,6 +734,7 @@ export default function RequestOrderPage() {
   }, [bartenderSkuMap, bartenderHours]);
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [barIngredients, setBarIngredients] = useState<Ingredient[]>([]);
   const [servingsByRecipeId, setServingsByRecipeId] = useState<
     Record<string, string>
   >({});
@@ -748,34 +786,6 @@ export default function RequestOrderPage() {
     // Clients should only see liquor. Admin gets the full list via email after Get Involved export.
     return list.filter((it) => it.type === "liquor");
   }, [orderList]);
-
-  const costs = useMemo(() => {
-    const list = orderList ?? [];
-    const liquor = list
-      .filter((it) => it.type === "liquor")
-      .reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
-    const other = list
-      .filter((it) => it.type !== "liquor")
-      .reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
-    return {
-      liquor: Number.isFinite(liquor) ? liquor : 0,
-      other: Number.isFinite(other) ? other : 0,
-      total: Number.isFinite(liquor + other) ? liquor + other : 0,
-    };
-  }, [orderList]);
-
-  const formattedEstimatedLiquorCost = useMemo(
-    () => formatAud(costs.liquor),
-    [costs.liquor],
-  );
-  const formattedEstimatedOtherCost = useMemo(
-    () => formatAud(costs.other),
-    [costs.other],
-  );
-  const formattedEstimatedTotalCost = useMemo(
-    () => formatAud(costs.total),
-    [costs.total],
-  );
 
   useEdgeSwipeNav({
     canGoBack: true,
@@ -1052,6 +1062,45 @@ export default function RequestOrderPage() {
   }, [stored]);
 
   useEffect(() => {
+    const loadBars = async () => {
+      // Optional: bars are modeled as ingredients so pricing + purchase links can live in Supabase.
+      const selectWithPacks =
+        "id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)";
+      const selectWithoutPacks =
+        "id, name, type, unit, bottle_size_ml, purchase_url, price";
+
+      let data: any = null;
+      let error: any = null;
+      {
+        const resp = await supabase
+          .from("ingredients")
+          .select(selectWithPacks)
+          .eq("type", "bar");
+        data = resp.data;
+        error = resp.error;
+      }
+
+      if (
+        error &&
+        (String((error as any).code || "") === "42703" ||
+          String(error.message || "").toLowerCase().includes("ingredient_packs"))
+      ) {
+        const resp = await supabase
+          .from("ingredients")
+          .select(selectWithoutPacks)
+          .eq("type", "bar");
+        data = resp.data;
+        error = resp.error;
+      }
+
+      if (error) return;
+      setBarIngredients(((data ?? []) as unknown as Ingredient[]) || []);
+    };
+
+    loadBars();
+  }, []);
+
+  useEffect(() => {
     if (!stored) return;
     // Persist tier selection so refresh/back keeps it.
     try {
@@ -1089,6 +1138,92 @@ export default function RequestOrderPage() {
   const recommendedMixologists = useMemo(() => {
     return recommendedBartenders(totalDrinks, cocktailsSummary.length);
   }, [totalDrinks, cocktailsSummary.length]);
+
+  const bartenderPriceMap = useMemo(
+    () => parseNumberMap(process.env.NEXT_PUBLIC_GI_BARTENDER_VARIANT_PRICES || ""),
+    [],
+  );
+
+  const estimatedBartenderCost = useMemo(() => {
+    const n = Number(recommendedMixologists) || 0;
+    if (n <= 0) return 0;
+    const unit = bartenderPriceMap[bartenderHours];
+    if (!Number.isFinite(unit) || unit <= 0) return 0;
+    return n * unit;
+  }, [recommendedMixologists, bartenderPriceMap, bartenderHours]);
+
+  const estimatedCocktailKitCost = useMemo(() => {
+    if (!recipes.length) return 0;
+    const allowedTiers = allowedPackTiersForPricingTier(pricingTier);
+    let total = 0;
+
+    for (const recipe of recipes) {
+      const servingsRaw = servingsByRecipeId[recipe.id] ?? "0";
+      const servings = Number(servingsRaw || "0") || 0;
+      if (servings <= 0) continue;
+
+      const packs = (recipe.recipe_packs ?? [])
+        .filter((p) => p && p.is_active !== false)
+        .filter((p) => {
+          const t = normalizePackTier(p.tier);
+          if (!allowedTiers) return true;
+          return allowedTiers.includes(t);
+        });
+
+      if (!packs.length) continue;
+      // Match the planner's 10% buffer for kits.
+      const required = Math.ceil(servings * 1.1);
+
+      const packOptions: PackOption[] = packs.map((p) => ({
+        packSize: Number(p.pack_size),
+        packPrice: Number(p.pack_price),
+        purchaseUrl: p.purchase_url || null,
+        searchUrl: null,
+        searchQuery: null,
+        variantSku: p.variant_sku || null,
+        retailer: "getinvolved",
+        tier: (p.tier as any) || null,
+      }));
+
+      const plan = buildCheapestPackPlan(required, packOptions, null);
+      if (!plan) continue;
+      total += Number(plan.totalCost) || 0;
+    }
+
+    return Number.isFinite(total) ? total : 0;
+  }, [recipes, servingsByRecipeId, pricingTier]);
+
+  const costs = useMemo(() => {
+    const list = orderList ?? [];
+    const liquor = list
+      .filter((it) => it.type === "liquor")
+      .reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
+    const otherIngredients = list
+      .filter((it) => it.type !== "liquor")
+      .reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
+    const other = otherIngredients + estimatedCocktailKitCost + estimatedBartenderCost;
+    return {
+      liquor: Number.isFinite(liquor) ? liquor : 0,
+      other: Number.isFinite(other) ? other : 0,
+      total: Number.isFinite(liquor + other) ? liquor + other : 0,
+      otherIngredients: Number.isFinite(otherIngredients) ? otherIngredients : 0,
+      cocktailKits: Number.isFinite(estimatedCocktailKitCost) ? estimatedCocktailKitCost : 0,
+      bartenders: Number.isFinite(estimatedBartenderCost) ? estimatedBartenderCost : 0,
+    };
+  }, [orderList, estimatedCocktailKitCost, estimatedBartenderCost]);
+
+  const formattedEstimatedLiquorCost = useMemo(
+    () => formatAud(costs.liquor),
+    [costs.liquor],
+  );
+  const formattedEstimatedOtherCost = useMemo(
+    () => formatAud(costs.other),
+    [costs.other],
+  );
+  const formattedEstimatedTotalCost = useMemo(
+    () => formatAud(costs.total),
+    [costs.total],
+  );
 
   useEffect(() => {
     if (!stored) return;
@@ -1149,6 +1284,61 @@ export default function RequestOrderPage() {
         });
       });
 
+      const normalizedBars = (barIngredients ?? []).filter(
+        (b) => String(b?.type || "") === "bar",
+      );
+
+      const findBar = (kind: "small" | "large") => {
+        const needle = kind === "small" ? "small" : "large";
+        return (
+          normalizedBars.find((b) =>
+            String(b?.name || "").toLowerCase().includes(needle),
+          ) || null
+        );
+      };
+
+      const barLarge = findBar("large");
+      const barSmall = findBar("small");
+      const largeCount = Math.floor((Number(recommendedMixologists) || 0) / 2);
+      const smallCount = (Number(recommendedMixologists) || 0) % 2;
+
+      const barItemFor = (bar: Ingredient, count: number) => {
+        const packs =
+          bar.ingredient_packs
+            ?.filter((p) => {
+              if (!p?.is_active) return false;
+              const normalized = normalizePackTier(p.tier);
+              if (pricingTier === "top_shelf") return normalized === "first_class";
+              return normalized === "economy";
+            })
+            .map((p) => ({
+              packSize: Number(p.pack_size),
+              packPrice: Number(p.pack_price),
+              purchaseUrl: p.purchase_url || null,
+              searchUrl: p.search_url || null,
+              searchQuery: p.search_query || null,
+              variantSku: p.variant_sku || null,
+              retailer: (p.retailer as any) || null,
+              tier: (p.tier as any) || null,
+            })) ?? null;
+
+        return {
+          ingredientId: bar.id,
+          name: bar.name,
+          type: bar.type,
+          amountPerServing: 1,
+          servings: count,
+          unit: bar.unit || "pcs",
+          bottleSizeMl: bar.bottle_size_ml,
+          purchaseUrl: bar.purchase_url,
+          price: bar.price ?? null,
+          packOptions: packs,
+        };
+      };
+
+      if (barLarge && largeCount > 0) items.push(barItemFor(barLarge, largeCount));
+      if (barSmall && smallCount > 0) items.push(barItemFor(barSmall, smallCount));
+
       const totals = buildIngredientTotals(items).sort((a, b) => {
         const typeA = typePriority[a.type] ?? 99;
         const typeB = typePriority[b.type] ?? 99;
@@ -1172,7 +1362,7 @@ export default function RequestOrderPage() {
     } catch {
       // Ignore storage errors.
     }
-  }, [stored, recipes, servingsByRecipeId, pricingTier]);
+  }, [stored, recipes, servingsByRecipeId, pricingTier, barIngredients, recommendedMixologists]);
 
   const handleBack = () => {
     // Take them back to the drink selection step (with their previous order restored).
@@ -1454,6 +1644,18 @@ export default function RequestOrderPage() {
     }
     const rows: Array<{ name: string; type: string; qty: string; total: string; url: string }> = [];
     const getInvolvedCartItems: GetInvolvedCartItem[] = [];
+    let cocktailKitItemsForEmail: Array<{
+      url: string;
+      count: number;
+      sku?: string | null;
+      desiredValue?: string | null;
+    }> = [];
+    let bartenderCartItemForEmail: {
+      url: string;
+      count: number;
+      sku?: string | null;
+      desiredValue?: string | null;
+    } | null = null;
 
     try {
       for (const item of orderList ?? []) {
@@ -1618,6 +1820,7 @@ export default function RequestOrderPage() {
           pricingTier,
         });
         if (kitItems.length) getInvolvedCartItems.push(...kitItems);
+        cocktailKitItemsForEmail = kitItems;
 
         // Also add recommended bartenders to cart.
         const cocktailCount = cocktailsSummary.length;
@@ -1628,13 +1831,20 @@ export default function RequestOrderPage() {
             bartenderSkuMap[String(Number(bartenderHours) || "")] ||
             GI_BARTENDER_VARIANT_SKU ||
             null;
-          getInvolvedCartItems.push({
+          const bartenderItem = {
             url: GI_BARTENDER_PRODUCT_URL,
             count: bartenders,
             sku: variantSku,
             desiredValue: bartenderHours,
             fields: null,
-          });
+          };
+          getInvolvedCartItems.push(bartenderItem);
+          bartenderCartItemForEmail = {
+            url: bartenderItem.url,
+            count: bartenderItem.count,
+            sku: bartenderItem.sku,
+            desiredValue: bartenderItem.desiredValue,
+          };
         }
       }
 
@@ -1697,6 +1907,17 @@ export default function RequestOrderPage() {
                 Number(servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0)) ||
                 0,
             })),
+            costs: {
+              liquor: costs.liquor,
+              cocktailKits: costs.cocktailKits,
+              bartenders: costs.bartenders,
+              otherIngredients: costs.otherIngredients,
+              other: costs.other,
+              total: costs.total,
+            },
+            recommendedMixologists,
+            cocktailKitItems: cocktailKitItemsForEmail,
+            bartenderCartItem: bartenderCartItemForEmail,
             orderList,
           }),
         }).catch(() => {});

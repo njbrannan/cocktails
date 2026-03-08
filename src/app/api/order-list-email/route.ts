@@ -21,6 +21,20 @@ type Line = {
   packPlan?: Array<{ packSize: number; count: number; purchaseUrl?: string | null }>;
 };
 
+function formatAud(amount: number) {
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n <= 0) return "";
+  try {
+    return new Intl.NumberFormat("en-AU", {
+      style: "currency",
+      currency: "AUD",
+      maximumFractionDigits: 0,
+    }).format(n);
+  } catch {
+    return `$${Math.round(n)}`;
+  }
+}
+
 function formatPackPlan(packPlan: any, unit: string) {
   const list = Array.isArray(packPlan) ? packPlan : [];
   return list
@@ -83,6 +97,12 @@ export async function POST(req: NextRequest) {
     const guestCount = body?.guestCount;
     const cocktails = Array.isArray(body?.cocktails) ? body.cocktails : [];
     const orderList = Array.isArray(body?.orderList) ? body.orderList : [];
+    const costs = body?.costs || null;
+    const recommendedMixologists = Number(body?.recommendedMixologists || 0) || 0;
+    const cocktailKitItems = Array.isArray(body?.cocktailKitItems)
+      ? body.cocktailKitItems
+      : [];
+    const bartenderCartItem = body?.bartenderCartItem || null;
 
     if (!clientEmail) {
       return NextResponse.json(
@@ -113,6 +133,58 @@ export async function POST(req: NextRequest) {
 
     const liquorOnly = orderList.filter((l: any) => String(l?.type || "") === "liquor");
 
+    const costHtml =
+      costs && (costs.liquor || costs.other || costs.total)
+        ? `<p style="margin:0 0 8px 0"><strong>Est. liquor cost:</strong> ${escapeHtml(
+            formatAud(costs.liquor),
+          )}</p>
+  <p style="margin:0 0 8px 0"><strong>Est. cost for everything else:</strong> ${escapeHtml(
+    formatAud(costs.other),
+  )}</p>
+  <p style="margin:0 0 8px 0"><strong>Total est. cost:</strong> ${escapeHtml(
+    formatAud(costs.total),
+  )}</p>`
+        : "";
+
+    const kitHtml =
+      cocktailKitItems.length
+        ? `<h3 style="margin:16px 0 8px 0">Cocktail packs (Get Involved)</h3>
+  <ul style="margin:0;padding-left:18px">
+    ${cocktailKitItems
+      .map((it: any) => {
+        const url = String(it?.url || "");
+        const count = Number(it?.count || 0) || 0;
+        if (!url || count <= 0) return "";
+        const label = it?.desiredValue ? `${count} × ${escapeHtml(String(it.desiredValue))}` : `${count} × pack`;
+        return `<li><a href="${escapeHtml(
+          url,
+        )}" target="_blank" rel="noreferrer noopener" style="color:#111;text-decoration:underline">${escapeHtml(
+          url,
+        )}</a> <span style="color:#666">(${label})</span></li>`;
+      })
+      .filter(Boolean)
+      .join("")}
+  </ul>`
+        : "";
+
+    const bartenderHtml =
+      bartenderCartItem && (Number(bartenderCartItem?.count || 0) || 0) > 0
+        ? `<h3 style="margin:16px 0 8px 0">Bartenders</h3>
+  <p style="margin:0 0 8px 0"><strong>Recommended mixologists:</strong> ${escapeHtml(
+    String(recommendedMixologists),
+  )}</p>
+  <p style="margin:0 0 8px 0"><strong>Cart item:</strong> <a href="${escapeHtml(
+    String(bartenderCartItem?.url || ""),
+  )}" target="_blank" rel="noreferrer noopener" style="color:#111;text-decoration:underline">${escapeHtml(
+    String(bartenderCartItem?.url || ""),
+  )}</a> · ${escapeHtml(String(Number(bartenderCartItem?.count || 0) || 0))}×</p>`
+        : recommendedMixologists > 0
+          ? `<h3 style="margin:16px 0 8px 0">Bartenders</h3>
+  <p style="margin:0 0 8px 0"><strong>Recommended mixologists:</strong> ${escapeHtml(
+    String(recommendedMixologists),
+  )}</p>`
+          : "";
+
     // Admin email: full list + links
     const adminHtml = `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
   <h2 style="margin:0 0 12px 0">Booking request (Cart export)</h2>
@@ -123,6 +195,7 @@ export async function POST(req: NextRequest) {
   <p style="margin:0 0 8px 0"><strong>Number of guests:</strong> ${escapeHtml(String(guestCount ?? ""))}</p>
   <p style="margin:0 0 8px 0"><strong>Client email:</strong> ${escapeHtml(clientEmail)}</p>
   <p style="margin:0 0 8px 0"><strong>Telephone:</strong> ${escapeHtml(clientPhone)}</p>
+  ${costHtml}
   ${
     bartenderStartTime || bartenderFinishTime || bartenderHours
       ? `<p style="margin:0 0 8px 0"><strong>Bartender time:</strong> ${escapeHtml(
@@ -134,6 +207,8 @@ export async function POST(req: NextRequest) {
   }
   <h3 style="margin:16px 0 8px 0">Cocktails</h3>
   ${cocktailsHtml}
+  ${kitHtml}
+  ${bartenderHtml}
   <h3 style="margin:16px 0 8px 0">Full shopping list (links)</h3>
   ${renderOrderListHtml(orderList, true)}
 </div>`;
@@ -192,4 +267,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

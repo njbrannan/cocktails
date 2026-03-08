@@ -5,7 +5,8 @@ export type IngredientType =
   | "syrup"
   | "garnish"
   | "ice"
-  | "glassware";
+  | "glassware"
+  | "bar";
 
 export type PackOption = {
   packSize: number;
@@ -376,7 +377,9 @@ export function buildIngredientTotals(
   }
 
   return Array.from(totals.values()).map((total) => {
-    const buffered = applyBuffer(total.total);
+    // Not every line should get a buffer. For example, mobile bars are equipment:
+    // we want the exact recommended count, not +10% rounded up.
+    const buffered = total.type === "bar" ? total.total : applyBuffer(total.total);
     const exactTotal = Math.ceil(buffered);
     const rounded = roundByUnitAndType(buffered, total.unit, total.type);
 

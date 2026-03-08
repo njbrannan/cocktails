@@ -1649,64 +1649,75 @@ export default function RequestOrderPage() {
     fields?: Record<string, any> | null;
   };
 
+  function sortGetInvolvedCartItems(
+    items: GetInvolvedCartItem[],
+    opts: {
+      cocktailPackUrls: Set<string>;
+      bartenderUrl: string;
+    },
+  ) {
+    const norm = (u: string) => {
+      try {
+        const parsed = new URL(u, "https://www.getinvolved.com.au");
+        return `${parsed.pathname}${parsed.search}`;
+      } catch {
+        return String(u || "");
+      }
+    };
+
+    const isIce = (it: GetInvolvedCartItem) =>
+      String(it.url || "").toLowerCase().includes("ice");
+    const icePackSize = (it: GetInvolvedCartItem) => {
+      const v = Number(it.desiredValue);
+      return Number.isFinite(v) && v > 0 ? v : 0;
+    };
+
+    const category = (it: GetInvolvedCartItem) => {
+      const url = String(it.url || "");
+      const nurl = norm(url);
+
+      if (opts.cocktailPackUrls.has(nurl) || opts.cocktailPackUrls.has(url))
+        return 0; // Cocktail Packs
+
+      // Glassware: either we pass desiredValue as pack size, or URL includes "glass".
+      if (String(url).toLowerCase().includes("glass")) return 1;
+
+      // Ice: prefer 20kg boxes before 5kg bags.
+      if (isIce(it)) return 2;
+
+      if (nurl === norm(opts.bartenderUrl)) return 3; // Bartenders
+
+      // Bars: put last.
+      if (String(url).toLowerCase().includes("bar")) return 4;
+
+      // Everything else Get Involved (fallback) comes after the core flow.
+      return 5;
+    };
+
+    return items.slice().sort((a, b) => {
+      const ca = category(a);
+      const cb = category(b);
+      if (ca !== cb) return ca - cb;
+
+      // Within ice, put bigger packs first (20kg before 5kg).
+      if (ca === 2) return icePackSize(b) - icePackSize(a);
+
+      // Stable-ish fallback: larger quantities first.
+      if (a.count !== b.count) return b.count - a.count;
+
+      return String(a.url || "").localeCompare(String(b.url || ""));
+    });
+  }
+
   const exportRetailer = async (
     retailer: "danmurphys" | "woolworths" | "getinvolved",
   ) => {
-    // Popup blockers: we must open the export tab synchronously on click.
-    // We'll show a tiny loader immediately, then redirect it once we finish checks.
-    let exportWin: Window | null = null;
     if (retailer === "getinvolved") {
       setExportingToCart(true);
       setCartError(null);
       setEventLocationError(null);
       setEventDateError(null);
       setBartenderTimeError(null);
-
-      exportWin = window.open("", "_blank");
-      if (!exportWin) {
-        setCartError(
-          "Pop-up blocked. Please allow pop-ups for this site and try again.",
-        );
-        setExportingToCart(false);
-        return;
-      }
-      try {
-        // Best-effort: prevent the new tab from being able to control this tab.
-        (exportWin as any).opener = null;
-      } catch {
-        // ignore
-      }
-      try {
-        exportWin.document.open();
-        exportWin.document.write(`<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <title>Preparing cart…</title>
-    <style>
-      html,body{height:100%}
-      body{margin:0;display:grid;place-items:center;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0b0b0b;color:#fff}
-      .card{width:min(520px,calc(100vw - 48px));padding:26px 22px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
-      .title{font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px;opacity:.85}
-      .msg{margin-top:10px;font-size:14px;opacity:.9;line-height:1.5}
-      .bar{margin-top:16px;height:10px;background:rgba(255,255,255,.12);border-radius:999px;overflow:hidden}
-      .bar>div{height:100%;width:35%;background:#35c27c;border-radius:999px;animation:move 1.1s ease-in-out infinite}
-      @keyframes move{0%{transform:translateX(-110%)}100%{transform:translateX(310%)}}
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <div class="title">Involved Events</div>
-      <div class="msg">Preparing your cart… keep this tab open.</div>
-      <div class="bar"><div></div></div>
-    </div>
-  </body>
-</html>`);
-        exportWin.document.close();
-      } catch {
-        // ignore
-      }
     }
     const rows: Array<{ name: string; type: string; qty: string; total: string; url: string }> = [];
     const getInvolvedCartItems: GetInvolvedCartItem[] = [];
@@ -1826,11 +1837,6 @@ export default function RequestOrderPage() {
               // ignore
             }
           }
-          try {
-            exportWin?.close();
-          } catch {
-            // ignore
-          }
           return;
         }
 
@@ -1845,11 +1851,6 @@ export default function RequestOrderPage() {
             rangeIso.error || "Please select a valid date/time range.",
           );
           setCartError("Please complete the highlighted fields above.");
-          try {
-            exportWin?.close();
-          } catch {
-            // ignore
-          }
           return;
         }
 
@@ -1861,22 +1862,12 @@ export default function RequestOrderPage() {
         const availData = await availResp.json().catch(() => null);
         if (!availResp.ok) {
           setCartError(availData?.error || "Unable to check availability.");
-          try {
-            exportWin?.close();
-          } catch {
-            // ignore
-          }
           return;
         }
         if (!availData?.available) {
           setCartError(
             "This booking slot is not available, please pick another date or call us at +61 472 775 268 to discuss what we can do for you.",
           );
-          try {
-            exportWin?.close();
-          } catch {
-            // ignore
-          }
           return;
         }
 
@@ -1922,11 +1913,6 @@ export default function RequestOrderPage() {
           setCartError(
             "No items found for Get Involved yet. Add pack purchase links for kits/ice/glassware first.",
           );
-          try {
-            exportWin?.close();
-          } catch {
-            // ignore
-          }
         }
         return;
       }
@@ -1939,16 +1925,19 @@ export default function RequestOrderPage() {
             : "getinvolved";
 
       if (retailer === "getinvolved" && getInvolvedCartItems.length) {
-        const exportUrl = buildLocalGetInvolvedExportUrl(getInvolvedCartItems);
-        if (exportWin) {
-          try {
-            exportWin.location.href = exportUrl;
-          } catch {
-            window.open(exportUrl, "_blank");
-          }
-        } else {
-          window.open(exportUrl, "_blank");
-        }
+        // Sort in a predictable "shopping" order for the Squarespace cart-import script.
+        const cocktailPackUrls = new Set(
+          cocktailKitItemsForEmail.map((it) => String(it.url || "").trim()),
+        );
+        const sorted = sortGetInvolvedCartItems(getInvolvedCartItems, {
+          cocktailPackUrls,
+          bartenderUrl: GI_BARTENDER_PRODUCT_URL,
+        });
+
+        const exportUrl = buildLocalGetInvolvedExportUrl(sorted);
+
+        // Avoid iPhone popup blockers: navigate in the same tab.
+        window.location.assign(exportUrl);
 
         // Email confirmations (admin gets full list with links; client gets liquor-only + summary).
         // Best-effort (don't block the cart export).
@@ -2002,11 +1991,6 @@ export default function RequestOrderPage() {
     } catch (err: any) {
       if (retailer === "getinvolved") {
         setCartError(err?.message || "Couldn’t add items to the cart.");
-        try {
-          exportWin?.close();
-        } catch {
-          // ignore
-        }
       }
     } finally {
       if (retailer === "getinvolved") setExportingToCart(false);

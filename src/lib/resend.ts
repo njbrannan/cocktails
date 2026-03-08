@@ -13,7 +13,7 @@ type SendEmailResult =
 function getResendConfig() {
   const apiKey = process.env.RESEND_API_KEY || "";
   const fromEmail = process.env.RESEND_FROM_EMAIL || "";
-  const fromName = process.env.RESEND_FROM_NAME || "Get Involved Catering";
+  const fromName = process.env.RESEND_FROM_NAME || "Involved Events";
   const adminEmail = process.env.ADMIN_EMAIL || "";
 
   return { apiKey, fromEmail, fromName, adminEmail };

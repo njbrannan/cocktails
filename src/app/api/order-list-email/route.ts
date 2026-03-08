@@ -19,6 +19,8 @@ type Line = {
   bottleSizeMl?: number | null;
   purchaseUrl?: string | null;
   packPlan?: Array<{ packSize: number; count: number; purchaseUrl?: string | null }>;
+  price?: number | null;
+  totalCost?: number | null;
 };
 
 function formatAud(amount: number) {
@@ -67,6 +69,37 @@ function renderOrderListHtml(lines: Line[], includeLinks: boolean) {
     })
     .join("");
   return `<table style="width:100%;border-collapse:collapse">${rows}</table>`;
+}
+
+function estimateLineCostFromIngredientPrice(line: any) {
+  const price = Number(line?.price);
+  if (!Number.isFinite(price) || price <= 0) return null;
+
+  const packCount = (() => {
+    const packPlan = Array.isArray(line?.packPlan) ? line.packPlan : [];
+    if (packPlan.length) {
+      const sum = packPlan.reduce(
+        (s: number, p: any) => s + (Number(p?.count) || 0),
+        0,
+      );
+      return sum > 0 ? sum : null;
+    }
+
+    const bottlesNeeded = Number(line?.bottlesNeeded);
+    if (Number.isFinite(bottlesNeeded) && bottlesNeeded > 0) return bottlesNeeded;
+
+    const total = Number(line?.total);
+    const size = Number(line?.bottleSizeMl);
+    if (Number.isFinite(total) && total > 0 && Number.isFinite(size) && size > 0) {
+      return Math.ceil(total / size);
+    }
+
+    if (Number.isFinite(total) && total > 0) return Math.ceil(total);
+    return null;
+  })();
+
+  if (!packCount) return null;
+  return packCount * price;
 }
 
 export async function POST(req: NextRequest) {
@@ -132,6 +165,27 @@ export async function POST(req: NextRequest) {
       : "<p style=\"margin:0;color:#666\">(No cocktails)</p>";
 
     const liquorOnly = orderList.filter((l: any) => String(l?.type || "") === "liquor");
+
+    const estimatedIngredientCost = (() => {
+      // "Ingredients I have to buy" = everything except liquor (client supplies alcohol).
+      const lines = orderList.filter((l: any) => String(l?.type || "") !== "liquor");
+      let total = 0;
+      for (const l of lines) {
+        const lineCost = estimateLineCostFromIngredientPrice(l);
+        if (lineCost != null) total += lineCost;
+      }
+      return Number.isFinite(total) && total > 0 ? total : 0;
+    })();
+
+    const cocktailPackRevenue = Number(costs?.cocktailKits) || 0;
+    const margin =
+      cocktailPackRevenue && estimatedIngredientCost
+        ? cocktailPackRevenue - estimatedIngredientCost
+        : 0;
+    const marginLabel =
+      cocktailPackRevenue && estimatedIngredientCost
+        ? ` (${margin >= 0 ? "+" : "-"}${escapeHtml(formatAud(Math.abs(margin)))})`
+        : "";
 
     const costHtml =
       costs && (costs.liquor || costs.other || costs.total)
@@ -210,6 +264,9 @@ export async function POST(req: NextRequest) {
   ${kitHtml}
   ${bartenderHtml}
   <h3 style="margin:16px 0 8px 0">Full shopping list (links)</h3>
+  <p style="margin:0 0 8px 0"><strong>Est. ingredient cost:</strong> ${escapeHtml(
+    formatAud(estimatedIngredientCost),
+  )}${marginLabel}</p>
   ${renderOrderListHtml(orderList, true)}
 </div>`;
 

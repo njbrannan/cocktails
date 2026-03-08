@@ -10,6 +10,7 @@ type OutputItem = {
   sku: string | null;
   itemId: string | null;
   variantId: string | null;
+  unitPrice?: number | null;
 };
 
 const BASE_ORIGIN = "https://www.getinvolved.com.au";
@@ -77,6 +78,38 @@ function pickSkuForValue(
       return lower.includes(wantedLower);
     });
     if (matches) return String(v?.sku || "").trim() || null;
+  }
+
+  return null;
+}
+
+function extractVariantUnitPrice(variant: any): number | null {
+  if (!variant) return null;
+
+  // Squarespace has changed JSON shapes over time. Try a few common candidates.
+  // Goal: return a unit price in dollars (AUD) as a number.
+  const candidates: any[] = [
+    variant.price,
+    variant.priceMoney?.value,
+    variant.pricing?.basePrice?.value,
+    variant.pricing?.salePrice?.value,
+    variant.pricing?.price?.value,
+    variant.priceValue,
+    variant.salePrice,
+  ];
+
+  for (const c of candidates) {
+    if (c == null) continue;
+    if (typeof c === "number" && Number.isFinite(c) && c > 0) return c;
+    if (typeof c === "string") {
+      const n = Number(c);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    if (typeof c === "object") {
+      // Sometimes: { value: 129.99, currency: 'AUD' }
+      const n = Number((c as any).value);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
   }
 
   return null;
@@ -184,7 +217,23 @@ export async function POST(req: Request) {
 
     const itemId = String(item?.id || "").trim() || null;
 
-    return { sku, itemId, variantId };
+    const selectedVariant =
+      (variantId
+        ? (variants || []).find(
+            (vv: any) => String(vv?.id || "").trim() === String(variantId),
+          )
+        : null) ||
+      (sku
+        ? (variants || []).find(
+            (vv: any) => String(vv?.sku || "").trim() === String(sku),
+          )
+        : null) ||
+      variants?.[0] ||
+      null;
+
+    const unitPrice = extractVariantUnitPrice(selectedVariant);
+
+    return { sku, itemId, variantId, unitPrice };
   });
 
   return NextResponse.json({ items: out });

@@ -1144,14 +1144,77 @@ export default function RequestOrderPage() {
     [],
   );
 
+  const [bartenderUnitPrice, setBartenderUnitPrice] = useState<number | null>(
+    null,
+  );
+
+  // If env pricing isn't set, fetch the live variant unit price from Squarespace JSON
+  // (via our server route) so estimates are closer to what the cart will show.
+  useEffect(() => {
+    const n = Number(recommendedMixologists) || 0;
+    if (n <= 0) {
+      setBartenderUnitPrice(null);
+      return;
+    }
+
+    const key = String(Number(bartenderHours) || bartenderHours || "").trim();
+    const fromEnv = bartenderPriceMap[key];
+    if (Number.isFinite(fromEnv) && fromEnv > 0) {
+      setBartenderUnitPrice(fromEnv);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const providedSku =
+          bartenderSkuMap[key] ||
+          bartenderSkuMap[String(Number(key) || "")] ||
+          GI_BARTENDER_VARIANT_SKU ||
+          null;
+        const resp = await fetch("/api/getinvolved/variant-skus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: [
+              {
+                url: GI_BARTENDER_PRODUCT_URL,
+                desiredValue: key || null,
+                providedSku,
+              },
+            ],
+          }),
+        });
+        const data = await resp.json().catch(() => null);
+        const unitPrice = Number(data?.items?.[0]?.unitPrice);
+        if (!cancelled) {
+          setBartenderUnitPrice(
+            Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : null,
+          );
+        }
+      } catch {
+        if (!cancelled) setBartenderUnitPrice(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    recommendedMixologists,
+    bartenderHours,
+    bartenderPriceMap,
+    bartenderSkuMap,
+    GI_BARTENDER_PRODUCT_URL,
+  ]);
+
   const estimatedBartenderCost = useMemo(() => {
     const n = Number(recommendedMixologists) || 0;
     if (n <= 0) return 0;
-    const key = String(Number(bartenderHours) || bartenderHours || "").trim();
-    const unit = bartenderPriceMap[key];
-    if (!Number.isFinite(unit) || unit <= 0) return 0;
+    const unit = bartenderUnitPrice;
+    if (typeof unit !== "number" || !Number.isFinite(unit) || unit <= 0) return 0;
     return n * unit;
-  }, [recommendedMixologists, bartenderPriceMap, bartenderHours]);
+  }, [recommendedMixologists, bartenderUnitPrice]);
 
   const estimatedCocktailKitCost = useMemo(() => {
     if (!recipes.length) return 0;
@@ -2316,50 +2379,22 @@ export default function RequestOrderPage() {
             <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">
               Your Shopping List
             </h2>
-            {formattedEstimatedLiquorCost ||
-            formattedEstimatedOtherCost ||
-            formattedEstimatedTotalCost ? (
-              <div className="min-w-0 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-accent/80 sm:max-w-[340px] sm:text-right sm:text-[11px]">
-                {formattedEstimatedLiquorCost ? (
-                  <p className="break-words">
-                    Est. liquor cost: {formattedEstimatedLiquorCost}
-                  </p>
-                ) : null}
-                {formattedEstimatedOtherCost ? (
-                  <p className="break-words">
-                    Est. cost for everything else: {formattedEstimatedOtherCost}
-                  </p>
-                ) : null}
-                {formattedEstimatedTotalCost ? (
-                  <p className="break-words">
-                    Total cost: {formattedEstimatedTotalCost}
-                  </p>
-                ) : null}
-                {(costs.cocktailKits || costs.bartenders || costs.otherIngredients) ? (
-                  <div className="mt-1 space-y-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-accent/60 sm:text-[10px]">
-                    {costs.otherIngredients ? (
-                      <p className="break-words">
-                        Everything else: {formatAud(costs.otherIngredients)}
-                      </p>
-                    ) : null}
-                    {costs.cocktailKits ? (
-                      <p className="break-words">
-                        Cocktail packs: {formatAud(costs.cocktailKits)}
-                      </p>
-                    ) : null}
-                    {recommendedMixologists > 0 ? (
-                      costs.bartenders ? (
-                        <p className="break-words">
-                          Bartenders: {formatAud(costs.bartenders)}
-                        </p>
-                      ) : (
-                        <p className="break-words">
-                          Bartenders: (pricing not set)
-                        </p>
-                      )
-                    ) : null}
-                  </div>
-                ) : null}
+            {formattedEstimatedLiquorCost || formattedEstimatedOtherCost ? (
+              <div className="min-w-0 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-accent/80 sm:max-w-[360px] sm:text-right sm:text-[11px]">
+                <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5">
+                  {formattedEstimatedLiquorCost ? (
+                    <>
+                      <span className="min-w-0 truncate">Est. liquor cost</span>
+                      <span className="tabular-nums">{formattedEstimatedLiquorCost}</span>
+                    </>
+                  ) : null}
+                  {formattedEstimatedOtherCost ? (
+                    <>
+                      <span className="min-w-0 truncate">Est. cost for everything else</span>
+                      <span className="tabular-nums">{formattedEstimatedOtherCost}</span>
+                    </>
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </div>

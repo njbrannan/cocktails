@@ -1198,8 +1198,10 @@ export default function RequestOrderPage() {
     const liquor = list
       .filter((it) => it.type === "liquor")
       .reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
+    // "Everything else" should reflect what we add to the Get Involved cart (not the client's liquor list).
+    // That currently includes: ice + glassware + mobile bars (+ cocktail kits + bartenders below).
     const otherIngredients = list
-      .filter((it) => it.type !== "liquor")
+      .filter((it) => it.type === "ice" || it.type === "glassware" || it.type === "bar")
       .reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
     const other = otherIngredients + estimatedCocktailKitCost + estimatedBartenderCost;
     return {

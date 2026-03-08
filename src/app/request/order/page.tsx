@@ -668,8 +668,8 @@ export default function RequestOrderPage() {
   const [bartenderHours, setBartenderHours] = useState<string>(
     GI_BARTENDER_DEFAULT_HOURS,
   );
-  const [bartenderStartTime, setBartenderStartTime] = useState<string>("");
-  const [bartenderFinishTime, setBartenderFinishTime] = useState<string>("");
+  const [bartenderStartTime, setBartenderStartTime] = useState<string>("16:00");
+  const [bartenderFinishTime, setBartenderFinishTime] = useState<string>("23:00");
 
   const availableBartenderHours = useMemo(() => {
     const keys = Object.keys(bartenderSkuMap || {});
@@ -1262,12 +1262,45 @@ export default function RequestOrderPage() {
     const liquor = list
       .filter((it) => it.type === "liquor")
       .reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
+
+    const estimateFromIngredientPrice = (item: IngredientTotal) => {
+      const price = typeof item.price === "number" ? item.price : null;
+      if (!price || !Number.isFinite(price) || price <= 0) return null;
+
+      const packCount = (() => {
+        if (item.packPlan?.length) {
+          const sum = item.packPlan.reduce((s, p) => s + (Number(p.count) || 0), 0);
+          return sum > 0 ? sum : null;
+        }
+        if (typeof item.bottlesNeeded === "number" && Number.isFinite(item.bottlesNeeded) && item.bottlesNeeded > 0) {
+          return item.bottlesNeeded;
+        }
+        if (
+          typeof item.bottleSizeMl === "number" &&
+          Number.isFinite(item.bottleSizeMl) &&
+          item.bottleSizeMl > 0 &&
+          typeof item.total === "number" &&
+          Number.isFinite(item.total) &&
+          item.total > 0
+        ) {
+          return Math.ceil(item.total / item.bottleSizeMl);
+        }
+        // Last resort: treat the total as a per-unit count.
+        return typeof item.total === "number" && Number.isFinite(item.total) && item.total > 0
+          ? Math.ceil(item.total)
+          : null;
+      })();
+
+      if (!packCount) return null;
+      return packCount * price;
+    };
+
     // "Everything else" should reflect what we add to the Get Involved cart (not the client's liquor list).
     // That currently includes: ice + glassware + mobile bars (+ cocktail kits + bartenders below).
     const otherIngredients = list
       .filter((it) => it.type === "ice" || it.type === "glassware" || it.type === "bar")
-      // Use pack pricing only (ingredient.price is too inconsistent with the store/cart).
-      .reduce((acc, item) => acc + (item.packPlan?.length ? item.totalCost ?? 0 : 0), 0);
+      // Prefer ingredients.price (your own internal pricing), fall back to pack pricing.
+      .reduce((acc, item) => acc + (estimateFromIngredientPrice(item) ?? item.totalCost ?? 0), 0);
     const other = otherIngredients + estimatedCocktailKitCost + estimatedBartenderCost;
     return {
       liquor: Number.isFinite(liquor) ? liquor : 0,
@@ -2375,8 +2408,14 @@ export default function RequestOrderPage() {
                   ) : null}
                   {formattedEstimatedOtherCost ? (
                     <>
-                      <span className="min-w-0 truncate">Est. cost for everything else</span>
+                      <span className="min-w-0 truncate">Est. cost everything else</span>
                       <span className="tabular-nums">{formattedEstimatedOtherCost}</span>
+                    </>
+                  ) : null}
+                  {formattedEstimatedTotalCost ? (
+                    <>
+                      <span className="min-w-0 truncate">Total cost</span>
+                      <span className="tabular-nums">{formattedEstimatedTotalCost}</span>
                     </>
                   ) : null}
                 </div>
@@ -2622,11 +2661,11 @@ export default function RequestOrderPage() {
             </label>
           </div>
 
-          {GI_BARTENDER_PRODUCT_URL ? (
+            {GI_BARTENDER_PRODUCT_URL ? (
             <div className="mt-4">
               <label className="block text-center text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                 Hours per bartender
-                <div className="mx-auto mt-3 grid w-full max-w-[420px] grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="mx-auto mt-3 grid w-full grid-cols-2 gap-2">
                   <label className="block text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
                     Start
                     <input
@@ -2662,7 +2701,7 @@ export default function RequestOrderPage() {
                     />
                   </label>
                 </div>
-                <div className="mx-auto mt-3 max-w-[240px]">
+                <div className="mx-auto mt-3 w-full">
                   <select
                     value={bartenderHours}
                     onChange={(event) => setBartenderHours(event.target.value)}

@@ -1147,7 +1147,8 @@ export default function RequestOrderPage() {
   const estimatedBartenderCost = useMemo(() => {
     const n = Number(recommendedMixologists) || 0;
     if (n <= 0) return 0;
-    const unit = bartenderPriceMap[bartenderHours];
+    const key = String(Number(bartenderHours) || bartenderHours || "").trim();
+    const unit = bartenderPriceMap[key];
     if (!Number.isFinite(unit) || unit <= 0) return 0;
     return n * unit;
   }, [recommendedMixologists, bartenderPriceMap, bartenderHours]);
@@ -2333,6 +2334,31 @@ export default function RequestOrderPage() {
                   <p className="break-words">
                     Total cost: {formattedEstimatedTotalCost}
                   </p>
+                ) : null}
+                {(costs.cocktailKits || costs.bartenders || costs.otherIngredients) ? (
+                  <div className="mt-1 space-y-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-accent/60 sm:text-[10px]">
+                    {costs.otherIngredients ? (
+                      <p className="break-words">
+                        Everything else: {formatAud(costs.otherIngredients)}
+                      </p>
+                    ) : null}
+                    {costs.cocktailKits ? (
+                      <p className="break-words">
+                        Cocktail packs: {formatAud(costs.cocktailKits)}
+                      </p>
+                    ) : null}
+                    {recommendedMixologists > 0 ? (
+                      costs.bartenders ? (
+                        <p className="break-words">
+                          Bartenders: {formatAud(costs.bartenders)}
+                        </p>
+                      ) : (
+                        <p className="break-words">
+                          Bartenders: (pricing not set)
+                        </p>
+                      )
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             ) : null}

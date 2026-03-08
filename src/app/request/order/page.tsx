@@ -2088,20 +2088,28 @@ export default function RequestOrderPage() {
         </div>
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
-          <div className="mt-4 flex items-baseline justify-between gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">
+          <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-start">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">
               Your Shopping List
-            </h3>
-            {formattedEstimatedLiquorCost || formattedEstimatedOtherCost || formattedEstimatedTotalCost ? (
-              <div className="shrink-0 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-accent/80 sm:text-[11px]">
+            </h2>
+            {formattedEstimatedLiquorCost ||
+            formattedEstimatedOtherCost ||
+            formattedEstimatedTotalCost ? (
+              <div className="min-w-0 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-accent/80 sm:max-w-[340px] sm:text-right sm:text-[11px]">
                 {formattedEstimatedLiquorCost ? (
-                  <p className="whitespace-nowrap">Est. liquor cost: {formattedEstimatedLiquorCost}</p>
+                  <p className="break-words">
+                    Est. liquor cost: {formattedEstimatedLiquorCost}
+                  </p>
                 ) : null}
                 {formattedEstimatedOtherCost ? (
-                  <p className="whitespace-nowrap">Est. cost for everything else: {formattedEstimatedOtherCost}</p>
+                  <p className="break-words">
+                    Est. cost for everything else: {formattedEstimatedOtherCost}
+                  </p>
                 ) : null}
                 {formattedEstimatedTotalCost ? (
-                  <p className="whitespace-nowrap">Total cost: {formattedEstimatedTotalCost}</p>
+                  <p className="break-words">
+                    Total cost: {formattedEstimatedTotalCost}
+                  </p>
                 ) : null}
               </div>
             ) : null}

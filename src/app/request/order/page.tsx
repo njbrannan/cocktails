@@ -2223,46 +2223,51 @@ export default function RequestOrderPage() {
           // Ignore failures; cart export + emails can still proceed.
         }
 
+        // Persist email payload so the export page can send it reliably (navigation cancels fetches).
+        try {
+          window.sessionStorage.setItem(
+            "get-involved:cart-export-email:v1",
+            JSON.stringify({
+              title: eventName.trim()
+                ? eventName.trim()
+                : "Cocktail booking request",
+              eventDate,
+              eventLocation,
+              guestCount: guestCountInput ? Number(guestCountInput) : null,
+              clientEmail,
+              clientPhone: combinedPhone || null,
+              bartenderStartTime: bartenderStartTime || null,
+              bartenderFinishTime: bartenderFinishTime || null,
+              bartenderHours: computedBartenderHours || Number(bartenderHours) || null,
+              notes,
+              cocktails: cocktailsSummary.map((c) => ({
+                recipeId: c.recipeId,
+                recipeName: c.recipeName,
+                servings:
+                  Number(
+                    servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0),
+                  ) || 0,
+              })),
+              costs: {
+                liquor: costs.liquor,
+                cocktailKits: costs.cocktailKits,
+                bartenders: costs.bartenders,
+                otherIngredients: costs.otherIngredients,
+                other: costs.other,
+                total: costs.total,
+              },
+              recommendedMixologists,
+              cocktailKitItems: cocktailKitItemsForEmail,
+              bartenderCartItem: bartenderCartItemForEmail,
+              orderList,
+            }),
+          );
+        } catch {
+          // ignore
+        }
+
         // Avoid iPhone popup blockers: navigate in the same tab.
         window.location.assign(exportUrl);
-
-        // Email confirmations (admin gets full list with links; client gets liquor-only + summary).
-        // Best-effort (don't block the cart export).
-        void fetch("/api/order-list-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: eventName.trim() ? eventName.trim() : "Cocktail booking request",
-            eventDate,
-            eventLocation,
-            guestCount: guestCountInput ? Number(guestCountInput) : null,
-            clientEmail,
-            clientPhone: combinedPhone || null,
-            bartenderStartTime: bartenderStartTime || null,
-            bartenderFinishTime: bartenderFinishTime || null,
-            bartenderHours: computedBartenderHours || Number(bartenderHours) || null,
-            notes,
-            cocktails: cocktailsSummary.map((c) => ({
-              recipeId: c.recipeId,
-              recipeName: c.recipeName,
-              servings:
-                Number(servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0)) ||
-                0,
-            })),
-            costs: {
-              liquor: costs.liquor,
-              cocktailKits: costs.cocktailKits,
-              bartenders: costs.bartenders,
-              otherIngredients: costs.otherIngredients,
-              other: costs.other,
-              total: costs.total,
-            },
-            recommendedMixologists,
-            cocktailKitItems: cocktailKitItemsForEmail,
-            bartenderCartItem: bartenderCartItemForEmail,
-            orderList,
-          }),
-        }).catch(() => {});
         return;
       }
 

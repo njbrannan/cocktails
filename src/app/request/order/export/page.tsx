@@ -91,6 +91,7 @@ function Spinner() {
 export default function GetInvolvedCartExportPage() {
   const [status, setStatus] = useState("Preparing your cart…");
   const [error, setError] = useState<string | null>(null);
+  const [emailStatus, setEmailStatus] = useState<string | null>(null);
   const [debugItems, setDebugItems] = useState<
     Array<{ url: string; count: number; sku: string | null }>
   >([]);
@@ -105,6 +106,41 @@ export default function GetInvolvedCartExportPage() {
       if (!itemsParam) {
         setError("No items were provided.");
         return;
+      }
+
+      // Send confirmation emails (best-effort) before redirecting off-site.
+      try {
+        const raw =
+          typeof window !== "undefined"
+            ? window.sessionStorage.getItem("get-involved:cart-export-email:v1")
+            : null;
+        if (raw) {
+          setEmailStatus("Sending confirmation emails…");
+          // Clear immediately so refresh doesn't spam.
+          window.sessionStorage.removeItem("get-involved:cart-export-email:v1");
+
+          const resp = await fetch("/api/order-list-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            // keepalive helps if the browser starts navigating quickly.
+            keepalive: true,
+            body: raw,
+          });
+          const json = await resp.json().catch(() => null);
+          if (!resp.ok) {
+            setEmailStatus(
+              json?.error
+                ? `Emails failed to send: ${String(json.error)}`
+                : `Emails failed to send (HTTP ${resp.status}).`,
+            );
+          } else {
+            const ok = Boolean(json?.ok);
+            setEmailStatus(ok ? "Emails sent." : "Emails may not have sent.");
+          }
+        }
+      } catch {
+        // Don't block cart export if email fails.
+        setEmailStatus("Emails failed to send.");
       }
 
       let payload: any = null;
@@ -206,6 +242,9 @@ export default function GetInvolvedCartExportPage() {
           <p className="mt-2 text-sm text-muted">
             {error ? "Couldn’t auto-fill cart. Please add items manually." : status}
           </p>
+          {emailStatus ? (
+            <p className="mt-2 text-[12px] text-ink-muted">{emailStatus}</p>
+          ) : null}
           {error ? (
             <p className="mt-4 text-sm font-medium text-red-700">{error}</p>
           ) : null}

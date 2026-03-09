@@ -321,6 +321,8 @@ export async function POST(req: NextRequest) {
         to: clientEmail,
         subject: "Booking request submitted — Involved Events",
         replyTo: adminEmail || undefined,
+        // Keep a copy for follow-up (note: this lands in Inbox, not Gmail "Sent").
+        bcc: adminEmail || undefined,
         html: clientHtml,
         text:
           `Booking request submitted.\n\n` +

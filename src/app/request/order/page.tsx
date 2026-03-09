@@ -1303,44 +1303,30 @@ export default function RequestOrderPage() {
       .filter((it) => it.type === "liquor")
       .reduce((acc, item) => acc + (item.totalCost ?? 0), 0);
 
-    const estimateFromIngredientPrice = (item: IngredientTotal) => {
-      const price = typeof item.price === "number" ? item.price : null;
-      if (!price || !Number.isFinite(price) || price <= 0) return null;
-
-      const packCount = (() => {
-        if (item.packPlan?.length) {
-          const sum = item.packPlan.reduce((s, p) => s + (Number(p.count) || 0), 0);
-          return sum > 0 ? sum : null;
-        }
-        if (typeof item.bottlesNeeded === "number" && Number.isFinite(item.bottlesNeeded) && item.bottlesNeeded > 0) {
-          return item.bottlesNeeded;
-        }
-        if (
-          typeof item.bottleSizeMl === "number" &&
-          Number.isFinite(item.bottleSizeMl) &&
-          item.bottleSizeMl > 0 &&
-          typeof item.total === "number" &&
-          Number.isFinite(item.total) &&
-          item.total > 0
-        ) {
-          return Math.ceil(item.total / item.bottleSizeMl);
-        }
-        // Last resort: treat the total as a per-unit count.
-        return typeof item.total === "number" && Number.isFinite(item.total) && item.total > 0
-          ? Math.ceil(item.total)
-          : null;
-      })();
-
-      if (!packCount) return null;
-      return packCount * price;
+    const packPlanCostForRetailer = (
+      item: IngredientTotal,
+      retailer: "getinvolved" | "woolworths" | "danmurphys",
+    ) => {
+      const plan = item.packPlan ?? [];
+      let total = 0;
+      let used = false;
+      for (const p of plan) {
+        if ((p as any)?.retailer !== retailer) continue;
+        const price = Number((p as any)?.packPrice);
+        const count = Number((p as any)?.count);
+        if (!Number.isFinite(price) || price <= 0) continue;
+        if (!Number.isFinite(count) || count <= 0) continue;
+        total += price * count;
+        used = true;
+      }
+      return used ? total : 0;
     };
 
-    // "Everything else" should reflect what we add to the Get Involved cart (not the client's liquor list).
+    // "Everything else" should reflect what we add to the Get Involved cart (not internal ingredient prices).
     // That currently includes: ice + glassware + mobile bars (+ cocktail kits + bartenders below).
     const otherIngredients = list
       .filter((it) => it.type === "ice" || it.type === "glassware" || it.type === "bar")
-      // Prefer ingredients.price (your own internal pricing), fall back to pack pricing.
-      .reduce((acc, item) => acc + (estimateFromIngredientPrice(item) ?? item.totalCost ?? 0), 0);
+      .reduce((acc, item) => acc + packPlanCostForRetailer(item, "getinvolved"), 0);
     const other = otherIngredients + estimatedCocktailKitCost + estimatedBartenderCost;
     return {
       liquor: Number.isFinite(liquor) ? liquor : 0,

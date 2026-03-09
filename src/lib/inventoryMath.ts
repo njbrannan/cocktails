@@ -22,6 +22,7 @@ export type PackOption = {
 export type PackPlanLine = {
   packSize: number;
   count: number;
+  packPrice?: number;
   purchaseUrl?: string;
   searchUrl?: string;
   variantSku?: string;
@@ -154,43 +155,62 @@ function cheapestPackPlan(
   }
 
   const backtrack = (amount: number) => {
-    const counts = new Map<number, number>();
-    const purchaseUrlBySize = new Map<number, string | undefined>();
-    const searchUrlBySize = new Map<number, string | undefined>();
-    const variantSkuBySize = new Map<number, string | undefined>();
-    const retailerBySize = new Map<number, PackOption["retailer"]>();
+    type KeyedLine = {
+      key: string;
+      packSize: number;
+      packPrice: number;
+      purchaseUrl?: string;
+      searchUrl?: string;
+      variantSku?: string;
+      retailer?: PackOption["retailer"];
+      count: number;
+    };
+    const linesByKey = new Map<string, KeyedLine>();
     let a = amount;
     let guard = 0;
     while (a > 0 && guard++ < 10000) {
       const idx = dpPackIdx[a]!;
       const prev = dpPrev[a]!;
       if (idx < 0 || prev < 0) break;
-      const size = packs[idx]!.packSize;
-      counts.set(size, (counts.get(size) || 0) + 1);
-      if (!purchaseUrlBySize.has(size)) {
-        purchaseUrlBySize.set(size, packs[idx]!.purchaseUrl || undefined);
-      }
-      if (!searchUrlBySize.has(size)) {
-        searchUrlBySize.set(size, packs[idx]!.searchUrl || undefined);
-      }
-      if (!variantSkuBySize.has(size)) {
-        variantSkuBySize.set(size, packs[idx]!.variantSku || undefined);
-      }
-      if (!retailerBySize.has(size)) {
-        retailerBySize.set(size, packs[idx]!.retailer || null);
+      const pack = packs[idx]!;
+      const size = pack.packSize;
+      const price = pack.packPrice;
+      const key = [
+        pack.retailer || "",
+        pack.tier || "",
+        size,
+        pack.purchaseUrl || pack.searchUrl || "",
+        pack.variantSku || "",
+        price,
+      ].join("|");
+      const prevLine = linesByKey.get(key);
+      if (prevLine) {
+        prevLine.count += 1;
+      } else {
+        linesByKey.set(key, {
+          key,
+          packSize: size,
+          packPrice: price,
+          purchaseUrl: pack.purchaseUrl || undefined,
+          searchUrl: pack.searchUrl || undefined,
+          variantSku: pack.variantSku || undefined,
+          retailer: pack.retailer || null,
+          count: 1,
+        });
       }
       a = prev;
     }
-    const plan: PackPlanLine[] = Array.from(counts.entries())
-      .map(([packSize, count]) => ({
-        packSize,
-        count,
-        purchaseUrl: purchaseUrlBySize.get(packSize),
-        searchUrl: searchUrlBySize.get(packSize),
-        variantSku: variantSkuBySize.get(packSize),
-        retailer: retailerBySize.get(packSize) || undefined,
+    const plan: PackPlanLine[] = Array.from(linesByKey.values())
+      .map((l) => ({
+        packSize: l.packSize,
+        count: l.count,
+        packPrice: l.packPrice,
+        purchaseUrl: l.purchaseUrl,
+        searchUrl: l.searchUrl,
+        variantSku: l.variantSku,
+        retailer: l.retailer || undefined,
       }))
-      .sort((a, b) => b.packSize - a.packSize);
+      .sort((a, b) => b.packSize - a.packSize || (b.packPrice || 0) - (a.packPrice || 0));
     const preferredCount =
       preferredPackSize && preferredPackSize > 0
         ? plan.find((p) => p.packSize === preferredPackSize)?.count || 0

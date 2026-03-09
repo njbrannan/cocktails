@@ -102,6 +102,22 @@ function estimateLineCostFromIngredientPrice(line: any) {
   return packCount * price;
 }
 
+function estimatePackPlanCostForRetailer(line: any, retailer: string) {
+  const plan = Array.isArray(line?.packPlan) ? line.packPlan : [];
+  let total = 0;
+  let used = false;
+  for (const p of plan) {
+    if (String(p?.retailer || "") !== retailer) continue;
+    const price = Number(p?.packPrice);
+    const count = Number(p?.count);
+    if (!Number.isFinite(price) || price <= 0) continue;
+    if (!Number.isFinite(count) || count <= 0) continue;
+    total += price * count;
+    used = true;
+  }
+  return used ? total : 0;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const adminEmail = getAdminEmail();
@@ -176,6 +192,27 @@ export async function POST(req: NextRequest) {
       }
       return Number.isFinite(total) && total > 0 ? total : 0;
     })();
+
+    const woolworthsCost = (() => {
+      // Best-effort: sum pack prices for lines planned from Woolworths pack options.
+      let total = 0;
+      for (const l of orderList) {
+        total += estimatePackPlanCostForRetailer(l, "woolworths");
+      }
+      return Number.isFinite(total) && total > 0 ? total : 0;
+    })();
+
+    const getInvolvedEverythingElseCharge = Number(costs?.other) || 0;
+    const giMinusWoolworths =
+      getInvolvedEverythingElseCharge && woolworthsCost
+        ? getInvolvedEverythingElseCharge - woolworthsCost
+        : 0;
+    const giMinusWoolworthsLabel =
+      getInvolvedEverythingElseCharge && woolworthsCost
+        ? ` (${giMinusWoolworths >= 0 ? "+" : "-"}${escapeHtml(
+            formatAud(Math.abs(giMinusWoolworths)),
+          )})`
+        : "";
 
     const cocktailPackRevenue = Number(costs?.cocktailKits) || 0;
     const margin =
@@ -267,6 +304,13 @@ export async function POST(req: NextRequest) {
   <p style="margin:0 0 8px 0"><strong>Est. ingredient cost:</strong> ${escapeHtml(
     formatAud(estimatedIngredientCost),
   )}${marginLabel}</p>
+  ${
+    woolworthsCost
+      ? `<p style="margin:0 0 8px 0"><strong>Est. Woolworths cost:</strong> ${escapeHtml(
+          formatAud(woolworthsCost),
+        )}${giMinusWoolworthsLabel}</p>`
+      : ""
+  }
   ${renderOrderListHtml(orderList, true)}
 </div>`;
 

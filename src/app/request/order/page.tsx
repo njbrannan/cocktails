@@ -1256,6 +1256,178 @@ export default function RequestOrderPage() {
     return n * unit;
   }, [recommendedMixologists, bartenderUnitPrice]);
 
+  const [giCartEstimate, setGiCartEstimate] = useState<{
+    total: number;
+    equipment: number; // ice/glassware/bar
+    kits: number;
+    bartenders: number;
+  } | null>(null);
+
+  const buildGetInvolvedEstimateItems = () => {
+    type EstimateItem = {
+      url: string;
+      count: number;
+      desiredValue?: string | null;
+      providedSku?: string | null;
+      kind: "equipment" | "kit" | "bartender";
+    };
+
+    const out: EstimateItem[] = [];
+
+    // Equipment we add to the cart: ice + glassware + bars.
+    for (const item of orderList ?? []) {
+      if (!(item.type === "ice" || item.type === "glassware" || item.type === "bar")) continue;
+
+      const plan = item.packPlan ?? [];
+      const giPlan = plan.filter((p: any) => String(p?.retailer || "") === "getinvolved");
+
+      if (giPlan.length) {
+        for (const p of giPlan as any[]) {
+          const url = String(p?.purchaseUrl || item.purchaseUrl || "").trim();
+          const count = Number(p?.count || 0) || 0;
+          if (!url || count <= 0) continue;
+          out.push({
+            url,
+            count,
+            desiredValue: p?.packSize != null ? String(p.packSize) : null,
+            providedSku: p?.variantSku ? String(p.variantSku) : null,
+            kind: "equipment",
+          });
+        }
+        continue;
+      }
+
+      // Fallback: if there's a direct Get Involved URL, estimate against the product's first variant.
+      const url = String(item.purchaseUrl || "").trim();
+      if (retailerForUrl(url) === "getinvolved") {
+        const count = Number(item.bottlesNeeded || 1) || 1;
+        out.push({ url, count, desiredValue: null, providedSku: null, kind: "equipment" });
+      }
+    }
+
+    // Cocktail packs we add to the cart.
+    try {
+      const kitItems = buildGetInvolvedCocktailKitCartItems({
+        recipes,
+        servingsByRecipeId,
+        pricingTier,
+      });
+      for (const it of kitItems) {
+        const url = String(it?.url || "").trim();
+        const count = Number(it?.count || 0) || 0;
+        if (!url || count <= 0) continue;
+        out.push({
+          url,
+          count,
+          desiredValue: it?.desiredValue ? String(it.desiredValue) : null,
+          providedSku: it?.sku ? String(it.sku) : null,
+          kind: "kit",
+        });
+      }
+    } catch {
+      // ignore
+    }
+
+    // Bartenders we add to the cart.
+    const cocktailCount = cocktailsSummary.length;
+    const bartenders = recommendedBartenders(totalDrinks, cocktailCount);
+    if (bartenders > 0 && GI_BARTENDER_PRODUCT_URL) {
+      const key = String(Number(bartenderHours) || bartenderHours || "").trim();
+      const providedSku =
+        bartenderSkuMap[key] ||
+        bartenderSkuMap[String(Number(key) || "")] ||
+        GI_BARTENDER_VARIANT_SKU ||
+        null;
+      out.push({
+        url: GI_BARTENDER_PRODUCT_URL,
+        count: bartenders,
+        desiredValue: key || null,
+        providedSku,
+        kind: "bartender",
+      });
+    }
+
+    // Coalesce duplicates so the lookup request stays small/stable.
+    const map = new Map<string, EstimateItem>();
+    for (const it of out) {
+      const key = [it.kind, it.url, it.desiredValue || "", it.providedSku || ""].join("|");
+      const prev = map.get(key);
+      if (prev) prev.count += it.count;
+      else map.set(key, { ...it });
+    }
+    return Array.from(map.values());
+  };
+
+  // Fetch live Squarespace prices for the exact items we add to cart.
+  // This keeps "Est. cost everything else" aligned with what the cart will show.
+  useEffect(() => {
+    const items = buildGetInvolvedEstimateItems();
+    if (!items.length) {
+      setGiCartEstimate(null);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const resp = await fetch("/api/getinvolved/variant-skus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            items: items.map((it) => ({
+              url: it.url,
+              desiredValue: it.desiredValue || null,
+              providedSku: it.providedSku || null,
+            })),
+          }),
+        });
+
+        const json = await resp.json().catch(() => null);
+        if (!resp.ok) throw new Error(json?.error || "Failed to fetch cart prices.");
+
+        const resolved = Array.isArray(json?.items) ? json.items : [];
+        let total = 0;
+        let equipment = 0;
+        let kits = 0;
+        let bartenders = 0;
+
+        for (let i = 0; i < items.length; i++) {
+          const unit = Number(resolved?.[i]?.unitPrice);
+          const count = Number(items[i]?.count || 0) || 0;
+          if (!Number.isFinite(unit) || unit <= 0 || count <= 0) continue;
+          const line = unit * count;
+          total += line;
+          if (items[i]!.kind === "equipment") equipment += line;
+          if (items[i]!.kind === "kit") kits += line;
+          if (items[i]!.kind === "bartender") bartenders += line;
+        }
+
+        if (cancelled) return;
+        if (!Number.isFinite(total) || total <= 0) {
+          setGiCartEstimate(null);
+          return;
+        }
+        setGiCartEstimate({
+          total,
+          equipment,
+          kits,
+          bartenders,
+        });
+      } catch {
+        if (!cancelled) setGiCartEstimate(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderList, recipes, servingsByRecipeId, pricingTier, bartenderHours, recommendedMixologists]);
+
   const estimatedCocktailKitCost = useMemo(() => {
     if (!recipes.length) return 0;
     const allowedTiers = allowedPackTiersForPricingTier(pricingTier);
@@ -1322,21 +1494,27 @@ export default function RequestOrderPage() {
       return used ? total : 0;
     };
 
-    // "Everything else" should reflect what we add to the Get Involved cart (not internal ingredient prices).
-    // That currently includes: ice + glassware + mobile bars (+ cocktail kits + bartenders below).
-    const otherIngredients = list
+    // "Everything else" should match what the cart will show.
+    // Prefer live SquareSpace unit prices for the exact Get Involved cart items; fall back to pack pricing.
+    const otherIngredientsFallback = list
       .filter((it) => it.type === "ice" || it.type === "glassware" || it.type === "bar")
       .reduce((acc, item) => acc + packPlanCostForRetailer(item, "getinvolved"), 0);
-    const other = otherIngredients + estimatedCocktailKitCost + estimatedBartenderCost;
+
+    const otherIngredients = giCartEstimate?.equipment ?? otherIngredientsFallback;
+    const other = giCartEstimate?.total ?? (otherIngredientsFallback + estimatedCocktailKitCost + estimatedBartenderCost);
     return {
       liquor: Number.isFinite(liquor) ? liquor : 0,
       other: Number.isFinite(other) ? other : 0,
       total: Number.isFinite(liquor + other) ? liquor + other : 0,
       otherIngredients: Number.isFinite(otherIngredients) ? otherIngredients : 0,
-      cocktailKits: Number.isFinite(estimatedCocktailKitCost) ? estimatedCocktailKitCost : 0,
-      bartenders: Number.isFinite(estimatedBartenderCost) ? estimatedBartenderCost : 0,
+      cocktailKits: Number.isFinite(giCartEstimate?.kits ?? estimatedCocktailKitCost)
+        ? (giCartEstimate?.kits ?? estimatedCocktailKitCost)
+        : 0,
+      bartenders: Number.isFinite(giCartEstimate?.bartenders ?? estimatedBartenderCost)
+        ? (giCartEstimate?.bartenders ?? estimatedBartenderCost)
+        : 0,
     };
-  }, [orderList, estimatedCocktailKitCost, estimatedBartenderCost]);
+  }, [orderList, estimatedCocktailKitCost, estimatedBartenderCost, giCartEstimate]);
 
   const formattedEstimatedLiquorCost = useMemo(
     () => formatAud(costs.liquor),

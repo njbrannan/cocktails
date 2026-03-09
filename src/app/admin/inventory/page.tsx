@@ -5,7 +5,6 @@ import {
   buildIngredientTotals,
   type PackOption,
 } from "@/lib/inventoryMath";
-import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useMemo, useState } from "react";
 
 type EventItem = {
@@ -135,19 +134,18 @@ export default function InventoryAdmin() {
   }, [events, selectedEvent]);
 
   const loadEvents = async () => {
-    const { data, error: fetchError } = await supabase
-      .from("events")
-      .select("id, title, event_date, guest_count, status")
-      .order("event_date", { ascending: true });
-
-    if (fetchError) {
-      setError(fetchError.message);
-      return;
-    }
-
-    setEvents((data as EventItem[]) || []);
-    if (data && data.length && !selectedEvent) {
-      setSelectedEvent(data[0].id);
+    try {
+      const resp = await fetch("/api/admin/events");
+      const json = await resp.json().catch(() => null);
+      if (!resp.ok) {
+        setError(json?.error || "Unable to load bookings.");
+        return;
+      }
+      const list = (json?.events as EventItem[]) || [];
+      setEvents(list);
+      if (list.length && !selectedEvent) setSelectedEvent(list[0].id);
+    } catch (e: any) {
+      setError(e?.message || "Unable to load bookings.");
     }
   };
 
@@ -200,201 +198,29 @@ export default function InventoryAdmin() {
     setRecommendedMixologists(0);
 
     await loadChecklist(eventId);
-
-    const { data, error: fetchError } = await supabase
-      .from("event_recipes")
-      .select(
-        "recipe_id, servings, recipes(id, name, recipe_packs(pack_size, pack_price, purchase_url, variant_sku, tier, is_active), recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active))))",
-      )
-      .eq("event_id", eventId);
-
-    if (fetchError) {
-      setError(fetchError.message);
-      return;
-    }
-
-    const rows = ((data ?? []) as unknown as DbEventRecipeRow[]) || [];
-
-    const cocktailSummary: Array<{ name: string; servings: number; recipeId: string }> = [];
-    for (const row of rows) {
-      const recipes = row.recipes
-        ? Array.isArray(row.recipes)
-          ? row.recipes
-          : [row.recipes]
-        : [];
-      for (const r of recipes) {
-        const name = String(r?.name || "").trim();
-        if (!name) continue;
-        cocktailSummary.push({
-          name,
-          servings: Number(row.servings) || 0,
-          recipeId: String((r as any)?.id || row.recipe_id || ""),
-        });
-      }
-    }
-
-    const cocktailsSorted = cocktailSummary
-      .filter((c) => c.servings > 0)
-      .sort((a, b) => a.name.localeCompare(b.name));
-    setCocktails(cocktailsSorted.map((c) => ({ name: c.name, servings: c.servings })));
-
-    const totalDrinks = cocktailsSorted.reduce((s, c) => s + (Number(c.servings) || 0), 0);
-    const bartenderCount = recommendedBartenders(totalDrinks, cocktailsSorted.length);
-    setRecommendedMixologists(bartenderCount);
-
-    const items = rows.flatMap((row) => {
-      const recipes = row.recipes
-        ? Array.isArray(row.recipes)
-          ? row.recipes
-          : [row.recipes]
-        : [];
-
-      return recipes.flatMap((recipe) =>
-        (recipe.recipe_ingredients ?? []).flatMap((ingredientRow) => {
-          const ingredient = normalizeIngredient(ingredientRow.ingredients);
-          if (!ingredient) return [];
-
-          const packOptions =
-            ingredient.ingredient_packs
-              ?.filter((p) => p?.is_active)
-              .map((p) => ({
-                packSize: Number(p.pack_size),
-                packPrice: Number(p.pack_price),
-                purchaseUrl: p.purchase_url || null,
-                searchUrl: p.search_url || null,
-                searchQuery: p.search_query || null,
-                variantSku: p.variant_sku || null,
-                retailer: (p.retailer as any) || null,
-                tier: (p.tier as any) || null,
-              })) ?? null;
-
-          return [
-            {
-              ingredientId: ingredient.id,
-              name: ingredient.name,
-              type: ingredient.type,
-              amountPerServing: ingredientRow.ml_per_serving,
-              servings: row.servings,
-              unit: ingredient.unit,
-              bottleSizeMl: ingredient.bottle_size_ml,
-              purchaseUrl: ingredient.purchase_url,
-              price: ingredient.price ?? null,
-              packOptions,
-            },
-          ];
-        }),
+    try {
+      const resp = await fetch(
+        `/api/admin/inventory?eventId=${encodeURIComponent(eventId)}`,
       );
-    });
-
-    // Bars: add recommended small/large bars if they exist.
-    try {
-      const { data: barData } = await supabase
-        .from("ingredients")
-        .select(
-          "id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)",
-        )
-        .eq("type", "bar");
-      const bars = ((barData ?? []) as unknown as DbIngredient[]) || [];
-
-      const findBar = (needle: string) =>
-        bars.find((b) => String(b?.name || "").toLowerCase().includes(needle)) || null;
-      const large = findBar("large");
-      const small = findBar("small");
-      const largeCount = Math.floor(bartenderCount / 2);
-      const smallCount = bartenderCount % 2;
-
-      const makeBarItem = (b: DbIngredient, count: number) => ({
-        ingredientId: b.id,
-        name: b.name,
-        type: b.type,
-        amountPerServing: 1,
-        servings: count,
-        unit: b.unit || "pcs",
-        bottleSizeMl: b.bottle_size_ml,
-        purchaseUrl: b.purchase_url,
-        price: b.price ?? null,
-        packOptions:
-          b.ingredient_packs
-            ?.filter((p) => p?.is_active)
-            .map((p) => ({
-              packSize: Number(p.pack_size),
-              packPrice: Number(p.pack_price),
-              purchaseUrl: p.purchase_url || null,
-              searchUrl: p.search_url || null,
-              searchQuery: p.search_query || null,
-              variantSku: p.variant_sku || null,
-              retailer: (p.retailer as any) || null,
-              tier: (p.tier as any) || null,
-            })) ?? null,
-      });
-
-      if (large && largeCount > 0) items.push(makeBarItem(large, largeCount));
-      if (small && smallCount > 0) items.push(makeBarItem(small, smallCount));
-    } catch {
-      // ignore
-    }
-
-    const built = buildIngredientTotals(items as any[]).sort((a, b) => {
-      const typeA = typePriority[a.type] ?? 99;
-      const typeB = typePriority[b.type] ?? 99;
-      if (typeA !== typeB) return typeA - typeB;
-      if (a.total !== b.total) return b.total - a.total;
-      return a.name.localeCompare(b.name);
-    });
-    setTotals(built);
-
-    // Get Involved cocktail kits: choose the cheapest pack plan for each selected recipe.
-    try {
-      const kitLines: Array<{ label: string; url: string; count: number }> = [];
-      let total = 0;
-
-      for (const c of cocktailsSorted) {
-        const recipe = rows
-          .flatMap((r) =>
-            r.recipes
-              ? Array.isArray(r.recipes)
-                ? r.recipes
-                : [r.recipes]
-              : [],
-          )
-          .find((rr) => String((rr as any)?.id || "") === c.recipeId);
-
-        const packs = (recipe as any)?.recipe_packs as any[] | null | undefined;
-        const active = (packs ?? []).filter((p) => p && p.is_active !== false);
-        if (!active.length) continue;
-
-        const required = Math.ceil((Number(c.servings) || 0) * 1.1);
-        const options: PackOption[] = active.map((p) => ({
-          packSize: Number(p.pack_size),
-          packPrice: Number(p.pack_price),
-          purchaseUrl: p.purchase_url || null,
-          searchUrl: null,
-          searchQuery: null,
-          variantSku: p.variant_sku || null,
-          retailer: "getinvolved",
-          tier: (p.tier as any) || null,
-        }));
-
-        const plan = buildCheapestPackPlan(required, options, null);
-        if (!plan?.plan?.length) continue;
-        total += Number(plan.totalCost) || 0;
-
-        for (const line of plan.plan) {
-          const url = line.purchaseUrl || "";
-          if (!url || line.count <= 0) continue;
-          kitLines.push({
-            label: `${c.name} (${line.packSize} pack)`,
-            url,
-            count: line.count,
-          });
-        }
+      const json = await resp.json().catch(() => null);
+      if (!resp.ok) {
+        setError(json?.error || "Unable to load calculator data.");
+        return;
       }
 
-      setKitPlan(kitLines);
-      setKitCost(total);
-    } catch {
-      setKitPlan([]);
-      setKitCost(0);
+      const cocktailsSorted = Array.isArray(json?.cocktails) ? json.cocktails : [];
+      setCocktails(
+        cocktailsSorted.map((c: any) => ({
+          name: String(c?.name || ""),
+          servings: Number(c?.servings || 0) || 0,
+        })),
+      );
+      setTotals(Array.isArray(json?.totals) ? json.totals : []);
+      setRecommendedMixologists(Number(json?.recommendedMixologists || 0) || 0);
+      setKitPlan(Array.isArray(json?.kitPlan) ? json.kitPlan : []);
+      setKitCost(Number(json?.kitCost || 0) || 0);
+    } catch (e: any) {
+      setError(e?.message || "Unable to load calculator data.");
     }
   };
 
@@ -584,4 +410,3 @@ export default function InventoryAdmin() {
     </div>
   );
 }
-

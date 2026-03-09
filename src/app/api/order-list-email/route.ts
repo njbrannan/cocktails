@@ -193,6 +193,20 @@ export async function POST(req: NextRequest) {
       return Number.isFinite(total) && total > 0 ? total : 0;
     })();
 
+    const consumablesCost = (() => {
+      // For margin: mixers + garnish + syrups + juice (exclude ice, glassware, bars, staff).
+      const lines = orderList.filter((l: any) => {
+        const t = String(l?.type || "");
+        return t === "mixer" || t === "juice" || t === "syrup" || t === "garnish";
+      });
+      let total = 0;
+      for (const l of lines) {
+        const lineCost = estimateLineCostFromIngredientPrice(l);
+        if (lineCost != null) total += lineCost;
+      }
+      return Number.isFinite(total) && total > 0 ? total : 0;
+    })();
+
     const woolworthsCost = (() => {
       // Best-effort: sum pack prices for lines planned from Woolworths pack options.
       let total = 0;
@@ -215,13 +229,15 @@ export async function POST(req: NextRequest) {
         : "";
 
     const cocktailPackRevenue = Number(costs?.cocktailKits) || 0;
-    const margin =
-      cocktailPackRevenue && estimatedIngredientCost
-        ? cocktailPackRevenue - estimatedIngredientCost
+    const packsMinusConsumables =
+      cocktailPackRevenue && consumablesCost
+        ? cocktailPackRevenue - consumablesCost
         : 0;
-    const marginLabel =
-      cocktailPackRevenue && estimatedIngredientCost
-        ? ` (${margin >= 0 ? "+" : "-"}${escapeHtml(formatAud(Math.abs(margin)))})`
+    const packsMinusConsumablesLabel =
+      cocktailPackRevenue && consumablesCost
+        ? ` (${packsMinusConsumables >= 0 ? "+" : "-"}${escapeHtml(
+            formatAud(Math.abs(packsMinusConsumables)),
+          )})`
         : "";
 
     const costHtml =
@@ -303,7 +319,14 @@ export async function POST(req: NextRequest) {
   <h3 style="margin:16px 0 8px 0">Full shopping list (links)</h3>
   <p style="margin:0 0 8px 0"><strong>Est. ingredient cost:</strong> ${escapeHtml(
     formatAud(estimatedIngredientCost),
-  )}${marginLabel}</p>
+  )}</p>
+  ${
+    cocktailPackRevenue && consumablesCost
+      ? `<p style="margin:0 0 8px 0"><strong>Cocktail pack revenue minus consumables (mixers/juice/syrup/garnish):</strong> ${escapeHtml(
+          formatAud(cocktailPackRevenue),
+        )} - ${escapeHtml(formatAud(consumablesCost))}${packsMinusConsumablesLabel}</p>`
+      : ""
+  }
   ${
     woolworthsCost
       ? `<p style="margin:0 0 8px 0"><strong>Est. Woolworths cost:</strong> ${escapeHtml(

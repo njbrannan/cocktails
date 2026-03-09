@@ -98,22 +98,43 @@ function extractVariantUnitPrice(variant: any): number | null {
     variant.salePrice,
   ];
 
+  const normalizeMoney = (val: any): number | null => {
+    if (val == null) return null;
+
+    if (typeof val === "number" && Number.isFinite(val) && val > 0) {
+      // Squarespace commerce JSON is typically cents as an integer. Use that as the default.
+      // This avoids huge estimates for common prices like "1800" (meaning $18.00).
+      if (Number.isInteger(val)) return val / 100;
+      return val;
+    }
+
+    if (typeof val === "string") {
+      const s = val.trim();
+      if (!s) return null;
+      // Digits only => cents.
+      if (/^\d+$/.test(s)) {
+        const n = Number(s);
+        return Number.isFinite(n) && n > 0 ? n / 100 : null;
+      }
+      // Contains decimal => dollars.
+      const n = Number(s);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    }
+
+    if (typeof val === "object") {
+      // Sometimes: { value: 12999, currency: 'AUD' } or { value: 129.99 }
+      const n = Number((val as any).value);
+      if (!Number.isFinite(n) || n <= 0) return null;
+      if (Number.isInteger(n)) return n / 100;
+      return n;
+    }
+
+    return null;
+  };
+
   for (const c of candidates) {
-    if (c == null) continue;
-    if (typeof c === "number" && Number.isFinite(c) && c > 0) {
-      // Some Squarespace JSON fields are returned in cents (e.g. 45000 for $450.00).
-      // Heuristic: values over $2,000 are almost certainly cents for our catalogue.
-      return c >= 2000 ? c / 100 : c;
-    }
-    if (typeof c === "string") {
-      const n = Number(c);
-      if (Number.isFinite(n) && n > 0) return n >= 2000 ? n / 100 : n;
-    }
-    if (typeof c === "object") {
-      // Sometimes: { value: 129.99, currency: 'AUD' }
-      const n = Number((c as any).value);
-      if (Number.isFinite(n) && n > 0) return n >= 2000 ? n / 100 : n;
-    }
+    const n = normalizeMoney(c);
+    if (n != null) return n;
   }
 
   return null;

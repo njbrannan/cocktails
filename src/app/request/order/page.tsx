@@ -2010,6 +2010,55 @@ export default function RequestOrderPage() {
 
         const exportUrl = buildLocalGetInvolvedExportUrl(sorted);
 
+        // Create an internal event record so the Admin tools (inventory/checklist) can reference it.
+        // This is best-effort and intentionally does not send emails (emails are handled by
+        // /api/order-list-email for this "Add to cart" flow).
+        try {
+          const notesParts: string[] = [];
+          if (eventLocation) notesParts.push(`Location: ${eventLocation}`);
+          if (eventDate) notesParts.push(`Date: ${eventDate}`);
+          if (bartenderStartTime)
+            notesParts.push(`Bartender start: ${bartenderStartTime}`);
+          if (bartenderFinishTime)
+            notesParts.push(`Bartender finish: ${bartenderFinishTime}`);
+          if (computedBartenderHours)
+            notesParts.push(`Bartender hours: ${computedBartenderHours}`);
+          if (notes?.trim()) {
+            if (notesParts.length) notesParts.push("");
+            notesParts.push(notes.trim());
+          }
+
+          await fetch("/api/events", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            // keepalive helps if the user leaves quickly or the browser starts navigating.
+            keepalive: true,
+            body: JSON.stringify({
+              title: eventName.trim()
+                ? eventName.trim()
+                : "Cocktail booking request",
+              eventDate,
+              guestCount: guestCountInput ? Number(guestCountInput) : null,
+              notes: notesParts.join("\n") || null,
+              clientEmail: clientEmail || null,
+              clientPhone: combinedPhone || null,
+              cocktails: cocktailsSummary.map((c) => ({
+                recipeId: c.recipeId,
+                recipeName: c.recipeName,
+                servings:
+                  Number(
+                    servingsByRecipeId[c.recipeId] ?? String(c.servings ?? 0),
+                  ) || 0,
+              })),
+              submit: false,
+              pricingTier,
+              skipEmails: true,
+            }),
+          });
+        } catch {
+          // Ignore failures; cart export + emails can still proceed.
+        }
+
         // Avoid iPhone popup blockers: navigate in the same tab.
         window.location.assign(exportUrl);
 

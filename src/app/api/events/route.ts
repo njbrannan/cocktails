@@ -352,6 +352,7 @@ export async function POST(request: NextRequest) {
       cocktails,
       submit,
       pricingTier,
+      skipEmails,
     }: {
       title?: string;
       eventDate?: string;
@@ -362,6 +363,7 @@ export async function POST(request: NextRequest) {
       cocktails?: CocktailSelection[];
       submit?: boolean;
       pricingTier?: "budget" | "house" | "top_shelf" | "economy" | "business" | "first_class";
+      skipEmails?: boolean;
     } = body;
 
     if (submit) {
@@ -500,7 +502,8 @@ export async function POST(request: NextRequest) {
     };
 
     // If it's submitted immediately, email admin + client confirmation (when email is configured).
-    if (submit && emailReport.configured) {
+    // Some flows (like "Add to cart") create an internal record but send emails via another route.
+    if (submit && emailReport.configured && !skipEmails) {
       const safeTitle = escapeHtml(title || "Cocktail request");
       const safeDate = escapeHtml(eventDate || "Date TBD");
       const safeDrinks = escapeHtml(String(computedDrinksCount));

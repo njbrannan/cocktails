@@ -183,6 +183,10 @@ export default function PrintCocktailMenuPage() {
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
+
+        .menu-accent {
+          color: #2f6f55;
+        }
       `}</style>
 
       <div className="menu-controls mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-6 py-6">
@@ -207,12 +211,21 @@ export default function PrintCocktailMenuPage() {
           {panels.map((cocktails, panelIndex) => (
             <div key={`panel-${sheetIndex}-${panelIndex}`} className="menu-panel">
               <div className="menu-panel-inner">
-                <header className="pb-4">
-                  <h1 className="text-[28px] font-semibold leading-tight text-black">
+                <header className="pb-3">
+                  <h1 className="text-[32px] font-semibold leading-[1.05] text-black">
                     {payload.title}
                   </h1>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-black/60">
-                    Cocktail menu
+                  <div className="mt-2 flex items-center gap-3">
+                    <span className="menu-accent text-[10px] font-semibold uppercase tracking-[0.22em]">
+                      Cocktail menu
+                    </span>
+                    <span className="h-px flex-1 bg-black/10" />
+                    <span className="menu-accent text-[10px] font-semibold uppercase tracking-[0.22em]">
+                      Involved Events
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[11px] leading-snug text-black/60">
+                    Crafted cocktails, beautifully planned.
                   </p>
                 </header>
 
@@ -221,9 +234,12 @@ export default function PrintCocktailMenuPage() {
                     const displayName = normalizeCocktailDisplayName(c.name);
                     const src = resolveCocktailImageSrc(null, displayName);
                     return (
-                      <article key={c.recipeId} className="flex items-start gap-3">
+                      <article
+                        key={c.recipeId}
+                        className="flex items-start gap-3"
+                      >
                         <div className="shrink-0">
-                          <div className="h-[44px] w-[44px] overflow-hidden rounded-xl bg-transparent p-0">
+                          <div className="h-[48px] w-[48px] overflow-hidden rounded-xl bg-transparent p-0">
                             <img
                               src={src}
                               alt={displayName}
@@ -248,10 +264,10 @@ export default function PrintCocktailMenuPage() {
                           </div>
                         </div>
                         <div className="min-w-0">
-                          <h2 className="truncate text-[13px] font-semibold leading-snug text-black">
+                          <h2 className="truncate text-[15px] font-semibold leading-snug text-black">
                             {displayName}
                           </h2>
-                          <p className="menu-card-desc mt-1 text-[11px] leading-snug text-black/65">
+                          <p className="menu-card-desc mt-1 text-[12px] leading-snug text-black/65">
                             {c.description || " "}
                           </p>
                         </div>

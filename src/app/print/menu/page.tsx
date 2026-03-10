@@ -44,8 +44,8 @@ export default function PrintCocktailMenuPage() {
 
   const pages = useMemo(() => {
     const list = payload?.cocktails ?? [];
-    // Two horizontal cocktails per A5 page (each fills half the page height).
-    return chunk(list, 2);
+    // Up to six cocktails per A5 page.
+    return chunk(list, 6);
   }, [payload]);
 
   // Auto-print once content is loaded.
@@ -101,10 +101,14 @@ export default function PrintCocktailMenuPage() {
             break-after: auto;
             page-break-after: auto;
           }
+          html,
+          body {
+            background: #fff !important;
+          }
         }
         .menu-card-desc {
           display: -webkit-box;
-          -webkit-line-clamp: 3;
+          -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
@@ -132,26 +136,26 @@ export default function PrintCocktailMenuPage() {
           key={`page-${pageIndex}`}
           className="menu-page mx-auto w-full max-w-3xl px-6 pb-10"
         >
-          <header className="menu-header pb-5">
-            <h1 className="text-3xl font-semibold text-black">
+          <header className="menu-header pb-4">
+            <h1 className="text-[28px] font-semibold leading-tight text-black">
               {payload.title}
             </h1>
-            <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-black/70">
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-black/60">
               Cocktail menu
             </p>
           </header>
 
-          <div className="menu-grid grid grid-cols-1 gap-4">
+          <div className="menu-grid grid grid-cols-2 gap-x-6 gap-y-5">
             {cocktails.map((c) => {
               const displayName = normalizeCocktailDisplayName(c.name);
               const src = resolveCocktailImageSrc(null, displayName);
               return (
                 <article
                   key={c.recipeId}
-                  className="flex h-[80mm] items-center gap-5 rounded-2xl border border-black/10 bg-white p-5"
+                  className="flex items-start gap-3"
                 >
                   <div className="shrink-0">
-                    <div className="h-[62mm] w-[62mm] overflow-hidden rounded-2xl border border-black/10 bg-white p-3">
+                    <div className="h-[52px] w-[52px] overflow-hidden rounded-xl bg-transparent p-0">
                       <img
                         src={src}
                         alt={displayName}
@@ -176,10 +180,10 @@ export default function PrintCocktailMenuPage() {
                     </div>
                   </div>
                   <div className="min-w-0">
-                    <h2 className="text-xl font-semibold text-black">
+                    <h2 className="truncate text-[13px] font-semibold leading-snug text-black">
                       {displayName}
                     </h2>
-                    <p className="menu-card-desc mt-2 text-[13px] leading-relaxed text-black/70">
+                    <p className="menu-card-desc mt-1 text-[11px] leading-snug text-black/65">
                       {c.description || " "}
                     </p>
                   </div>

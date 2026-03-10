@@ -69,6 +69,8 @@ type RecipeIngredient = {
 type Recipe = {
   id: string;
   name: string;
+  description?: string | null;
+  image_url?: string | null;
   recipe_packs?: Array<{
     pack_size: number;
     pack_price: number;
@@ -646,6 +648,16 @@ function buildGetInvolvedCocktailKitCartItems(opts: {
   return out;
 }
 
+type PrintMenuPayload = {
+  v: 1;
+  title: string;
+  cocktails: Array<{
+    recipeId: string;
+    name: string;
+    description: string | null;
+  }>;
+};
+
 export default function RequestOrderPage() {
   const router = useRouter();
   const orderBartendersRef = useRef<HTMLDivElement | null>(null);
@@ -799,6 +811,30 @@ export default function RequestOrderPage() {
     "AU",
   );
   const [phoneLocal, setPhoneLocal] = useState("");
+
+  const handlePrintCocktailMenu = () => {
+    const title = String(eventName || "").trim() || "Cocktail Menu";
+    const byId = new Map(recipes.map((r) => [r.id, r]));
+    const cocktails = (cocktailsSummary ?? []).map((c) => {
+      const r = byId.get(c.recipeId);
+      return {
+        recipeId: c.recipeId,
+        name: normalizeCocktailDisplayName(c.recipeName || r?.name || "Cocktail"),
+        description: (r?.description ?? null) as string | null,
+      };
+    });
+
+    const payload: PrintMenuPayload = { v: 1, title, cocktails };
+    try {
+      window.sessionStorage.setItem(
+        "get-involved:print-menu:v1",
+        JSON.stringify(payload),
+      );
+    } catch {
+      // ignore
+    }
+    router.push("/print/menu");
+  };
 
   const [loading, setLoading] = useState(false);
   const [exportingToCart, setExportingToCart] = useState(false);
@@ -1061,9 +1097,9 @@ export default function RequestOrderPage() {
       if (recipeIds.length === 0) return;
 
       const selectWithPacks =
-        "id, name, recipe_packs(pack_size, pack_price, purchase_url, variant_sku, tier, is_active), recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)))";
+        "id, name, description, image_url, recipe_packs(pack_size, pack_price, purchase_url, variant_sku, tier, is_active), recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)))";
       const selectWithoutPacks =
-        "id, name, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
+        "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
 
       let data: any = null;
       let error: any = null;
@@ -2637,6 +2673,16 @@ export default function RequestOrderPage() {
                 </div>
               );
             })}
+          </div>
+
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={handlePrintCocktailMenu}
+              className="gi-btn-secondary w-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] hover:-translate-y-0.5"
+            >
+              Print Cocktail Menu
+            </button>
           </div>
 
           <div className="mt-6">

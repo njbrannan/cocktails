@@ -2676,10 +2676,21 @@ export default function RequestOrderPage() {
           </div>
 
           <div className="mt-4">
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+              Event Name (for the printed menu)
+              <input
+                type="text"
+                value={eventName}
+                onChange={(event) => setEventName(event.target.value)}
+                placeholder="Birthday, corporate event, engagement..."
+                autoComplete="organization"
+                className={`mt-2 ${fieldClass} border-soft`}
+              />
+            </label>
             <button
               type="button"
               onClick={handlePrintCocktailMenu}
-              className="gi-btn-secondary w-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] hover:-translate-y-0.5"
+              className="gi-btn-secondary mt-3 w-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] hover:-translate-y-0.5"
             >
               Print Cocktail Menu
             </button>

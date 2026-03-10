@@ -44,7 +44,8 @@ export default function PrintCocktailMenuPage() {
 
   const pages = useMemo(() => {
     const list = payload?.cocktails ?? [];
-    return chunk(list, 4);
+    // Two horizontal cocktails per A5 page (each fills half the page height).
+    return chunk(list, 2);
   }, [payload]);
 
   // Auto-print once content is loaded.
@@ -92,6 +93,7 @@ export default function PrintCocktailMenuPage() {
             display: none !important;
           }
           .menu-page {
+            height: 186mm; /* A5 height (210mm) minus @page vertical margins (24mm) */
             break-after: page;
             page-break-after: always;
           }
@@ -102,7 +104,7 @@ export default function PrintCocktailMenuPage() {
         }
         .menu-card-desc {
           display: -webkit-box;
-          -webkit-line-clamp: 4;
+          -webkit-line-clamp: 3;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
@@ -130,26 +132,26 @@ export default function PrintCocktailMenuPage() {
           key={`page-${pageIndex}`}
           className="menu-page mx-auto w-full max-w-3xl px-6 pb-10"
         >
-          <header className="pb-6">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/70">
+          <header className="menu-header pb-5">
+            <h1 className="text-3xl font-semibold text-black">
               {payload.title}
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold text-black">
-              Cocktail Menu
             </h1>
+            <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-black/70">
+              Cocktail menu
+            </p>
           </header>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="menu-grid grid grid-cols-1 gap-4">
             {cocktails.map((c) => {
               const displayName = normalizeCocktailDisplayName(c.name);
               const src = resolveCocktailImageSrc(null, displayName);
               return (
                 <article
                   key={c.recipeId}
-                  className="rounded-2xl border border-black/10 bg-white p-4"
+                  className="flex h-[80mm] items-center gap-5 rounded-2xl border border-black/10 bg-white p-5"
                 >
-                  <div className="flex items-center justify-center">
-                    <div className="h-28 w-28 overflow-hidden rounded-2xl border border-black/10 bg-white p-2">
+                  <div className="shrink-0">
+                    <div className="h-[62mm] w-[62mm] overflow-hidden rounded-2xl border border-black/10 bg-white p-3">
                       <img
                         src={src}
                         alt={displayName}
@@ -173,12 +175,14 @@ export default function PrintCocktailMenuPage() {
                       />
                     </div>
                   </div>
-                  <h2 className="mt-3 text-base font-semibold text-black">
-                    {displayName}
-                  </h2>
-                  <p className="menu-card-desc mt-1 text-[12px] leading-relaxed text-black/70">
-                    {c.description || " "}
-                  </p>
+                  <div className="min-w-0">
+                    <h2 className="text-xl font-semibold text-black">
+                      {displayName}
+                    </h2>
+                    <p className="menu-card-desc mt-2 text-[13px] leading-relaxed text-black/70">
+                      {c.description || " "}
+                    </p>
+                  </div>
                 </article>
               );
             })}
@@ -188,4 +192,3 @@ export default function PrintCocktailMenuPage() {
     </div>
   );
 }
-

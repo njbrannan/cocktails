@@ -281,13 +281,17 @@ export default function PrintCocktailMenuPage() {
         .menu-panel-inner {
           position: absolute;
           left: 50%;
-          top: 50%;
+          /* Some browsers/printers still apply a tiny non-zero printable margin.
+             Nudge down + shrink a touch to avoid top clipping in print. */
+          top: calc(50% + 2mm);
           /* Add a tiny safety margin so nothing gets clipped by print scaling. */
-          width: 146mm;
-          height: 208mm;
+          width: 144mm;
+          height: 204mm;
           transform: translate(-50%, -50%) rotate(90deg);
           transform-origin: center;
-          padding: 8mm;
+          padding: 7mm;
+          padding-top: 9mm;
+          padding-bottom: 6mm;
           box-sizing: border-box;
           border-radius: 0;
           /* Keep print-friendly: light paper tone with very subtle texture (low ink). */

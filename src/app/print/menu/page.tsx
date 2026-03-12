@@ -19,6 +19,60 @@ type PrintMenuPayload = {
   }>;
 };
 
+function isRocksGlassCocktail(displayName: string) {
+  const n = displayName.toLowerCase();
+  // Heuristic based on our current icon set / common serves.
+  // This is only used to improve the print-menu hero row layout.
+  return (
+    n.includes("negroni") ||
+    n.includes("boulevardier") ||
+    n.includes("old fashioned") ||
+    n.includes("old-fashioned") ||
+    n.includes("whisky sour") ||
+    n.includes("whiskey sour") ||
+    n.includes("moscow mule")
+  );
+}
+
+function orderHeroCocktails<T extends { name: string }>(list: T[]) {
+  const rocks: T[] = [];
+  const non: T[] = [];
+  for (const c of list) {
+    const d = normalizeCocktailDisplayName(c.name);
+    (isRocksGlassCocktail(d) ? rocks : non).push(c);
+  }
+
+  // Interleave to avoid adjacent rocks-glass drinks when possible.
+  const out: T[] = [];
+  // If there are more non-rocks, start with non-rocks for a nicer flow.
+  let takeRocks = non.length === 0;
+  while (rocks.length || non.length) {
+    if (!takeRocks && non.length) out.push(non.shift()!);
+    else if (takeRocks && rocks.length) out.push(rocks.shift()!);
+    else if (non.length) out.push(non.shift()!);
+    else if (rocks.length) out.push(rocks.shift()!);
+    // Prefer alternating, but if one bucket empties we just continue.
+    takeRocks = !takeRocks;
+  }
+
+  // Extra pass: if two rocks ended up adjacent (happens when rocks > non+1),
+  // try swapping with the next non-rock later in the list.
+  for (let i = 1; i < out.length; i++) {
+    const a = normalizeCocktailDisplayName(out[i - 1].name);
+    const b = normalizeCocktailDisplayName(out[i].name);
+    if (isRocksGlassCocktail(a) && isRocksGlassCocktail(b)) {
+      const j = out.findIndex((x, idx) => idx > i && !isRocksGlassCocktail(normalizeCocktailDisplayName(x.name)));
+      if (j > i) {
+        const tmp = out[i];
+        out[i] = out[j];
+        out[j] = tmp;
+      }
+    }
+  }
+
+  return out;
+}
+
 function chunk<T>(arr: T[], size: number) {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -373,7 +427,7 @@ export default function PrintCocktailMenuPage() {
                 </header>
 
                 <div className="menu-hero">
-                  {cocktails.slice(0, 6).map((c, i) => {
+                  {orderHeroCocktails(cocktails).slice(0, 6).map((c, i) => {
                     const displayName = normalizeCocktailDisplayName(c.name);
                     const src = resolveCocktailImageSrc(null, displayName);
                     const placements: Array<{
@@ -383,18 +437,18 @@ export default function PrintCocktailMenuPage() {
                       scale: number;
                       z: number;
                     }> = [
-                      // Back row (slightly smaller, a touch lower)
-                      { left: "16%", top: "18%", rotate: -8, scale: 0.92, z: 1 },
-                      { left: "39%", top: "22%", rotate: 5, scale: 0.92, z: 1 },
-                      { left: "62%", top: "18%", rotate: -2, scale: 0.92, z: 1 },
-                      // Front row
-                      { left: "26%", top: "0%", rotate: -4, scale: 1.02, z: 2 },
-                      { left: "50%", top: "4%", rotate: 7, scale: 1.02, z: 3 },
-                      { left: "74%", top: "2%", rotate: 2, scale: 1.02, z: 2 },
+                      // A neat horizontal "bunch" across the page, with a tiny overlap.
+                      // Keep tops mostly aligned so it reads cleanly when printed.
+                      { left: "14%", top: "8%", rotate: -5, scale: 0.96, z: 1 },
+                      { left: "30%", top: "6%", rotate: 3, scale: 0.96, z: 1 },
+                      { left: "46%", top: "9%", rotate: -2, scale: 0.98, z: 2 },
+                      { left: "60%", top: "6%", rotate: 4, scale: 0.98, z: 2 },
+                      { left: "74%", top: "8%", rotate: -3, scale: 0.96, z: 1 },
+                      { left: "88%", top: "7%", rotate: 2, scale: 0.96, z: 1 },
                     ];
                     const p = placements[i] || {
-                      left: `${18 + i * 12}%`,
-                      top: `${i % 2 ? 6 : 10}%`,
+                      left: `${14 + i * 14}%`,
+                      top: "8%",
                       rotate: 0,
                       scale: 0.95,
                       z: 1,

@@ -260,8 +260,8 @@ export default function PrintCocktailMenuPage() {
           /* Extra safety: some laptop/browser print pipelines still clip a few px at the top.
              Scale + nudge the rotated panel slightly for print only. */
           .menu-panel-inner {
-            top: calc(50% + 3mm) !important;
-            transform: translate(-50%, -50%) rotate(90deg) scale(0.96) !important;
+            top: calc(50% + 4mm) !important;
+            transform: translate(-50%, -50%) rotate(90deg) scale(0.94) !important;
           }
         }
 
@@ -281,7 +281,8 @@ export default function PrintCocktailMenuPage() {
           position: relative;
           width: 210mm;
           /* Leave a dedicated gutter for the cut line so it never overlaps the menus. */
-          height: 146mm;
+          /* Slightly shorter than half A4 so printers that clip top/bottom don't cut content. */
+          height: 145mm;
           overflow: hidden;
         }
 
@@ -318,9 +319,9 @@ export default function PrintCocktailMenuPage() {
 
         .menu-hero {
           position: relative;
-          height: 40mm;
-          margin-top: 7mm;
-          margin-bottom: 8mm;
+          height: 36mm;
+          margin-top: 6mm;
+          margin-bottom: 6mm;
         }
 
         .menu-hero-img {
@@ -458,16 +459,16 @@ export default function PrintCocktailMenuPage() {
                     }> = [
                       // A neat horizontal "bunch" across the page, with a tiny overlap.
                       // Keep tops mostly aligned so it reads cleanly when printed.
-                      { left: "12%", top: "8%", rotate: 0, scale: 0.96, z: 1 },
-                      { left: "28%", top: "8%", rotate: 0, scale: 0.96, z: 1 },
-                      { left: "44%", top: "8%", rotate: 0, scale: 0.98, z: 2 },
-                      { left: "60%", top: "8%", rotate: 0, scale: 0.98, z: 2 },
-                      { left: "76%", top: "8%", rotate: 0, scale: 0.96, z: 1 },
-                      { left: "92%", top: "8%", rotate: 0, scale: 0.96, z: 1 },
+                      { left: "12%", top: "4%", rotate: 0, scale: 0.96, z: 1 },
+                      { left: "28%", top: "4%", rotate: 0, scale: 0.96, z: 1 },
+                      { left: "44%", top: "4%", rotate: 0, scale: 0.98, z: 2 },
+                      { left: "60%", top: "4%", rotate: 0, scale: 0.98, z: 2 },
+                      { left: "76%", top: "4%", rotate: 0, scale: 0.96, z: 1 },
+                      { left: "92%", top: "4%", rotate: 0, scale: 0.96, z: 1 },
                     ];
                     const p = placements[i] || {
                       left: `${14 + i * 14}%`,
-                      top: "8%",
+                      top: "4%",
                       rotate: 0,
                       scale: 0.95,
                       z: 1,
@@ -526,7 +527,7 @@ export default function PrintCocktailMenuPage() {
                   })}
                 </div>
 
-                <p className="mt-6 text-center text-[12px] font-semibold italic text-[#2f6f55]/90">
+                <p className="mt-4 text-center text-[12px] font-semibold italic text-[#2f6f55]/90">
                   * non-alcoholic options available *
                 </p>
               </div>

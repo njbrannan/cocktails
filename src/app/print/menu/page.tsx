@@ -280,7 +280,8 @@ export default function PrintCocktailMenuPage() {
         .menu-panel {
           position: relative;
           width: 210mm;
-          height: 148.5mm;
+          /* Leave a dedicated gutter for the cut line so it never overlaps the menus. */
+          height: 146mm;
           overflow: hidden;
         }
 
@@ -347,13 +348,21 @@ export default function PrintCocktailMenuPage() {
         .menu-cut {
           position: relative;
           width: 210mm;
-          height: 0;
+          height: 5mm;
+        }
+        .menu-cut::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 50%;
+          transform: translateY(-50%);
           border-top: 1px dashed rgba(0, 0, 0, 0.35);
         }
         .menu-cut-label {
           position: absolute;
           left: 50%;
-          top: 0;
+          top: 50%;
           transform: translate(-50%, -50%);
           display: inline-flex;
           align-items: center;

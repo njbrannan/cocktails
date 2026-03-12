@@ -47,6 +47,56 @@ function ScissorsIcon(props: { className?: string }) {
   );
 }
 
+function MartiniMark(props: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      aria-hidden="true"
+      className={props.className || "h-8 w-8"}
+      fill="none"
+    >
+      <path
+        d="M12 14h40c0 10-10 19-20 23-10-4-20-13-20-23Z"
+        fill="#2f6f55"
+      />
+      <path d="M32 37v15" stroke="#2f6f55" strokeWidth="4" strokeLinecap="round" />
+      <path d="M22 56h20" stroke="#2f6f55" strokeWidth="4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LeafCorner(props: { className?: string; flipX?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 120 120"
+      aria-hidden="true"
+      className={props.className || "h-10 w-10"}
+      style={props.flipX ? { transform: "scaleX(-1)" } : undefined}
+      fill="none"
+    >
+      <path
+        d="M18 102c28-4 44-18 54-42 5-12 7-25 9-42 18 18 30 40 28 62-2 20-18 34-36 36-19 3-40-5-55-14Z"
+        fill="#2f6f55"
+        opacity="0.22"
+      />
+      <path
+        d="M20 102c22-18 36-36 46-62"
+        stroke="#2f6f55"
+        strokeWidth="3"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <path
+        d="M38 86c8-3 15-7 20-12M46 68c8-4 15-9 21-16"
+        stroke="#0c2f5e"
+        strokeWidth="2"
+        strokeLinecap="round"
+        opacity="0.25"
+      />
+    </svg>
+  );
+}
+
 export default function PrintCocktailMenuPage() {
   const router = useRouter();
   const [payload, setPayload] = useState<PrintMenuPayload | null>(null);
@@ -151,6 +201,50 @@ export default function PrintCocktailMenuPage() {
           transform-origin: center;
           padding: 10mm;
           box-sizing: border-box;
+          border-radius: 10mm;
+          /* Keep print-friendly: light paper tone with very subtle texture (low ink). */
+          background:
+            radial-gradient(10px 10px at 10% 20%, rgba(0, 0, 0, 0.028), transparent 62%),
+            radial-gradient(10px 10px at 70% 35%, rgba(0, 0, 0, 0.022), transparent 62%),
+            radial-gradient(10px 10px at 40% 80%, rgba(0, 0, 0, 0.020), transparent 62%),
+            linear-gradient(180deg, #fbf5e6 0%, #f7efd9 100%);
+          box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.10);
+        }
+
+        .menu-title {
+          font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+          letter-spacing: 0.12em;
+        }
+
+        .menu-subtitle {
+          letter-spacing: 0.22em;
+        }
+
+        .menu-hero {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8mm;
+          align-items: end;
+          margin-top: 8mm;
+        }
+
+        .menu-hero-img {
+          width: 34mm;
+          height: 34mm;
+          object-fit: contain;
+          filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.10));
+        }
+
+        .menu-list {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 5mm;
+          margin-top: 10mm;
+        }
+
+        .menu-item-name {
+          font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+          color: #0c2f5e;
         }
 
         .menu-cut {
@@ -179,13 +273,19 @@ export default function PrintCocktailMenuPage() {
 
         .menu-card-desc {
           display: -webkit-box;
-          -webkit-line-clamp: 2;
+          -webkit-line-clamp: 1;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
 
         .menu-accent {
           color: #2f6f55;
+        }
+
+        .menu-ornament {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
         }
       `}</style>
 
@@ -211,39 +311,76 @@ export default function PrintCocktailMenuPage() {
           {panels.map((cocktails, panelIndex) => (
             <div key={`panel-${sheetIndex}-${panelIndex}`} className="menu-panel">
               <div className="menu-panel-inner">
-                <header className="pb-3">
-                  <h1 className="text-[32px] font-semibold leading-[1.05] text-black">
-                    {payload.title}
-                  </h1>
-                  <div className="mt-2 flex items-center gap-3">
-                    <span className="menu-accent text-[10px] font-semibold uppercase tracking-[0.22em]">
-                      Cocktail menu
+                <div className="menu-ornament">
+                  <div className="absolute left-[8mm] top-[8mm] opacity-80">
+                    <LeafCorner className="h-12 w-12" />
+                  </div>
+                  <div className="absolute bottom-[8mm] right-[8mm] opacity-80">
+                    <LeafCorner className="h-12 w-12" flipX />
+                  </div>
+                </div>
+                <header className="text-center">
+                  <div className="flex items-center justify-center gap-4">
+                    <span className="menu-title text-[40px] font-extrabold text-[#0c2f5e]">
+                      COCKTAIL
                     </span>
-                    <span className="h-px flex-1 bg-black/10" />
-                    <span className="menu-accent text-[10px] font-semibold uppercase tracking-[0.22em]">
-                      Involved Events
+                    <MartiniMark className="h-11 w-11" />
+                    <span className="menu-title text-[40px] font-extrabold text-[#0c2f5e]">
+                      MENU
                     </span>
                   </div>
-                  <p className="mt-2 text-[11px] leading-snug text-black/60">
-                    Crafted cocktails, beautifully planned.
+                  <p className="menu-subtitle mt-3 text-[10px] font-semibold uppercase text-[#2f6f55]">
+                    — Speciality drinks for your event —
+                  </p>
+                  <p className="mt-3 text-[16px] font-semibold text-black/80">
+                    {payload.title}
                   </p>
                 </header>
 
-                <div className="grid grid-cols-1 gap-3">
-                  {cocktails.map((c) => {
+                <div className="menu-hero">
+                  {cocktails.slice(0, 3).map((c) => {
                     const displayName = normalizeCocktailDisplayName(c.name);
                     const src = resolveCocktailImageSrc(null, displayName);
                     return (
-                      <article
-                        key={c.recipeId}
-                        className="flex items-start gap-3"
-                      >
-                        <div className="shrink-0">
-                          <div className="h-[48px] w-[48px] overflow-hidden rounded-xl bg-transparent p-0">
+                      <div key={`hero-${c.recipeId}`} className="grid place-items-center">
+                        <img
+                          src={src}
+                          alt={displayName}
+                          className="menu-hero-img"
+                          onError={(event) => {
+                            const img = event.currentTarget;
+                            const stage = Number(img.dataset.fallbackStage || "0") || 0;
+                            if (stage >= 3) {
+                              img.src = COCKTAIL_PLACEHOLDER_IMAGE;
+                              return;
+                            }
+                            const current = img.getAttribute("src") || "";
+                            if (stage === 0) {
+                              img.dataset.fallbackStage = "1";
+                              img.src = resolveSvgFallbackForImageSrc(current);
+                              return;
+                            }
+                            img.dataset.fallbackStage = String(stage + 1);
+                            img.src = COCKTAIL_PLACEHOLDER_IMAGE;
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="menu-list">
+                  {cocktails.map((c) => {
+                    const displayName = normalizeCocktailDisplayName(c.name);
+                    return (
+                      <article key={c.recipeId} className="min-w-0">
+                        <div className="flex items-start gap-4">
+                          <div className="mt-0.5 grid h-10 w-10 place-items-center">
                             <img
-                              src={src}
-                              alt={displayName}
-                              className="h-full w-full object-contain"
+                              src={resolveCocktailImageSrc(null, displayName)}
+                              alt=""
+                              aria-hidden="true"
+                              className="h-10 w-10 object-contain"
                               onError={(event) => {
                                 const img = event.currentTarget;
                                 const stage = Number(img.dataset.fallbackStage || "0") || 0;
@@ -262,19 +399,26 @@ export default function PrintCocktailMenuPage() {
                               }}
                             />
                           </div>
-                        </div>
-                        <div className="min-w-0">
-                          <h2 className="truncate text-[15px] font-semibold leading-snug text-black">
-                            {displayName}
-                          </h2>
-                          <p className="menu-card-desc mt-1 text-[12px] leading-snug text-black/65">
-                            {c.description || " "}
-                          </p>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-baseline gap-2">
+                              <span className="menu-accent text-[18px] leading-none">•</span>
+                              <h2 className="menu-item-name truncate text-[18px] font-bold">
+                                {displayName}
+                              </h2>
+                            </div>
+                            <p className="menu-card-desc mt-1 text-[12.5px] leading-snug text-black/65">
+                              {c.description || " "}
+                            </p>
+                          </div>
                         </div>
                       </article>
                     );
                   })}
                 </div>
+
+                <p className="mt-6 text-center text-[12px] font-semibold italic text-[#2f6f55]/90">
+                  * non-alcoholic options available *
+                </p>
               </div>
             </div>
           ))}

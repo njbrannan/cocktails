@@ -326,8 +326,8 @@ export default function PrintCocktailMenuPage() {
 
         .menu-list {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 4mm 10mm;
+          grid-template-columns: 1fr;
+          gap: 5mm;
           margin-top: 0;
         }
 
@@ -430,6 +430,7 @@ export default function PrintCocktailMenuPage() {
                   {orderHeroCocktails(cocktails).slice(0, 6).map((c, i) => {
                     const displayName = normalizeCocktailDisplayName(c.name);
                     const src = resolveCocktailImageSrc(null, displayName);
+                    const isRocks = isRocksGlassCocktail(displayName);
                     const placements: Array<{
                       left: string;
                       top: string;
@@ -462,7 +463,9 @@ export default function PrintCocktailMenuPage() {
                         style={{
                           left: p.left,
                           top: p.top,
-                          transform: `translateX(-50%) rotate(${p.rotate}deg) scale(${p.scale})`,
+                          transform: `translateX(-50%) rotate(${p.rotate}deg) scale(${
+                            p.scale * (isRocks ? 0.8 : 1)
+                          })`,
                           zIndex: p.z,
                         }}
                         onError={(event) => {

@@ -21,16 +21,15 @@ type PrintMenuPayload = {
 
 function isRocksGlassCocktail(displayName: string) {
   const n = displayName.toLowerCase();
-  // Heuristic based on our current icon set / common serves.
-  // This is only used to improve the print-menu hero row layout.
+  // This is only used to scale hero-row images a touch smaller for rocks-glass serves.
+  // Keep this list aligned to your "rocks glass" definition.
   return (
-    n.includes("negroni") ||
-    n.includes("boulevardier") ||
     n.includes("old fashioned") ||
     n.includes("old-fashioned") ||
-    n.includes("whisky sour") ||
-    n.includes("whiskey sour") ||
-    n.includes("moscow mule")
+    n.includes("negroni") ||
+    n.includes("moscow mule") ||
+    n.includes("tommys margarita") ||
+    n.includes("tommy's margarita")
   );
 }
 
@@ -440,12 +439,12 @@ export default function PrintCocktailMenuPage() {
                     }> = [
                       // A neat horizontal "bunch" across the page, with a tiny overlap.
                       // Keep tops mostly aligned so it reads cleanly when printed.
-                      { left: "14%", top: "8%", rotate: -5, scale: 0.96, z: 1 },
-                      { left: "30%", top: "6%", rotate: 3, scale: 0.96, z: 1 },
-                      { left: "46%", top: "9%", rotate: -2, scale: 0.98, z: 2 },
-                      { left: "60%", top: "6%", rotate: 4, scale: 0.98, z: 2 },
-                      { left: "74%", top: "8%", rotate: -3, scale: 0.96, z: 1 },
-                      { left: "88%", top: "7%", rotate: 2, scale: 0.96, z: 1 },
+                      { left: "12%", top: "8%", rotate: 0, scale: 0.96, z: 1 },
+                      { left: "28%", top: "8%", rotate: 0, scale: 0.96, z: 1 },
+                      { left: "44%", top: "8%", rotate: 0, scale: 0.98, z: 2 },
+                      { left: "60%", top: "8%", rotate: 0, scale: 0.98, z: 2 },
+                      { left: "76%", top: "8%", rotate: 0, scale: 0.96, z: 1 },
+                      { left: "92%", top: "8%", rotate: 0, scale: 0.96, z: 1 },
                     ];
                     const p = placements[i] || {
                       left: `${14 + i * 14}%`,

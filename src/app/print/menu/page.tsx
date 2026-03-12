@@ -256,6 +256,13 @@ export default function PrintCocktailMenuPage() {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
+
+          /* Extra safety: some laptop/browser print pipelines still clip a few px at the top.
+             Scale + nudge the rotated panel slightly for print only. */
+          .menu-panel-inner {
+            top: calc(50% + 3mm) !important;
+            transform: translate(-50%, -50%) rotate(90deg) scale(0.96) !important;
+          }
         }
 
         .menu-sheet {
@@ -362,8 +369,9 @@ export default function PrintCocktailMenuPage() {
         }
 
         .menu-card-desc {
+          /* Allow descriptions to wrap to a second line (print-friendly). */
           display: -webkit-box;
-          -webkit-line-clamp: 1;
+          -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }

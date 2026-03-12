@@ -101,6 +101,39 @@ export default function PrintCocktailMenuPage() {
   const router = useRouter();
   const [payload, setPayload] = useState<PrintMenuPayload | null>(null);
 
+  async function printWhenReady() {
+    // Avoid "weird" prints caused by late-loading fonts/images shifting layout mid-dialog.
+    try {
+      // Fonts
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fonts = (document as any).fonts;
+      if (fonts && typeof fonts.ready?.then === "function") {
+        await fonts.ready;
+      }
+
+      // Images
+      const imgs = Array.from(document.images || []);
+      await Promise.all(
+        imgs.map(
+          (img) =>
+            new Promise<void>((resolve) => {
+              if (img.complete) return resolve();
+              img.addEventListener("load", () => resolve(), { once: true });
+              img.addEventListener("error", () => resolve(), { once: true });
+            }),
+        ),
+      );
+    } catch {
+      // ignore
+    }
+
+    try {
+      window.print();
+    } catch {
+      // ignore
+    }
+  }
+
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem("get-involved:print-menu:v1");
@@ -125,11 +158,7 @@ export default function PrintCocktailMenuPage() {
   useEffect(() => {
     if (!payload) return;
     const t = window.setTimeout(() => {
-      try {
-        window.print();
-      } catch {
-        // ignore
-      }
+      void printWhenReady();
     }, 300);
     return () => window.clearTimeout(t);
   }, [payload]);
@@ -168,6 +197,10 @@ export default function PrintCocktailMenuPage() {
           html,
           body {
             background: #fff !important;
+          }
+          * {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
         }
 
@@ -221,25 +254,27 @@ export default function PrintCocktailMenuPage() {
         }
 
         .menu-hero {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 8mm;
-          align-items: end;
-          margin-top: 8mm;
+          position: relative;
+          height: 44mm;
+          margin-top: 7mm;
+          margin-bottom: 8mm;
         }
 
         .menu-hero-img {
-          width: 34mm;
-          height: 34mm;
+          position: absolute;
+          width: 32mm;
+          height: 32mm;
           object-fit: contain;
-          filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.10));
+          filter:
+            drop-shadow(0 10px 14px rgba(0, 0, 0, 0.10))
+            drop-shadow(0 2px 2px rgba(0, 0, 0, 0.06));
         }
 
         .menu-list {
           display: grid;
-          grid-template-columns: 1fr;
-          gap: 5mm;
-          margin-top: 10mm;
+          grid-template-columns: 1fr 1fr;
+          gap: 4mm 10mm;
+          margin-top: 0;
         }
 
         .menu-item-name {
@@ -299,7 +334,7 @@ export default function PrintCocktailMenuPage() {
         </button>
         <button
           type="button"
-          onClick={() => window.print()}
+          onClick={() => void printWhenReady()}
           className="rounded-full bg-black px-5 py-2 text-sm font-semibold text-white"
         >
           Print
@@ -338,33 +373,61 @@ export default function PrintCocktailMenuPage() {
                 </header>
 
                 <div className="menu-hero">
-                  {cocktails.slice(0, 3).map((c) => {
+                  {cocktails.slice(0, 6).map((c, i) => {
                     const displayName = normalizeCocktailDisplayName(c.name);
                     const src = resolveCocktailImageSrc(null, displayName);
+                    const placements: Array<{
+                      left: string;
+                      top: string;
+                      rotate: number;
+                      scale: number;
+                      z: number;
+                    }> = [
+                      // Back row (slightly smaller, a touch lower)
+                      { left: "16%", top: "18%", rotate: -8, scale: 0.92, z: 1 },
+                      { left: "39%", top: "22%", rotate: 5, scale: 0.92, z: 1 },
+                      { left: "62%", top: "18%", rotate: -2, scale: 0.92, z: 1 },
+                      // Front row
+                      { left: "26%", top: "0%", rotate: -4, scale: 1.02, z: 2 },
+                      { left: "50%", top: "4%", rotate: 7, scale: 1.02, z: 3 },
+                      { left: "74%", top: "2%", rotate: 2, scale: 1.02, z: 2 },
+                    ];
+                    const p = placements[i] || {
+                      left: `${18 + i * 12}%`,
+                      top: `${i % 2 ? 6 : 10}%`,
+                      rotate: 0,
+                      scale: 0.95,
+                      z: 1,
+                    };
                     return (
-                      <div key={`hero-${c.recipeId}`} className="grid place-items-center">
-                        <img
-                          src={src}
-                          alt={displayName}
-                          className="menu-hero-img"
-                          onError={(event) => {
-                            const img = event.currentTarget;
-                            const stage = Number(img.dataset.fallbackStage || "0") || 0;
-                            if (stage >= 3) {
-                              img.src = COCKTAIL_PLACEHOLDER_IMAGE;
-                              return;
-                            }
-                            const current = img.getAttribute("src") || "";
-                            if (stage === 0) {
-                              img.dataset.fallbackStage = "1";
-                              img.src = resolveSvgFallbackForImageSrc(current);
-                              return;
-                            }
-                            img.dataset.fallbackStage = String(stage + 1);
+                      <img
+                        key={`hero-${c.recipeId}`}
+                        src={src}
+                        alt={displayName}
+                        className="menu-hero-img"
+                        style={{
+                          left: p.left,
+                          top: p.top,
+                          transform: `translateX(-50%) rotate(${p.rotate}deg) scale(${p.scale})`,
+                          zIndex: p.z,
+                        }}
+                        onError={(event) => {
+                          const img = event.currentTarget;
+                          const stage = Number(img.dataset.fallbackStage || "0") || 0;
+                          if (stage >= 3) {
                             img.src = COCKTAIL_PLACEHOLDER_IMAGE;
-                          }}
-                        />
-                      </div>
+                            return;
+                          }
+                          const current = img.getAttribute("src") || "";
+                          if (stage === 0) {
+                            img.dataset.fallbackStage = "1";
+                            img.src = resolveSvgFallbackForImageSrc(current);
+                            return;
+                          }
+                          img.dataset.fallbackStage = String(stage + 1);
+                          img.src = COCKTAIL_PLACEHOLDER_IMAGE;
+                        }}
+                      />
                     );
                   })}
                 </div>
@@ -374,43 +437,15 @@ export default function PrintCocktailMenuPage() {
                     const displayName = normalizeCocktailDisplayName(c.name);
                     return (
                       <article key={c.recipeId} className="min-w-0">
-                        <div className="flex items-start gap-4">
-                          <div className="mt-0.5 grid h-10 w-10 place-items-center">
-                            <img
-                              src={resolveCocktailImageSrc(null, displayName)}
-                              alt=""
-                              aria-hidden="true"
-                              className="h-10 w-10 object-contain"
-                              onError={(event) => {
-                                const img = event.currentTarget;
-                                const stage = Number(img.dataset.fallbackStage || "0") || 0;
-                                if (stage >= 3) {
-                                  img.src = COCKTAIL_PLACEHOLDER_IMAGE;
-                                  return;
-                                }
-                                const current = img.getAttribute("src") || "";
-                                if (stage === 0) {
-                                  img.dataset.fallbackStage = "1";
-                                  img.src = resolveSvgFallbackForImageSrc(current);
-                                  return;
-                                }
-                                img.dataset.fallbackStage = String(stage + 1);
-                                img.src = COCKTAIL_PLACEHOLDER_IMAGE;
-                              }}
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-baseline gap-2">
-                              <span className="menu-accent text-[18px] leading-none">•</span>
-                              <h2 className="menu-item-name truncate text-[18px] font-bold">
-                                {displayName}
-                              </h2>
-                            </div>
-                            <p className="menu-card-desc mt-1 text-[12.5px] leading-snug text-black/65">
-                              {c.description || " "}
-                            </p>
-                          </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="menu-accent text-[18px] leading-none">•</span>
+                          <h2 className="menu-item-name truncate text-[18px] font-bold">
+                            {displayName}
+                          </h2>
                         </div>
+                        <p className="menu-card-desc mt-1 pl-5 text-[12.5px] leading-snug text-black/65">
+                          {c.description || " "}
+                        </p>
                       </article>
                     );
                   })}

@@ -838,7 +838,7 @@ export default function RequestOrderPage() {
 
   const [loading, setLoading] = useState(false);
   const [exportingToCart, setExportingToCart] = useState(false);
-  const [cartError, setCartError] = useState<string | null>(null);
+  const [cartError, setCartError] = useState<React.ReactNode | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -1992,6 +1992,31 @@ export default function RequestOrderPage() {
       setEventLocationError(null);
       setEventDateError(null);
       setBartenderTimeError(null);
+
+      if ((Number(totalDrinks) || 0) > 400) {
+        setCartError(
+          <span>
+            <strong>Big Celebration! :</strong>{" "}
+            For bookings including upwards of 400 drinks please contact us at{" "}
+            <a
+              href="tel:+61472775268"
+              className="underline underline-offset-2"
+            >
+              +61 472 775 268
+            </a>{" "}
+            directly for a bespoke service quote or email us at{" "}
+            <a
+              href="mailto:bookings@getinvolved.com.au"
+              className="underline underline-offset-2"
+            >
+              bookings@getinvolved.com.au
+            </a>{" "}
+            to get Involved.
+          </span>,
+        );
+        setExportingToCart(false);
+        return;
+      }
     }
     const rows: Array<{ name: string; type: string; qty: string; total: string; url: string }> = [];
     const getInvolvedCartItems: GetInvolvedCartItem[] = [];

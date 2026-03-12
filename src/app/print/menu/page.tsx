@@ -250,6 +250,7 @@ export default function PrintCocktailMenuPage() {
           html,
           body {
             background: #fff !important;
+            color: #111 !important;
           }
           * {
             -webkit-print-color-adjust: exact;
@@ -281,19 +282,16 @@ export default function PrintCocktailMenuPage() {
           position: absolute;
           left: 50%;
           top: 50%;
-          width: 148mm;
-          height: 210mm;
+          /* Add a tiny safety margin so nothing gets clipped by print scaling. */
+          width: 146mm;
+          height: 208mm;
           transform: translate(-50%, -50%) rotate(90deg);
           transform-origin: center;
-          padding: 10mm;
+          padding: 8mm;
           box-sizing: border-box;
-          border-radius: 10mm;
+          border-radius: 0;
           /* Keep print-friendly: light paper tone with very subtle texture (low ink). */
-          background:
-            radial-gradient(10px 10px at 10% 20%, rgba(0, 0, 0, 0.028), transparent 62%),
-            radial-gradient(10px 10px at 70% 35%, rgba(0, 0, 0, 0.022), transparent 62%),
-            radial-gradient(10px 10px at 40% 80%, rgba(0, 0, 0, 0.020), transparent 62%),
-            linear-gradient(180deg, #fbf5e6 0%, #f7efd9 100%);
+          background: #fbf5e6;
           box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.10);
         }
 
@@ -308,7 +306,7 @@ export default function PrintCocktailMenuPage() {
 
         .menu-hero {
           position: relative;
-          height: 44mm;
+          height: 40mm;
           margin-top: 7mm;
           margin-bottom: 8mm;
         }

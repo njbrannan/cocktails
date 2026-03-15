@@ -581,9 +581,13 @@ export default function RequestPage() {
               href="https://www.getinvolved.com.au"
               target="_blank"
               rel="noreferrer"
-              className="whitespace-nowrap text-[13px] font-bold sm:text-sm"
+              className="inline-flex items-center"
             >
-              Involved Events
+              <img
+                src="/involved-events-logo.svg"
+                alt="Involved Events"
+                className="h-8 w-auto sm:h-9"
+              />
             </a>
             <a
               href="https://www.getinvolved.com.au"

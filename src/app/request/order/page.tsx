@@ -2490,7 +2490,7 @@ export default function RequestOrderPage() {
               className="inline-flex items-center"
             >
               <img
-                src="/involved-events-logo.svg"
+                src="/involved-events-logo.png"
                 alt="Involved Events"
                 className="h-8 w-auto sm:h-9"
               />

@@ -586,7 +586,7 @@ export default function RequestPage() {
             <img
               src="/involved-events-logo.png?v=3"
               alt="Involved Events — Bespoke Bar Services"
-              className="h-20 w-auto max-w-full sm:h-24 md:h-28"
+              className="h-24 w-auto max-w-full object-contain sm:h-28 md:h-32"
             />
           </a>
         </header>

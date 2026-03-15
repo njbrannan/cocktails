@@ -604,12 +604,13 @@ export default function RequestPage() {
               />
             </a>
           </p>
-          <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">
-            Cocktail Party Planner
-          </h1>
-          <p className="mt-2 text-sm text-muted">
-            Select cocktails, set quantities, then create your order list.
-          </p>
+          <div className="mt-4 flex justify-center">
+            <img
+              src="/involved-events-logo.png?v=2"
+              alt="Involved Events — Bespoke Bar Services"
+              className="h-20 w-auto max-w-full sm:h-24 md:h-28"
+            />
+          </div>
         </header>
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}

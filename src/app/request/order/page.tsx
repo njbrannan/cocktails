@@ -2510,8 +2510,14 @@ export default function RequestOrderPage() {
               />
             </a>
           </p>
-          <h1 className="font-display text-4xl text-ink">Your Shopping List</h1>
-          <p className="mt-2 text-sm text-muted">
+          <div className="mt-4 flex justify-center">
+            <img
+              src="/involved-events-logo.png?v=2"
+              alt="Involved Events — Bespoke Bar Services"
+              className="h-20 w-auto max-w-full sm:h-24 md:h-28"
+            />
+          </div>
+          <p className="mt-4 text-sm text-muted">
             Totals include a 10% buffer. Items are rounded up to pack sizes where provided (for example, 700ml bottles).
           </p>
         </header>

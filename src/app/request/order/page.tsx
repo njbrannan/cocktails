@@ -2492,7 +2492,7 @@ export default function RequestOrderPage() {
               <img
                 src="/involved-events-logo.png"
                 alt="Involved Events"
-                className="h-8 w-auto sm:h-9"
+                className="h-10 w-auto sm:h-11 md:h-12"
               />
             </a>
             <a

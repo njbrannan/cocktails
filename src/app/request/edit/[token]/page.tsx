@@ -707,34 +707,19 @@ export default function RequestEditPage() {
 
       <div className="no-print mx-auto flex w-full max-w-5xl flex-col gap-8">
         <header>
-          <p className="flex items-center justify-between gap-3 font-semibold uppercase tracking-[0.22em] text-accent">
-            <a
-              href="https://www.getinvolved.com.au"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center"
-            >
-              <img
-                src="/involved-events-logo.png?v=2"
-                alt="Involved Events"
-                className="h-12 w-auto sm:h-14 md:h-16"
-              />
-            </a>
-            <a
-              href="https://www.getinvolved.com.au"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Get Involved! Catering"
-              className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border border-subtle bg-white/70 shadow-sm hover:-translate-y-0.5"
-            >
-              <img
-                src="/prawn-icon.png"
-                alt=""
-                aria-hidden="true"
-                className="h-full w-full object-cover"
-              />
-            </a>
-          </p>
+          <a
+            href="https://www.getinvolved.com.au"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 flex justify-center"
+            aria-label="Involved Events"
+          >
+            <img
+              src="/involved-events-logo.png?v=3"
+              alt="Involved Events — Bespoke Bar Services"
+              className="h-20 w-auto max-w-full sm:h-24 md:h-28"
+            />
+          </a>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">
             Edit Cocktail Booking Request Page
           </h1>

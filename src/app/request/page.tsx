@@ -584,9 +584,9 @@ export default function RequestPage() {
               className="inline-flex items-center"
             >
               <img
-                src="/involved-events-logo.png"
+                src="/involved-events-logo.png?v=2"
                 alt="Involved Events"
-                className="h-10 w-auto sm:h-11 md:h-12"
+                className="h-12 w-auto sm:h-14 md:h-16"
               />
             </a>
             <a

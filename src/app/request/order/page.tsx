@@ -793,6 +793,13 @@ export default function RequestOrderPage() {
 
   const [orderList, setOrderList] = useState<IngredientTotal[]>([]);
   const [recalcError, setRecalcError] = useState<string | null>(null);
+
+  const withTimeout = async <T,>(p: PromiseLike<T>, ms: number): Promise<T> => {
+    const timeout = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Request timed out")), ms);
+    });
+    return await Promise.race([Promise.resolve(p) as Promise<T>, timeout]);
+  };
   const [editingQuantities, setEditingQuantities] = useState(false);
   const [pricingTier, setPricingTier] = useState<
     "budget" | "house" | "top_shelf"
@@ -1103,13 +1110,21 @@ export default function RequestOrderPage() {
 
       let data: any = null;
       let error: any = null;
-      {
-        const resp = await supabase
-          .from("recipes")
-          .select(selectWithPacks)
-          .in("id", recipeIds);
-        data = resp.data;
-        error = resp.error;
+      try {
+        const resp = await withTimeout(
+          supabase.from("recipes").select(selectWithPacks).in("id", recipeIds),
+          12_000,
+        );
+        data = (resp as any).data;
+        error = (resp as any).error;
+      } catch (e: any) {
+        const msg = String(e?.message || "");
+        setRecalcError(
+          msg.toLowerCase().includes("timed out")
+            ? "Loading your cocktails is taking longer than expected. Please check your connection and refresh."
+            : "Unable to load your cocktails right now. Please check your connection and refresh.",
+        );
+        return;
       }
 
       if (
@@ -1118,12 +1133,22 @@ export default function RequestOrderPage() {
           String(error.message || "").toLowerCase().includes("ingredient_packs") ||
           String(error.message || "").toLowerCase().includes("recipe_packs"))
       ) {
-        const resp = await supabase
-          .from("recipes")
-          .select(selectWithoutPacks)
-          .in("id", recipeIds);
-        data = resp.data;
-        error = resp.error;
+        try {
+          const resp = await withTimeout(
+            supabase.from("recipes").select(selectWithoutPacks).in("id", recipeIds),
+            12_000,
+          );
+          data = (resp as any).data;
+          error = (resp as any).error;
+        } catch (e: any) {
+          const msg = String(e?.message || "");
+          setRecalcError(
+            msg.toLowerCase().includes("timed out")
+              ? "Loading your cocktails is taking longer than expected. Please check your connection and refresh."
+              : "Unable to load your cocktails right now. Please check your connection and refresh.",
+          );
+          return;
+        }
       }
 
       if (error) {
@@ -1147,13 +1172,15 @@ export default function RequestOrderPage() {
 
       let data: any = null;
       let error: any = null;
-      {
-        const resp = await supabase
-          .from("ingredients")
-          .select(selectWithPacks)
-          .eq("type", "bar");
-        data = resp.data;
-        error = resp.error;
+      try {
+        const resp = await withTimeout(
+          supabase.from("ingredients").select(selectWithPacks).eq("type", "bar"),
+          12_000,
+        );
+        data = (resp as any).data;
+        error = (resp as any).error;
+      } catch {
+        return;
       }
 
       if (
@@ -1161,12 +1188,19 @@ export default function RequestOrderPage() {
         (String((error as any).code || "") === "42703" ||
           String(error.message || "").toLowerCase().includes("ingredient_packs"))
       ) {
-        const resp = await supabase
-          .from("ingredients")
-          .select(selectWithoutPacks)
-          .eq("type", "bar");
-        data = resp.data;
-        error = resp.error;
+        try {
+          const resp = await withTimeout(
+            supabase
+              .from("ingredients")
+              .select(selectWithoutPacks)
+              .eq("type", "bar"),
+            12_000,
+          );
+          data = (resp as any).data;
+          error = (resp as any).error;
+        } catch {
+          return;
+        }
       }
 
       if (error) return;

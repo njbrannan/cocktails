@@ -316,6 +316,13 @@ export default function RequestPage() {
     };
   }, [swipeOpenRecipeId]);
 
+  const withTimeout = async <T,>(p: PromiseLike<T>, ms: number): Promise<T> => {
+    const timeout = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Request timed out")), ms);
+    });
+    return await Promise.race([Promise.resolve(p) as Promise<T>, timeout]);
+  };
+
   const loadMenu = async () => {
     setError(null);
     setMenuLoading(true);
@@ -324,61 +331,77 @@ export default function RequestPage() {
     const selectWithoutPacks =
       "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
 
-    let { data, error: recipeError } = await supabase
-      .from("recipes")
-      .select(selectWithPacks)
-      .eq("is_active", true);
+    const TIMEOUT_MS = 12_000;
 
-    // If packs aren't available (missing column, RLS, permission), fall back to a simpler select.
-    if (recipeError) {
-      const code = String((recipeError as any).code || "");
-      const msg = String(recipeError.message || "").toLowerCase();
-      const shouldFallback =
-        code === "42703" || // undefined_column
-        code === "42501" || // insufficient_privilege
-        msg.includes("ingredient_packs") ||
-        msg.includes("permission denied") ||
-        msg.includes("row-level security") ||
-        msg.includes("rls");
+    try {
+      let data: any = null;
+      let recipeError: any = null;
 
-      if (shouldFallback) {
-      ({ data, error: recipeError } = await supabase
-        .from("recipes")
-        .select(selectWithoutPacks)
-        .eq("is_active", true));
+      ({ data, error: recipeError } = await withTimeout(
+        supabase.from("recipes").select(selectWithPacks).eq("is_active", true),
+        TIMEOUT_MS,
+      ));
+
+      // If packs aren't available (missing column, RLS, permission), fall back to a simpler select.
+      if (recipeError) {
+        const code = String((recipeError as any).code || "");
+        const msg = String(recipeError.message || "").toLowerCase();
+        const shouldFallback =
+          code === "42703" || // undefined_column
+          code === "42501" || // insufficient_privilege
+          msg.includes("ingredient_packs") ||
+          msg.includes("permission denied") ||
+          msg.includes("row-level security") ||
+          msg.includes("rls");
+
+        if (shouldFallback) {
+          ({ data, error: recipeError } = await withTimeout(
+            supabase
+              .from("recipes")
+              .select(selectWithoutPacks)
+              .eq("is_active", true),
+            TIMEOUT_MS,
+          ));
+        }
       }
-    }
 
-    if (recipeError) {
+      if (recipeError) {
+        throw recipeError;
+      }
+
+      const list = ((data ?? []) as unknown as Recipe[]) || [];
+      const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
+      setRecipes(sorted);
+      saveCachedRecipes(sorted);
+      setServingsByRecipeId((prev) => {
+        const next = { ...prev };
+        for (const recipe of sorted) {
+          if (next[recipe.id] === undefined) {
+            next[recipe.id] = "0";
+          }
+        }
+        return next;
+      });
+    } catch (e: any) {
       // If offline (or Supabase is unreachable), fall back to the last cached menu.
       const cached = loadCachedRecipes<Recipe>();
       if (cached?.recipes?.length) {
-        setRecipes([...cached.recipes].sort((a, b) => a.name.localeCompare(b.name)));
-        setMenuLoadedOnce(true);
-        setMenuLoading(false);
+        setRecipes(
+          [...cached.recipes].sort((a, b) => a.name.localeCompare(b.name)),
+        );
         return;
       }
-      setError(recipeError.message);
+
+      const msg = String(e?.message || "");
+      setError(
+        msg.toLowerCase().includes("timed out")
+          ? "Loading cocktails is taking longer than expected. Please check your connection and try again."
+          : "Unable to load cocktails right now. Please check your connection and try again.",
+      );
+    } finally {
       setMenuLoadedOnce(true);
       setMenuLoading(false);
-      return;
     }
-
-    const list = ((data ?? []) as unknown as Recipe[]) || [];
-    const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
-    setRecipes(sorted);
-    saveCachedRecipes(sorted);
-    setServingsByRecipeId((prev) => {
-      const next = { ...prev };
-      for (const recipe of sorted) {
-        if (next[recipe.id] === undefined) {
-          next[recipe.id] = "0";
-        }
-      }
-      return next;
-    });
-    setMenuLoadedOnce(true);
-    setMenuLoading(false);
   };
 
   useEffect(() => {
@@ -600,7 +623,18 @@ export default function RequestPage() {
           </a>
         </header>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-sm font-medium text-red-700">{error}</p>
+            <button
+              type="button"
+              onClick={() => loadMenu()}
+              className="mt-2 text-sm font-semibold text-red-800 underline underline-offset-4"
+            >
+              Try again
+            </button>
+          </div>
+        ) : null}
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
           <h2 className="font-display text-2xl text-accent">

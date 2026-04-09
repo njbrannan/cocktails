@@ -329,15 +329,24 @@ export default function RequestPage() {
       .select(selectWithPacks)
       .eq("is_active", true);
 
-    if (
-      recipeError &&
-      (String((recipeError as any).code || "") === "42703" ||
-        String(recipeError.message || "").toLowerCase().includes("ingredient_packs"))
-    ) {
+    // If packs aren't available (missing column, RLS, permission), fall back to a simpler select.
+    if (recipeError) {
+      const code = String((recipeError as any).code || "");
+      const msg = String(recipeError.message || "").toLowerCase();
+      const shouldFallback =
+        code === "42703" || // undefined_column
+        code === "42501" || // insufficient_privilege
+        msg.includes("ingredient_packs") ||
+        msg.includes("permission denied") ||
+        msg.includes("row-level security") ||
+        msg.includes("rls");
+
+      if (shouldFallback) {
       ({ data, error: recipeError } = await supabase
         .from("recipes")
         .select(selectWithoutPacks)
         .eq("is_active", true));
+      }
     }
 
     if (recipeError) {

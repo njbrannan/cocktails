@@ -1152,7 +1152,20 @@ export default function RequestOrderPage() {
       }
 
       if (error) {
-        setRecalcError(error.message);
+        const msg = String(error.message || "");
+        const looksLikeNetwork =
+          msg.toLowerCase().includes("load failed") ||
+          msg.toLowerCase().includes("failed to fetch") ||
+          msg.toLowerCase().includes("networkerror") ||
+          msg.toLowerCase().includes("fetch");
+
+        // If we already have an order list from sessionStorage, don't alarm the client with a
+        // scary error for a non-essential background refresh. The page can still function.
+        if (looksLikeNetwork && (stored?.orderList?.length || 0) > 0) {
+          return;
+        }
+
+        setRecalcError(msg || "Unable to load your cocktails right now.");
         return;
       }
 

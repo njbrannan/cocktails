@@ -2798,10 +2798,11 @@ export default function RequestOrderPage() {
             ) : null}
           </div>
           <div className="mt-3">
-            <div className="flex w-full overflow-hidden rounded-full border border-subtle bg-white/70 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+            <div className="relative z-10 isolate flex w-full overflow-hidden rounded-full border border-subtle bg-white/70 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
               <button
                 type="button"
                 onClick={() => setPricingTier("house")}
+                aria-pressed={pricingTier === "house"}
                 className={`flex-1 px-4 py-2 text-center transition ${
                   pricingTier === "house"
                     ? "bg-accent text-on-accent"
@@ -2813,6 +2814,7 @@ export default function RequestOrderPage() {
               <button
                 type="button"
                 onClick={() => setPricingTier("top_shelf")}
+                aria-pressed={pricingTier === "top_shelf"}
                 className={`flex-1 border-l border-subtle px-4 py-2 text-center transition ${
                   pricingTier === "top_shelf"
                     ? "bg-accent text-on-accent"

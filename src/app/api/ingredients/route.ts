@@ -1,5 +1,5 @@
-import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { corsPreflight, withCors } from "@/lib/cors";
+import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { NextRequest, NextResponse } from "next/server";
 
 export function OPTIONS() {
@@ -26,22 +26,18 @@ async function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
 export async function GET(request: NextRequest) {
   try {
     const supabaseServer = getSupabaseServerClient();
-    const ids = (request.nextUrl.searchParams.get("ids") || "")
-      .split(",")
-      .map((id) => id.trim())
-      .filter(Boolean);
+    const type = (request.nextUrl.searchParams.get("type") || "").trim();
     const selectWithPacks =
-      "id, name, description, image_url, recipe_packs(pack_size, pack_price, purchase_url, variant_sku, tier, is_active), recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)))";
+      "id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)";
     const selectWithoutPacks =
-      "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
+      "id, name, type, unit, bottle_size_ml, purchase_url, price";
 
     let data: any = null;
     let error: any = null;
+
     {
-      let query = supabaseServer
-        .from("recipes")
-        .select(selectWithPacks);
-      query = ids.length ? query.in("id", ids) : query.eq("is_active", true);
+      let query = supabaseServer.from("ingredients").select(selectWithPacks);
+      if (type) query = query.eq("type", type);
       const resp = await withTimeout(query, 12_000);
       data = resp.data;
       error = resp.error;
@@ -50,13 +46,10 @@ export async function GET(request: NextRequest) {
     if (
       error &&
       (String((error as any).code || "") === "42703" ||
-        String(error.message || "").toLowerCase().includes("ingredient_packs") ||
-        String(error.message || "").toLowerCase().includes("recipe_packs"))
+        String(error.message || "").toLowerCase().includes("ingredient_packs"))
     ) {
-      let query = supabaseServer
-        .from("recipes")
-        .select(selectWithoutPacks);
-      query = ids.length ? query.in("id", ids) : query.eq("is_active", true);
+      let query = supabaseServer.from("ingredients").select(selectWithoutPacks);
+      if (type) query = query.eq("type", type);
       const resp = await withTimeout(query, 12_000);
       data = resp.data;
       error = resp.error;
@@ -72,10 +65,9 @@ export async function GET(request: NextRequest) {
 
     return withCors(
       NextResponse.json(
-        { recipes: list },
+        { ingredients: list },
         {
           headers: {
-            // Browser/CDN can cache this. The mobile app also caches it locally.
             "Cache-Control": "public, max-age=60, s-maxage=300",
           },
         },

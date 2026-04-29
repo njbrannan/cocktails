@@ -800,6 +800,24 @@ export default function RequestOrderPage() {
     });
     return await Promise.race([Promise.resolve(p) as Promise<T>, timeout]);
   };
+
+  const fetchJsonWithTimeout = async (url: string, ms: number) => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), ms);
+    try {
+      const response = await fetch(url, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      const json = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(json?.error || `Request failed (HTTP ${response.status})`);
+      }
+      return json;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  };
   const [editingQuantities, setEditingQuantities] = useState(false);
   const [pricingTier, setPricingTier] = useState<
     "budget" | "house" | "top_shelf"
@@ -1111,20 +1129,39 @@ export default function RequestOrderPage() {
       let data: any = null;
       let error: any = null;
       try {
-        const resp = await withTimeout(
-          supabase.from("recipes").select(selectWithPacks).in("id", recipeIds),
+        const json = await fetchJsonWithTimeout(
+          `/api/recipes?ids=${encodeURIComponent(recipeIds.join(","))}`,
           12_000,
         );
-        data = (resp as any).data;
-        error = (resp as any).error;
+        data = Array.isArray(json?.recipes) ? json.recipes : null;
       } catch (e: any) {
-        const msg = String(e?.message || "");
-        setRecalcError(
-          msg.toLowerCase().includes("timed out")
-            ? "Loading your cocktails is taking longer than expected. Please check your connection and refresh."
-            : "Unable to load your cocktails right now. Please check your connection and refresh.",
-        );
-        return;
+        try {
+          const resp = await withTimeout(
+            supabase.from("recipes").select(selectWithPacks).in("id", recipeIds),
+            12_000,
+          );
+          data = (resp as any).data;
+          error = (resp as any).error;
+        } catch (fallbackErr: any) {
+          const msg = String(fallbackErr?.message || e?.message || "");
+          const looksLikeNetwork =
+            msg.toLowerCase().includes("load failed") ||
+            msg.toLowerCase().includes("failed to fetch") ||
+            msg.toLowerCase().includes("networkerror") ||
+            msg.toLowerCase().includes("fetch");
+
+          if (looksLikeNetwork && (stored?.orderList?.length || 0) > 0) {
+            return;
+          }
+
+          setRecalcError(
+            msg.toLowerCase().includes("timed out") ||
+              msg.toLowerCase().includes("aborted")
+              ? "Loading your cocktails is taking longer than expected. Please check your connection and refresh."
+              : "Unable to load your cocktails right now. Please check your connection and refresh.",
+          );
+          return;
+        }
       }
 
       if (
@@ -1186,14 +1223,19 @@ export default function RequestOrderPage() {
       let data: any = null;
       let error: any = null;
       try {
-        const resp = await withTimeout(
-          supabase.from("ingredients").select(selectWithPacks).eq("type", "bar"),
-          12_000,
-        );
-        data = (resp as any).data;
-        error = (resp as any).error;
+        const json = await fetchJsonWithTimeout("/api/ingredients?type=bar", 12_000);
+        data = Array.isArray(json?.ingredients) ? json.ingredients : null;
       } catch {
-        return;
+        try {
+          const resp = await withTimeout(
+            supabase.from("ingredients").select(selectWithPacks).eq("type", "bar"),
+            12_000,
+          );
+          data = (resp as any).data;
+          error = (resp as any).error;
+        } catch {
+          return;
+        }
       }
 
       if (

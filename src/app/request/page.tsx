@@ -323,6 +323,24 @@ export default function RequestPage() {
     return await Promise.race([Promise.resolve(p) as Promise<T>, timeout]);
   };
 
+  const fetchJsonWithTimeout = async (url: string, ms: number) => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), ms);
+    try {
+      const response = await fetch(url, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      const json = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(json?.error || `Request failed (HTTP ${response.status})`);
+      }
+      return json;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  };
+
   const loadMenu = async () => {
     setError(null);
     setMenuLoading(true);
@@ -337,10 +355,17 @@ export default function RequestPage() {
       let data: any = null;
       let recipeError: any = null;
 
-      ({ data, error: recipeError } = await withTimeout(
-        supabase.from("recipes").select(selectWithPacks).eq("is_active", true),
-        TIMEOUT_MS,
-      ));
+      try {
+        const json = await fetchJsonWithTimeout("/api/recipes", TIMEOUT_MS);
+        data = Array.isArray(json?.recipes) ? json.recipes : null;
+      } catch {
+        // Last-resort fallback for local/offline-ish situations where our API is
+        // unreachable but the browser Supabase client is still available.
+        ({ data, error: recipeError } = await withTimeout(
+          supabase.from("recipes").select(selectWithPacks).eq("is_active", true),
+          TIMEOUT_MS,
+        ));
+      }
 
       // If packs aren't available (missing column, RLS, permission), fall back to a simpler select.
       if (recipeError) {

@@ -443,10 +443,33 @@ export default function RequestEditPage() {
     const selectWithoutPacks =
       "id, name, description, image_url, recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price))";
 
-    let { data, error: recipeError } = await supabase
-      .from("recipes")
-      .select(selectWithPacks)
-      .eq("is_active", true);
+    let data: any = null;
+    let recipeError: any = null;
+
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 12_000);
+      try {
+        const response = await fetch("/api/recipes", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const json = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(json?.error || `Request failed (HTTP ${response.status})`);
+        }
+        data = Array.isArray(json?.recipes) ? json.recipes : null;
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    } catch {
+      const resp = await supabase
+        .from("recipes")
+        .select(selectWithPacks)
+        .eq("is_active", true);
+      data = resp.data;
+      recipeError = resp.error;
+    }
 
     if (
       recipeError &&

@@ -318,17 +318,24 @@ export default function PrintCocktailMenuPage() {
         }
 
         .menu-hero {
-          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0;
           height: 36mm;
           margin-top: 6mm;
           margin-bottom: 6mm;
+          overflow: visible;
         }
 
         .menu-hero-img {
-          position: absolute;
+          position: relative;
+          flex: 0 0 auto;
           width: 32mm;
           height: 32mm;
           object-fit: contain;
+          margin-left: -2.5mm;
+          margin-right: -2.5mm;
           filter:
             drop-shadow(0 10px 14px rgba(0, 0, 0, 0.10))
             drop-shadow(0 2px 2px rgba(0, 0, 0, 0.06));
@@ -450,29 +457,6 @@ export default function PrintCocktailMenuPage() {
                     const displayName = normalizeCocktailDisplayName(c.name);
                     const src = resolveCocktailImageSrc(null, displayName);
                     const isRocks = isRocksGlassCocktail(displayName);
-                    const placements: Array<{
-                      left: string;
-                      top: string;
-                      rotate: number;
-                      scale: number;
-                      z: number;
-                    }> = [
-                      // A neat horizontal "bunch" across the page, with a tiny overlap.
-                      // Keep tops mostly aligned so it reads cleanly when printed.
-                      { left: "12%", top: "4%", rotate: 0, scale: 0.96, z: 1 },
-                      { left: "28%", top: "4%", rotate: 0, scale: 0.96, z: 1 },
-                      { left: "44%", top: "4%", rotate: 0, scale: 0.98, z: 2 },
-                      { left: "60%", top: "4%", rotate: 0, scale: 0.98, z: 2 },
-                      { left: "76%", top: "4%", rotate: 0, scale: 0.96, z: 1 },
-                      { left: "92%", top: "4%", rotate: 0, scale: 0.96, z: 1 },
-                    ];
-                    const p = placements[i] || {
-                      left: `${14 + i * 14}%`,
-                      top: "4%",
-                      rotate: 0,
-                      scale: 0.95,
-                      z: 1,
-                    };
                     return (
                       <img
                         key={`hero-${c.recipeId}`}
@@ -480,12 +464,8 @@ export default function PrintCocktailMenuPage() {
                         alt={displayName}
                         className="menu-hero-img"
                         style={{
-                          left: p.left,
-                          top: p.top,
-                          transform: `translateX(-50%) rotate(${p.rotate}deg) scale(${
-                            p.scale * (isRocks ? 0.8 : 1)
-                          })`,
-                          zIndex: p.z,
+                          transform: `scale(${isRocks ? 0.8 : 1})`,
+                          zIndex: i + 1,
                         }}
                         onError={(event) => {
                           const img = event.currentTarget;

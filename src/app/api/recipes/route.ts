@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { corsPreflight, withCors } from "@/lib/cors";
+import { filterFallbackRecipes } from "@/lib/fallbackMenu";
 import { NextRequest, NextResponse } from "next/server";
 
 export function OPTIONS() {
@@ -24,12 +25,29 @@ async function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
 }
 
 export async function GET(request: NextRequest) {
+  const ids = (request.nextUrl.searchParams.get("ids") || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+
+  const fallbackResponse = (reason?: string) =>
+    withCors(
+      NextResponse.json(
+        {
+          recipes: filterFallbackRecipes(ids),
+          fallback: true,
+          reason: reason || null,
+        },
+        {
+          headers: {
+            "Cache-Control": "public, max-age=60, s-maxage=300",
+          },
+        },
+      ),
+    );
+
   try {
     const supabaseServer = getSupabaseServerClient();
-    const ids = (request.nextUrl.searchParams.get("ids") || "")
-      .split(",")
-      .map((id) => id.trim())
-      .filter(Boolean);
     const selectWithPacks =
       "id, name, description, image_url, recipe_packs(pack_size, pack_price, purchase_url, variant_sku, tier, is_active), recipe_ingredients(ml_per_serving, ingredients(id, name, type, unit, bottle_size_ml, purchase_url, price, ingredient_packs(pack_size, pack_price, purchase_url, search_url, search_query, variant_sku, retailer, tier, is_active)))";
     const selectWithoutPacks =
@@ -63,7 +81,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (error) {
-      return withCors(NextResponse.json({ error: error.message }, { status: 400 }));
+      return fallbackResponse(error.message);
     }
 
     const list = (data ?? []).slice().sort((a: any, b: any) => {
@@ -82,11 +100,6 @@ export async function GET(request: NextRequest) {
       ),
     );
   } catch (err: any) {
-    return withCors(
-      NextResponse.json(
-        { error: err?.message || "Server error" },
-        { status: 500 },
-      ),
-    );
+    return fallbackResponse(err?.message || "Server error");
   }
 }

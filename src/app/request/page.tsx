@@ -9,6 +9,7 @@ import {
   resolveNextCocktailImageSrc,
   resolveSvgFallbackForImageSrc,
 } from "@/lib/cocktailImages";
+import { fallbackRecipes } from "@/lib/fallbackMenu";
 import { loadCachedRecipes, saveCachedRecipes } from "@/lib/offlineRecipes";
 import { useEdgeSwipeNav } from "@/hooks/useEdgeSwipeNav";
 import { useRouter } from "next/navigation";
@@ -417,12 +418,21 @@ export default function RequestPage() {
         return;
       }
 
-      const msg = String(e?.message || "");
-      setError(
-        msg.toLowerCase().includes("timed out")
-          ? "Loading cocktails is taking longer than expected. Please check your connection and try again."
-          : "Unable to load cocktails right now. Please check your connection and try again.",
+      setRecipes(
+        [...(fallbackRecipes as unknown as Recipe[])].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
       );
+      setServingsByRecipeId((prev) => {
+        const next = { ...prev };
+        for (const recipe of fallbackRecipes) {
+          if (next[recipe.id] === undefined) {
+            next[recipe.id] = "0";
+          }
+        }
+        return next;
+      });
+      return;
     } finally {
       setMenuLoadedOnce(true);
       setMenuLoading(false);

@@ -673,7 +673,7 @@ export default function RequestPage() {
 
         <div className="glass-panel rounded-[28px] px-8 py-6">
           <h2 className="font-display text-2xl text-accent">
-            {step === "select" ? "Select cocktails" : "Set quantities"}
+            {step === "select" ? "Select from our cocktails" : "Set quantities"}
           </h2>
           <p className="mt-2 text-sm text-muted">
             {step === "select"

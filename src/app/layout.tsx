@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Playfair_Display, Roboto } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import { Analytics } from "@vercel/analytics/next";
 
 const playfair = Playfair_Display({
   variable: "--font-classic-display",
@@ -84,6 +85,7 @@ export default function RootLayout({
       >
         <ServiceWorkerRegister />
         {children}
+        <Analytics />
       </body>
     </html>
   );

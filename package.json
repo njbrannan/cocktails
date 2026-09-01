@@ -17,6 +17,7 @@
     "@capacitor/core": "^8.0.2",
     "@capacitor/ios": "^8.0.2",
     "@supabase/supabase-js": "^2.94.1",
+    "@vercel/analytics": "^1.6.1",
     "countries-list": "^3.2.2",
     "libphonenumber-js": "^1.12.36",
     "next": "16.1.6",
